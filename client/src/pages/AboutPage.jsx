@@ -209,7 +209,8 @@ function AboutPage() {
           <div className="flex flex-wrap justify-center gap-3 pt-2">
             <Link
               to="/schedules"
-              className="inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold text-brand-900 bg-white border border-white/60 shadow-md hover:bg-white/90 hover:shadow-lg transition-all duration-300"
+              className="inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold bg-brand-100 border border-brand-200 shadow-md hover:bg-brand-200 hover:shadow-lg transition-all duration-300"
+              style={{ color: "#0f3d2c" }}
             >
               📅 Lihat Jadwal Ibadah
             </Link>
