@@ -9,15 +9,20 @@ const routes = require('./routes');
 const { notFoundHandler, globalErrorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
+function normalizeOrigin(origin) {
+  return String(origin || '').trim().replace(/\/+$/, '');
+}
+
 const allowedOrigins = (process.env.CLIENT_URL || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map(normalizeOrigin)
   .filter(Boolean);
 
 const localDevOrigins = ['http://localhost:5173', 'http://localhost:5174'];
 for (const origin of localDevOrigins) {
-  if (!allowedOrigins.includes(origin)) {
-    allowedOrigins.push(origin);
+  const normalized = normalizeOrigin(origin);
+  if (!allowedOrigins.includes(normalized)) {
+    allowedOrigins.push(normalized);
   }
 }
 
@@ -31,11 +36,12 @@ app.use(cors({
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin)) {
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
     }
 
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
+    return callback(new Error(`CORS blocked for origin: ${normalizedOrigin}`));
   },
   credentials: true
 }));
