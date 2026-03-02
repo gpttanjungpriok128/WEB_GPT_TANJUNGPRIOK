@@ -257,12 +257,19 @@ Jika SMTP tidak diisi, API tetap jalan dan email notifikasi otomatis di-skip.
    - `docker compose up --build -d`
 3. App tersedia di `http://localhost`.
 
-### Deploy Gratis (Render + Vercel)
-Arsitektur paling stabil untuk gratis saat ini:
-- Backend API + PostgreSQL: Render (free tier)
-- Frontend React: Vercel Hobby (free tier)
+### Deploy Gratis (Render + Neon + Vercel)
+Arsitektur gratis yang paling aman untuk mulai:
+- Backend API: Render (free web service)
+- PostgreSQL: Neon (free)
+- Frontend React: Vercel Hobby (free)
 
-1. Deploy database PostgreSQL di Render (free).
+Cara tercepat backend:
+- Gunakan `render.yaml` (Blueprint) di root project.
+- Saat deploy, isi variabel yang `sync: false` dengan nilai dari Neon + domain Vercel.
+- Contoh env siap copy ada di `server/.env.render.example`.
+
+1. Buat database PostgreSQL di Neon (free) lalu catat:
+   - Host, Port, Database, User, Password
 2. Deploy backend dari folder `server` ke Render:
    - Build Command: `npm install`
    - Start Command: `npm start`
@@ -270,6 +277,8 @@ Arsitektur paling stabil untuk gratis saat ini:
      - `NODE_ENV=production`
      - `PORT=10000`
      - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+     - `DB_SSL=true`
+     - `DB_SSL_REJECT_UNAUTHORIZED=true`
      - `JWT_SECRET`, `JWT_EXPIRES_IN`
      - `CLIENT_URL` (isi domain frontend Vercel)
      - `GOOGLE_CLIENT_ID` (jika login Google aktif)
