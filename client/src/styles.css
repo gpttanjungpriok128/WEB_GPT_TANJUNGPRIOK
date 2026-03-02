@@ -86,26 +86,30 @@ html {
   color: var(--brand-muted);
 }
 
-/* Improve dark-mode text contrast for brand utility classes */
+/* Dark-mode typography hierarchy: heading > body > metadata */
+.dark .text-brand-900,
+.dark .text-brand-800,
 .dark .text-brand-200 {
   color: #f8fafc;
 }
 
+.dark .text-brand-700,
+.dark .text-brand-600,
 .dark .text-brand-300 {
   color: #e2e8f0;
 }
 
+.dark .text-brand-500,
 .dark .text-brand-400 {
-  color: #cbd5e1;
-}
-
-.dark .text-brand-500 {
   color: #94a3b8;
 }
 
-.dark .text-brand-600,
-.dark .text-brand-700 {
-  color: #e2e8f0;
+.dark .text-primary {
+  color: #6ee7b7;
+}
+
+.dark .text-primary-light {
+  color: #a7f3d0;
 }
 
 /* ─── Glassmorphism ─── */
