@@ -47,6 +47,7 @@ Starter fullstack website gereja dengan arsitektur modern, role-based access, ap
 - Email notification saat prayer request masuk (opsional via SMTP env)
 - CMS-style editor (rich text basic)
 - Dark mode toggle (persist localStorage)
+- Upload gambar renungan bisa disimpan permanen ke Cloudinary (opsional, disarankan untuk production)
 
 ## Struktur Folder
 
@@ -282,6 +283,8 @@ Cara tercepat backend:
      - `JWT_SECRET`, `JWT_EXPIRES_IN`
      - `CLIENT_URL` (isi domain frontend Vercel)
      - `GOOGLE_CLIENT_ID` (jika login Google aktif)
+     - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (agar gambar renungan tidak hilang saat redeploy)
+     - `CLOUDINARY_FOLDER` (opsional, default `gpt-tanjungpriok/articles`)
 3. Deploy frontend dari folder `client` ke Vercel:
    - Framework: Vite
    - Env:

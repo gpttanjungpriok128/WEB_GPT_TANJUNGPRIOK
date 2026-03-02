@@ -112,6 +112,9 @@ function ArticlesPage() {
                     src={resolveImageUrl(article.image)}
                     alt={article.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
                   />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -210,6 +213,9 @@ function ArticlesPage() {
                     src={resolveImageUrl(selectedArticle.image)}
                     alt={selectedArticle.title}
                     className="h-full w-full object-cover opacity-90"
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
                   />
                 </div>
               )}

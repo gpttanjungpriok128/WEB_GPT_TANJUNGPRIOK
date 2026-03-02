@@ -1,5 +1,7 @@
+const fs = require('fs');
 const { Op } = require('sequelize');
 const { Article, User } = require('../models');
+const { isCloudinaryConfigured, uploadLocalImageToCloudinary } = require('../services/cloudinaryService');
 
 const ARTICLE_STATUS = ['draft', 'pending', 'published', 'rejected'];
 
@@ -30,6 +32,38 @@ function buildSearchWhere(search) {
       { content: { [Op.iLike]: `%${search}%` } }
     ]
   };
+}
+
+async function removeLocalUpload(file) {
+  if (!file?.path) {
+    return;
+  }
+
+  try {
+    await fs.promises.unlink(file.path);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
+async function resolveArticleImage(file) {
+  if (!file) {
+    return null;
+  }
+
+  if (!isCloudinaryConfigured()) {
+    return `/uploads/${file.filename}`;
+  }
+
+  try {
+    return await uploadLocalImageToCloudinary(file.path, {
+      folder: process.env.CLOUDINARY_FOLDER || 'gpt-tanjungpriok/articles'
+    });
+  } finally {
+    await removeLocalUpload(file);
+  }
 }
 
 async function getArticles(req, res, next) {
@@ -136,7 +170,7 @@ async function createArticle(req, res, next) {
   try {
     const { title, content } = req.body;
     const requestedStatus = req.body.status;
-    const image = req.file ? `/uploads/${req.file.filename}` : null;
+    const image = await resolveArticleImage(req.file);
 
     let status = 'pending';
     let approvedBy = null;
@@ -184,7 +218,7 @@ async function updateArticle(req, res, next) {
     }
 
     if (req.file) {
-      article.image = `/uploads/${req.file.filename}`;
+      article.image = await resolveArticleImage(req.file);
     }
 
     article.title = title ?? article.title;
