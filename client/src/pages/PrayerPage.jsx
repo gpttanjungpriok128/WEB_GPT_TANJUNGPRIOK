@@ -13,6 +13,7 @@ function PrayerPage() {
   const [prayerRequests, setPrayerRequests] = useState([]);
   const [isPrayerLoading, setIsPrayerLoading] = useState(false);
   const [completingPrayerId, setCompletingPrayerId] = useState(null);
+  const [deletingPrayerId, setDeletingPrayerId] = useState(null);
   const [adminMessage, setAdminMessage] = useState({ type: "", text: "" });
 
   useEffect(() => {
@@ -68,6 +69,25 @@ function PrayerPage() {
       setAdminMessage({ type: "error", text: "Gagal menandai permohonan doa sebagai selesai." });
     } finally {
       setCompletingPrayerId(null);
+    }
+  };
+
+  const handleDeleteCompletedPrayer = async (id) => {
+    const isConfirmed = window.confirm("Hapus permanen permohonan doa yang sudah selesai ini?");
+    if (!isConfirmed) return;
+
+    setDeletingPrayerId(id);
+    setAdminMessage({ type: "", text: "" });
+
+    try {
+      await api.delete(`/prayer-requests/${id}`);
+      setPrayerRequests((prev) => prev.filter((item) => item.id !== id));
+      setAdminMessage({ type: "success", text: "Permohonan doa selesai berhasil dihapus." });
+    } catch (error) {
+      const message = error.response?.data?.message || "Gagal menghapus permohonan doa selesai.";
+      setAdminMessage({ type: "error", text: message });
+    } finally {
+      setDeletingPrayerId(null);
     }
   };
 
@@ -142,16 +162,26 @@ function PrayerPage() {
                   <p className="mt-3 whitespace-pre-wrap text-sm text-brand-700 dark:text-brand-300 leading-relaxed">
                     {item.request}
                   </p>
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex justify-end gap-2">
                     <button
                       type="button"
-                      disabled={item.isRead || completingPrayerId === item.id}
+                      disabled={item.isRead || completingPrayerId === item.id || deletingPrayerId === item.id}
                       onClick={() => handleCompletePrayer(item.id)}
                       className="btn-primary !text-sm !px-4 !py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ background: item.isRead ? "#94a3b8" : undefined }}
                     >
                       {item.isRead ? "Sudah Selesai" : completingPrayerId === item.id ? "Memproses..." : "Tandai Selesai"}
                     </button>
+                    {item.isRead && (
+                      <button
+                        type="button"
+                        disabled={deletingPrayerId === item.id || completingPrayerId === item.id}
+                        onClick={() => handleDeleteCompletedPrayer(item.id)}
+                        className="btn-outline !text-sm !px-4 !py-2 border-rose-500 text-rose-600 hover:!bg-rose-500 hover:!text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deletingPrayerId === item.id ? "Menghapus..." : "Hapus"}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

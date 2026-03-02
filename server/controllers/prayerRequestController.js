@@ -60,6 +60,10 @@ async function deletePrayerRequest(req, res, next) {
       return res.status(404).json({ message: 'Prayer request not found' });
     }
 
+    if (!prayerRequest.isRead) {
+      return res.status(409).json({ message: 'Only completed prayer requests can be deleted' });
+    }
+
     await prayerRequest.destroy();
     return res.status(200).json({ message: 'Prayer request deleted' });
   } catch (error) {
