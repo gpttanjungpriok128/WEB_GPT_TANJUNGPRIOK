@@ -4,6 +4,10 @@ const { sequelize, LiveStreamSetting, User } = require('./models');
 
 const DEFAULT_PORT = Number(process.env.PORT || 5000);
 
+function isTrue(value) {
+  return ['true', '1', 'yes', 'on'].includes(String(value || '').toLowerCase());
+}
+
 function startHttpServer(preferredPort, retries = 1) {
   const server = app.listen(preferredPort, () => {
     console.log(`Server running on port ${preferredPort}`);
@@ -70,7 +74,8 @@ async function bootstrap() {
       defaults: { youtubeUrl: 'https://www.youtube.com/embed/live_stream?channel=YOUR_CHANNEL_ID' }
     });
 
-    if (process.env.NODE_ENV !== 'production') {
+    const shouldSeedDefaultUsers = process.env.NODE_ENV !== 'production' || isTrue(process.env.SEED_DEFAULT_USERS);
+    if (shouldSeedDefaultUsers) {
       await ensureDefaultUsers();
     }
 
