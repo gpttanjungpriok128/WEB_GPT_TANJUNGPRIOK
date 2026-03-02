@@ -86,6 +86,28 @@ html {
   color: var(--brand-muted);
 }
 
+/* Improve dark-mode text contrast for brand utility classes */
+.dark .text-brand-200 {
+  color: #f8fafc;
+}
+
+.dark .text-brand-300 {
+  color: #e2e8f0;
+}
+
+.dark .text-brand-400 {
+  color: #cbd5e1;
+}
+
+.dark .text-brand-500 {
+  color: #94a3b8;
+}
+
+.dark .text-brand-600,
+.dark .text-brand-700 {
+  color: #e2e8f0;
+}
+
 /* ─── Glassmorphism ─── */
 .glass {
   background: var(--glass-bg);
