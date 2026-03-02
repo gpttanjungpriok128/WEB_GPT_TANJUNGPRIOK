@@ -1,6 +1,6 @@
 const app = require('./app');
 const bcrypt = require('bcrypt');
-const { sequelize, LiveStreamSetting, User } = require('./models');
+const { sequelize, LiveStreamSetting, User, Schedule } = require('./models');
 
 const DEFAULT_PORT = Number(process.env.PORT || 5000);
 
@@ -24,6 +24,70 @@ function startHttpServer(preferredPort, retries = 1) {
     console.error('Failed to bind server port:', error.message);
     process.exit(1);
   });
+}
+
+function toIsoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getNextWeekdayDate(targetDay, weekOffset = 0) {
+  const date = new Date();
+  const diff = (targetDay - date.getDay() + 7) % 7;
+  date.setDate(date.getDate() + diff + (weekOffset * 7));
+  return toIsoDate(date);
+}
+
+function getDefaultSchedules() {
+  return [
+    {
+      title: 'Ibadah Minggu Raya (Sunday Service)',
+      date: getNextWeekdayDate(0, 0),
+      time: '09:00 WIB',
+      description: 'Setiap hari Minggu jam 09.00 WIB.'
+    },
+    {
+      title: 'Ibadah Minggu Raya di GPT Volker',
+      date: getNextWeekdayDate(0, 1),
+      time: '16:00 WIB',
+      description: 'Dilaksanakan pada minggu ke-2 dan ke-4 setiap bulan di GPT Volker.'
+    },
+    {
+      title: 'Ibadah Doa Penyembahan',
+      date: getNextWeekdayDate(2, 0),
+      time: '18:30 WIB',
+      description: 'Setiap hari Selasa jam 18.30 WIB.'
+    },
+    {
+      title: 'Ibadah Pendalaman Alkitab',
+      date: getNextWeekdayDate(4, 0),
+      time: '18:30 WIB',
+      description: 'Setiap hari Kamis jam 18.30 WIB.'
+    },
+    {
+      title: 'Sekolah Minggu (Sunday School)',
+      date: getNextWeekdayDate(0, 0),
+      time: '07:30 WIB',
+      description: 'Ibadah kategorial untuk anak-anak, setiap hari Minggu jam 07.30 WIB.'
+    },
+    {
+      title: 'Ibadah Kaum Muda Remaja (Faithfull Generation Church Community)',
+      date: getNextWeekdayDate(6, 1),
+      time: '17:00 WIB',
+      description: 'Ibadah kategorial, setiap hari Sabtu pada minggu ke-2 dan ke-4.'
+    },
+    {
+      title: 'Ibadah Kaum Wanita',
+      date: getNextWeekdayDate(6, 0),
+      time: '10:00 WIB',
+      description: 'Ibadah kategorial, setiap hari Sabtu pada minggu ke-1 dan ke-3.'
+    },
+    {
+      title: 'Ibadah Kaum Pria',
+      date: getNextWeekdayDate(6, 3),
+      time: '10:00 WIB',
+      description: 'Ibadah kategorial, setiap hari Sabtu pada minggu ke-4.'
+    }
+  ];
 }
 
 async function ensureDefaultUsers() {
@@ -64,6 +128,26 @@ async function ensureDefaultUsers() {
   }
 }
 
+async function ensureDefaultSchedules(forceUpdate = false) {
+  const schedules = getDefaultSchedules();
+  const existingCount = await Schedule.count();
+  if (existingCount > 0 && !forceUpdate) {
+    return;
+  }
+
+  for (const entry of schedules) {
+    const existing = await Schedule.findOne({ where: { title: entry.title } });
+    if (!existing) {
+      await Schedule.create(entry);
+      continue;
+    }
+
+    if (forceUpdate) {
+      await existing.update(entry);
+    }
+  }
+}
+
 async function bootstrap() {
   try {
     await sequelize.authenticate();
@@ -78,6 +162,8 @@ async function bootstrap() {
     if (shouldSeedDefaultUsers) {
       await ensureDefaultUsers();
     }
+
+    await ensureDefaultSchedules(isTrue(process.env.SEED_DEFAULT_SCHEDULES));
 
     startHttpServer(DEFAULT_PORT, 2);
   } catch (error) {
