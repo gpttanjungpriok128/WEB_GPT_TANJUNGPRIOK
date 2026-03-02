@@ -1,13 +1,25 @@
 const express = require('express');
-const { register, login, me } = require('../controllers/authController');
+const {
+  register,
+  login,
+  me,
+  loginWithGoogle,
+  getGoogleClientConfig
+} = require('../controllers/authController');
 const { authenticate } = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validationMiddleware');
-const { registerValidation, loginValidation } = require('../validators/authValidator');
+const {
+  registerValidation,
+  loginValidation,
+  googleLoginValidation
+} = require('../validators/authValidator');
 
 const router = express.Router();
 
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
+router.post('/google', googleLoginValidation, validate, loginWithGoogle);
+router.get('/google/client', getGoogleClientConfig);
 router.get('/me', authenticate, me);
 
 module.exports = router;

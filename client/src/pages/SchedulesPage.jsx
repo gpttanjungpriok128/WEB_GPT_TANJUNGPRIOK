@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
+import PageHero from "../components/PageHero";
+import heroImage from "../img/hero-schedules.jpeg";
 
 function SchedulesPage() {
   const [items, setItems] = useState([]);
@@ -103,15 +105,13 @@ function SchedulesPage() {
 
   return (
     <div className="space-y-10">
-      {/* Header */}
-      <section className="space-y-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-900 dark:text-white">
-          Jadwal <span className="gradient-text">Ibadah</span>
-        </h1>
-        <p className="text-lg text-brand-600 dark:text-brand-400 max-w-2xl">
-          Jadwal ibadah umum dan kategorial di GPT Tanjung Priok dan Volker.
-        </p>
-      </section>
+      {/* Hero */}
+      <PageHero
+        image={heroImage}
+        title="Jadwal"
+        titleAccent="Ibadah"
+        subtitle="Jadwal ibadah umum dan kategorial di GPT Tanjung Priok dan Volker."
+      />
 
       {/* Loading State */}
       {isLoading && (

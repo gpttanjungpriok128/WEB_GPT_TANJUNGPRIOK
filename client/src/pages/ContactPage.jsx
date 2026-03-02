@@ -1,4 +1,6 @@
 import { useState } from "react";
+import PageHero from "../components/PageHero";
+import heroImage from "../img/hero-contact.jpeg";
 
 function ContactPage() {
   const contactEmail = "gpt.tanjungpriok128@gmail.com";
@@ -72,15 +74,13 @@ function ContactPage() {
 
   return (
     <div className="space-y-12">
-      {/* Header */}
-      <section className="space-y-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-900 dark:text-white">
-          Hubungi <span className="gradient-text">Kami</span>
-        </h1>
-        <p className="text-lg text-brand-600 dark:text-brand-400 max-w-2xl">
-          Kami senang mendengar dari Anda. Silakan hubungi kami dengan pertanyaan atau kebutuhan apapun.
-        </p>
-      </section>
+      {/* Hero */}
+      <PageHero
+        image={heroImage}
+        title="Hubungi"
+        titleAccent="Kami"
+        subtitle="Kami senang mendengar dari Anda. Silakan hubungi kami dengan pertanyaan atau kebutuhan apapun."
+      />
 
       <div className="grid gap-10 md:grid-cols-3">
         {/* Contact Information */}

@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const { User } = require('../models');
 const { generateToken } = require('../utils/jwt');
 
@@ -60,4 +61,107 @@ async function me(req, res) {
   return res.status(200).json({ user: req.user });
 }
 
-module.exports = { register, login, me };
+function getGoogleClientConfig(req, res) {
+  return res.status(200).json({ clientId: process.env.GOOGLE_CLIENT_ID || null });
+}
+
+function normalizeGoogleName(googleName, email) {
+  if (googleName && googleName.trim()) {
+    return googleName.trim();
+  }
+
+  if (!email) {
+    return 'Pengguna Google';
+  }
+
+  const localPart = email.split('@')[0] || 'pengguna';
+  return localPart.replace(/[._-]+/g, ' ').trim() || 'Pengguna Google';
+}
+
+async function verifyGoogleCredential(credential) {
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  if (!googleClientId) {
+    const configError = new Error('Google login belum dikonfigurasi di server');
+    configError.statusCode = 503;
+    throw configError;
+  }
+
+  const response = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+  );
+
+  if (!response.ok) {
+    const invalidTokenError = new Error('Token Google tidak valid');
+    invalidTokenError.statusCode = 401;
+    throw invalidTokenError;
+  }
+
+  const payload = await response.json();
+
+  if (payload.aud !== googleClientId) {
+    const invalidAudienceError = new Error('Google Client ID tidak cocok');
+    invalidAudienceError.statusCode = 401;
+    throw invalidAudienceError;
+  }
+
+  if (payload.email_verified !== 'true') {
+    const unverifiedEmailError = new Error('Email Google belum terverifikasi');
+    unverifiedEmailError.statusCode = 401;
+    throw unverifiedEmailError;
+  }
+
+  const email = payload.email?.trim().toLowerCase();
+  if (!email) {
+    const invalidPayloadError = new Error('Email Google tidak ditemukan');
+    invalidPayloadError.statusCode = 400;
+    throw invalidPayloadError;
+  }
+
+  return {
+    email,
+    name: normalizeGoogleName(payload.name, email)
+  };
+}
+
+async function loginWithGoogle(req, res, next) {
+  try {
+    const credential = req.body.credential?.trim();
+    if (!credential) {
+      return res.status(400).json({ message: 'Google credential wajib diisi' });
+    }
+
+    const profile = await verifyGoogleCredential(credential);
+
+    let user = await User.findOne({ where: { email: profile.email } });
+
+    if (!user) {
+      const generatedPassword = crypto.randomBytes(24).toString('hex');
+      const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+      user = await User.create({
+        name: profile.name,
+        email: profile.email,
+        password: hashedPassword,
+        role: 'jemaat'
+      });
+    }
+
+    const token = generateToken({ id: user.id, role: user.role });
+    return res.status(200).json({
+      message: 'Login Google berhasil',
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({ message: 'Email sudah terdaftar' });
+    }
+
+    return next(error);
+  }
+}
+
+module.exports = { register, login, me, loginWithGoogle, getGoogleClientConfig };

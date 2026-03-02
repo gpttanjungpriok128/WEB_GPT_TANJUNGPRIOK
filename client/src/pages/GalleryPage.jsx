@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import PageHero from "../components/PageHero";
+import heroImage from "../img/hero-gallery.jpeg";
 
 function GalleryPage() {
   const { user } = useAuth();
@@ -188,14 +190,12 @@ function GalleryPage() {
 
   return (
     <div className="space-y-8">
-      <section className="space-y-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-900 dark:text-white">
-          Galeri <span className="gradient-text">Kegiatan</span>
-        </h1>
-        <p className="text-lg text-brand-600 dark:text-brand-400 max-w-2xl">
-          Dokumentasi momen berharga dari kegiatan dan acara gereja kami
-        </p>
-      </section>
+      <PageHero
+        image={heroImage}
+        title="Galeri"
+        titleAccent="Kegiatan"
+        subtitle="Dokumentasi momen berharga dari kegiatan dan acara gereja kami"
+      />
 
       {/* Stats */}
       <section className="grid gap-4 sm:grid-cols-3">

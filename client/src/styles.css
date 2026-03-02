@@ -138,6 +138,67 @@ html {
   box-shadow: 0 8px 24px rgba(20, 132, 88, 0.25);
 }
 
+/* ─── Hero CTA Button ─── */
+.btn-hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.75rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0e4530;
+  background-color: #ffffff;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-hero:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.btn-hero:active {
+  transform: translateY(0);
+}
+
+/* ─── Page Hero Banner ─── */
+.page-hero {
+  min-height: 220px;
+}
+
+@media (min-width: 768px) {
+  .page-hero {
+    min-height: 280px;
+  }
+}
+
+/* ─── Text Reveal Animation ─── */
+.animate-text-reveal {
+  animation: textReveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.animate-text-reveal.delay-1 {
+  animation-delay: 0.15s;
+}
+
+@keyframes textReveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ─── Keyframes ─── */
 @keyframes page-enter {
   from {

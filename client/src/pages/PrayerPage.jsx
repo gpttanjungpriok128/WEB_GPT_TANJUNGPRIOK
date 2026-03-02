@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import PageHero from "../components/PageHero";
+import heroImage from "../img/hero-prayer.jpeg";
 
 function PrayerPage() {
   const { user } = useAuth();
@@ -82,15 +84,13 @@ function PrayerPage() {
 
   return (
     <div className="space-y-10">
-      {/* Header */}
-      <section className="space-y-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-900 dark:text-white">
-          Permohonan <span className="gradient-text">Doa</span>
-        </h1>
-        <p className="text-lg text-brand-600 dark:text-brand-400 max-w-2xl">
-          Bagikan kebutuhan doa Anda dengan komunitas kami. Kami akan mendoakan Anda dengan sepenuh hati.
-        </p>
-      </section>
+      {/* Hero */}
+      <PageHero
+        image={heroImage}
+        title="Permohonan"
+        titleAccent="Doa"
+        subtitle="Bagikan kebutuhan doa Anda dengan komunitas kami. Kami akan mendoakan Anda dengan sepenuh hati."
+      />
 
       {/* Admin Section */}
       {user?.role === "admin" && (

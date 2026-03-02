@@ -11,4 +11,8 @@ const loginValidation = [
   body('password').notEmpty().withMessage('Password is required')
 ];
 
-module.exports = { registerValidation, loginValidation };
+const googleLoginValidation = [
+  body('credential').trim().notEmpty().withMessage('Google credential is required')
+];
+
+module.exports = { registerValidation, loginValidation, googleLoginValidation };

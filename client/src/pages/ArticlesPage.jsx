@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import PageHero from "../components/PageHero";
+import heroImage from "../img/hero-articles.jpeg";
 
 function ArticlesPage() {
   const [articles, setArticles] = useState([]);
@@ -67,15 +69,12 @@ function ArticlesPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <section className="space-y-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-900 dark:text-white">
-          <span className="gradient-text">Renungan</span>
-        </h1>
-        <p className="text-lg text-brand-600 dark:text-brand-400 max-w-2xl">
-          Membaca renungan harian sebagai penguatan iman dan pengaharapan kita
-        </p>
-      </section>
+      {/* Hero */}
+      <PageHero
+        image={heroImage}
+        titleAccent="Renungan"
+        subtitle="Membaca renungan harian sebagai penguatan iman dan pengaharapan kita"
+      />
 
       {/* Search */}
       <div className="relative">

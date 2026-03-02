@@ -1,21 +1,20 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import PageHero from "../components/PageHero";
+import heroImage from "../img/hero-about.jpeg";
 
 function AboutPage() {
   const { user } = useAuth();
 
   return (
     <div className="space-y-14">
-      {/* Header */}
-      <section className="space-y-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-900 dark:text-white">
-          Tentang <span className="gradient-text">GPT Tanjung Priok</span>
-        </h1>
-        <p className="text-lg text-brand-600 dark:text-brand-400 max-w-2xl leading-relaxed">
-          Mengenal komunitas kami, visi, misi, dan perjalanan iman bersama
-          dengan semangat "Growing Together"
-        </p>
-      </section>
+      {/* Hero */}
+      <PageHero
+        image={heroImage}
+        title="Tentang"
+        titleAccent="GPT Tanjung Priok"
+        subtitle='Mengenal komunitas kami, visi, misi, dan perjalanan iman bersama dengan semangat "Growing Together"'
+      />
 
       {/* Introduction */}
       <section className="glass-card p-8 md:p-10">

@@ -22,6 +22,7 @@ Starter fullstack website gereja dengan arsitektur modern, role-based access, ap
 
 ### Authentication + Authorization
 - Register/Login/Logout
+- Login dengan Google (otomatis membuat akun role `jemaat` saat pertama login)
 - JWT Authentication
 - Password hashing (bcrypt)
 - Role: `admin`, `multimedia`, `jemaat`
@@ -154,6 +155,7 @@ erDiagram
 ### Public
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/google`
 - `GET /api/articles?page=1&limit=6&search=kasih`
 - `GET /api/articles/:id`
 - `GET /api/schedules`
@@ -221,7 +223,18 @@ Default account (auto-create saat backend start di mode development):
 3. `npm run dev`
 
 Frontend: `http://localhost:5173` (kadang auto pindah ke `5174` jika port bentrok)
-Backend: `http://localhost:5001`
+Backend: `http://localhost:5000`
+
+### 4) Setup Google Login (Opsional)
+1. Buka Google Cloud Console -> APIs & Services -> Credentials.
+2. Buat OAuth Client ID dengan tipe `Web application`.
+3. Isi `Authorized JavaScript origins`:
+   - Local: `http://localhost:5173` dan `http://localhost:5174`
+   - Production frontend domain Anda (contoh: `https://namasitus.vercel.app`)
+4. Masukkan Client ID ke:
+   - `server/.env` -> `GOOGLE_CLIENT_ID=...`
+   - `client/.env` -> `VITE_GOOGLE_CLIENT_ID=...`
+5. Restart backend dan frontend setelah env diubah.
 
 ## Konfigurasi SMTP (Opsional)
 
@@ -244,16 +257,44 @@ Jika SMTP tidak diisi, API tetap jalan dan email notifikasi otomatis di-skip.
    - `docker compose up --build -d`
 3. App tersedia di `http://localhost`.
 
-### Railway
-- Deploy backend service dari folder `server`.
-- Tambahkan PostgreSQL plugin Railway.
-- Set environment variable sesuai `server/.env.example`.
-- Deploy frontend terpisah (Vercel/Netlify/Railway static).
+### Deploy Gratis (Render + Vercel)
+Arsitektur paling stabil untuk gratis saat ini:
+- Backend API + PostgreSQL: Render (free tier)
+- Frontend React: Vercel Hobby (free tier)
+
+1. Deploy database PostgreSQL di Render (free).
+2. Deploy backend dari folder `server` ke Render:
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+   - Env wajib:
+     - `NODE_ENV=production`
+     - `PORT=10000`
+     - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
+     - `JWT_SECRET`, `JWT_EXPIRES_IN`
+     - `CLIENT_URL` (isi domain frontend Vercel)
+     - `GOOGLE_CLIENT_ID` (jika login Google aktif)
+3. Deploy frontend dari folder `client` ke Vercel:
+   - Framework: Vite
+   - Env:
+     - `VITE_API_URL=https://<backend-render-domain>/api`
+     - `VITE_SERVER_URL=https://<backend-render-domain>`
+     - `VITE_GOOGLE_CLIENT_ID` (jika login Google aktif)
+4. Update `CLIENT_URL` di backend Render dengan domain frontend final.
+5. Di Google OAuth, tambahkan domain frontend production ke `Authorized JavaScript origins`.
 
 ### VPS (Nginx + PM2)
 - Jalankan backend via PM2 (`pm2 start server.js`).
 - Build frontend (`npm run build`) lalu serve static lewat Nginx.
 - Reverse proxy `/api` ke backend Node.js.
+
+### Rencana Migrasi ke Hostinger
+- Untuk aplikasi Node.js + PostgreSQL seperti project ini, gunakan Hostinger VPS (bukan shared hosting statis).
+- Jalankan stack yang sama lewat Docker Compose (`docker-compose.yml`) atau PM2 + Nginx.
+- Langkah aman migrasi:
+  1. Ekspor database dari hosting gratis.
+  2. Impor ke PostgreSQL di VPS Hostinger.
+  3. Pindahkan env production.
+  4. Arahkan domain ke VPS Hostinger.
 
 ## SQL Script
 

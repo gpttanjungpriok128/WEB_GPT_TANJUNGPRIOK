@@ -1,13 +1,143 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
+  const envGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const googleButtonRef = useRef(null);
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState(envGoogleClientId || "");
+
+  const redirectAfterLogin = useCallback(
+    (role) => {
+      navigate(["admin", "multimedia"].includes(role) ? "/dashboard" : "/");
+    },
+    [navigate]
+  );
+
+  const handleGoogleLogin = useCallback(
+    async (credential) => {
+      setError("");
+      setIsGoogleSubmitting(true);
+      try {
+        const data = await loginWithGoogle(credential);
+        redirectAfterLogin(data?.user?.role);
+      } catch (err) {
+        const apiMessage =
+          err.response?.data?.message ||
+          err.response?.data?.errors?.[0]?.msg ||
+          "Login dengan Google gagal. Silakan coba lagi.";
+        setError(apiMessage);
+      } finally {
+        setIsGoogleSubmitting(false);
+      }
+    },
+    [loginWithGoogle, redirectAfterLogin]
+  );
+
+  useEffect(() => {
+    if (envGoogleClientId) {
+      setGoogleClientId(envGoogleClientId);
+      return;
+    }
+
+    let isUnmounted = false;
+    async function loadGoogleClientIdFromServer() {
+      try {
+        const { data } = await api.get("/auth/google/client");
+        if (!isUnmounted && data?.clientId) {
+          setGoogleClientId(data.clientId);
+        }
+      } catch (err) {
+        if (!isUnmounted) {
+          setGoogleClientId("");
+        }
+      }
+    }
+
+    loadGoogleClientIdFromServer();
+    return () => {
+      isUnmounted = true;
+    };
+  }, [envGoogleClientId]);
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return undefined;
+    }
+
+    let isUnmounted = false;
+
+    const onScriptError = () => {
+      if (!isUnmounted) {
+        setError("Google Sign-In gagal dimuat. Silakan refresh halaman.");
+      }
+    };
+
+    const renderGoogleButton = () => {
+      if (isUnmounted || !window.google?.accounts?.id || !googleButtonRef.current) {
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: (response) => {
+          if (!response.credential) {
+            setError("Credential Google tidak valid.");
+            return;
+          }
+          handleGoogleLogin(response.credential);
+        }
+      });
+
+      googleButtonRef.current.innerHTML = "";
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        shape: "pill",
+        text: "continue_with",
+        width: 320
+      });
+      setGoogleReady(true);
+    };
+
+    const existingScript = document.querySelector('script[data-google-identity="true"]');
+    if (window.google?.accounts?.id) {
+      renderGoogleButton();
+      return () => {
+        isUnmounted = true;
+      };
+    }
+
+    if (existingScript) {
+      existingScript.addEventListener("load", renderGoogleButton);
+      existingScript.addEventListener("error", onScriptError);
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.dataset.googleIdentity = "true";
+      script.addEventListener("load", renderGoogleButton);
+      script.addEventListener("error", onScriptError);
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      isUnmounted = true;
+      const script = document.querySelector('script[data-google-identity="true"]');
+      script?.removeEventListener("load", renderGoogleButton);
+      script?.removeEventListener("error", onScriptError);
+    };
+  }, [googleClientId, handleGoogleLogin]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -15,8 +145,7 @@ function LoginPage() {
     setIsSubmitting(true);
     try {
       const data = await login(form);
-      const role = data?.user?.role;
-      navigate(["admin", "multimedia"].includes(role) ? "/dashboard" : "/");
+      redirectAfterLogin(data?.user?.role);
     } catch (err) {
       const apiMessage =
         err.response?.data?.message ||
@@ -78,7 +207,11 @@ function LoginPage() {
             </div>
           )}
 
-          <button type="submit" disabled={isSubmitting} className="btn-primary w-full disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={isSubmitting || isGoogleSubmitting}
+            className="btn-primary w-full disabled:opacity-60"
+          >
             {isSubmitting ? "Masuk..." : "Masuk"}
           </button>
 
@@ -92,6 +225,21 @@ function LoginPage() {
               </span>
             </div>
           </div>
+
+          {googleClientId ? (
+            <div className="space-y-2">
+              <div ref={googleButtonRef} className="flex justify-center min-h-11" />
+              {!googleReady && (
+                <p className="text-xs text-center text-brand-500 dark:text-brand-400">
+                  Memuat Google Sign-In...
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-center text-amber-600 dark:text-amber-400">
+              Login Google belum aktif. Isi `VITE_GOOGLE_CLIENT_ID` di frontend atau `GOOGLE_CLIENT_ID` di backend.
+            </p>
+          )}
 
           <Link to="/register" className="btn-outline w-full text-center block">
             Daftar Akun Baru

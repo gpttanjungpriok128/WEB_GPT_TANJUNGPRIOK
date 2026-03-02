@@ -38,7 +38,18 @@ function HomePage() {
   return (
     <div className="space-y-16">
       {/* Hero Section */}
-      <section className="cinematic-hero relative rounded-3xl bg-gradient-to-br from-brand-800 via-primary to-brand-600 text-white shadow-xl overflow-hidden">
+      <section className="cinematic-hero relative rounded-3xl text-white shadow-xl overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src={heroImage}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-900/90 via-brand-800/75 to-brand-900/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        </div>
+
         {/* Decorative floating orbs */}
         <div className="absolute inset-0 pointer-events-none">
           <div
@@ -51,9 +62,9 @@ function HomePage() {
           />
         </div>
 
-        <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center">
-          {/* Text Side */}
-          <div className="px-6 py-16 md:pl-14 md:py-24 lg:py-28">
+        <div className="relative z-10">
+          {/* Text Content */}
+          <div className="px-6 py-20 md:px-14 md:py-28 lg:py-32 max-w-2xl">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-white/70 animate-text-reveal">
               Selamat Datang di
             </p>
@@ -68,7 +79,7 @@ function HomePage() {
               kasih untuk saling melayani.
             </p>
             <div className="flex flex-wrap gap-3 animate-text-reveal delay-4" style={{ animationFillMode: "both" }}>
-              <Link to="/schedules" className="btn-primary !bg-white !text-primary hover:!bg-white/90">
+              <Link to="/schedules" className="btn-hero">
                 📅 Jadwal Ibadah
               </Link>
               {user && (
@@ -80,18 +91,6 @@ function HomePage() {
               </Link>
             )}
           </div>
-          </div>
-
-          {/* Image Side */}
-          <div className="hidden md:block relative animate-text-reveal delay-3" style={{ animationFillMode: "both" }}>
-            <div className="relative mx-4 mr-6 my-8 rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src={heroImage}
-                alt="Komunitas GPT Tanjung Priok"
-                className="w-full h-full object-cover aspect-[4/3]"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-            </div>
           </div>
         </div>
       </section>
