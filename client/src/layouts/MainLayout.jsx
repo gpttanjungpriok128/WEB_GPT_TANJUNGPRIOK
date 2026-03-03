@@ -16,8 +16,16 @@ function MainLayout({ children }) {
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
-  const canAccessDashboard = ["admin", "multimedia"].includes(user?.role);
   const location = useLocation();
+  const canAccessDashboard = ["admin", "multimedia"].includes(user?.role);
+  const isAdminSidebarPage =
+    user?.role === "admin" &&
+    (
+      location.pathname.startsWith("/dashboard")
+      || location.pathname === "/prayer"
+      || location.pathname === "/live"
+      || location.pathname === "/gallery"
+    );
   const mainRef = useRef(null);
   const lastScrollY = useRef(0);
 
@@ -32,6 +40,16 @@ function MainLayout({ children }) {
       ? [{ to: "/dashboard/congregation", label: "Data Jemaat" }]
       : []),
     { to: "/contact", label: "Kontak" },
+  ];
+
+  const adminSidebarLinks = [
+    { to: "/dashboard", label: "Dashboard", end: true },
+    { to: "/dashboard/congregation", label: "Data Jemaat" },
+    { to: "/dashboard/articles/manage", label: "Kelola Renungan" },
+    { to: "/dashboard/articles/new", label: "Buat Renungan" },
+    { to: "/gallery", label: "Galeri" },
+    { to: "/prayer", label: "Permohonan Doa" },
+    { to: "/live", label: "Live Streaming" },
   ];
 
   // Auto-hide nav on scroll
@@ -107,203 +125,326 @@ function MainLayout({ children }) {
   return (
     <div className="app-shell min-h-screen flex flex-col">
       {/* Navigation */}
-      <nav
-        className={`nav-glass sticky top-0 z-50 transition-all duration-300 ${
-          navHidden && !mobileMenuOpen
-            ? "nav-hidden"
-            : "nav-visible"
-        }`}
-      >
-        <div className="container-custom">
-          <div className="flex items-center justify-between gap-3 h-16">
-            {/* Logo */}
-            <Link
-              to="/"
-              className="flex items-center gap-3 group"
-            >
-              <BrandLogo />
-              <div className="hidden sm:block">
-                <p className="text-base font-bold text-brand-800 dark:text-white group-hover:text-primary transition-colors">
-                  GPT Tanjung Priok
-                </p>
-                <p className="text-xs text-brand-500 dark:text-brand-400 font-medium">
-                  Growing Together
-                </p>
-              </div>
-            </Link>
-
-            {/* Desktop Nav */}
-            <div className="hidden lg:flex items-center gap-0.5">
-              {navLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  end={link.to === "/"}
-                  className={({ isActive }) =>
-                    `nav-link-modern ${
-                      isActive
-                        ? "active"
-                        : "text-brand-700 dark:text-brand-200 hover:text-primary"
-                    }`
-                  }
-                >
-                  {link.label}
-                </NavLink>
-              ))}
-              {user && ["admin", "multimedia"].includes(user.role) && (
-                <NavLink
-                  to="/dashboard/articles/manage"
-                  className={({ isActive }) =>
-                    `nav-link-modern ${
-                      isActive
-                        ? "active"
-                        : "text-brand-700 dark:text-brand-200 hover:text-primary"
-                    }`
-                  }
-                >
-                  CMS
-                </NavLink>
-              )}
-            </div>
-
-            {/* Right Actions */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleTheme}
-                className="relative rounded-xl p-2.5 hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
-                title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+      {!isAdminSidebarPage && (
+        <nav
+          className={`nav-glass sticky top-0 z-50 transition-all duration-300 ${
+            navHidden && !mobileMenuOpen
+              ? "nav-hidden"
+              : "nav-visible"
+          }`}
+        >
+          <div className="container-custom">
+            <div className="flex items-center justify-between gap-3 h-16">
+              {/* Logo */}
+              <Link
+                to="/"
+                className="flex items-center gap-3 group"
               >
-                <span className="text-lg transition-transform duration-300 block" style={{ transform: theme === "dark" ? "rotate(180deg)" : "rotate(0deg)" }}>
-                  {theme === "dark" ? "☀️" : "🌙"}
-                </span>
-              </button>
+                <BrandLogo />
+                <div className="hidden sm:block">
+                  <p className="text-base font-bold text-brand-800 dark:text-white group-hover:text-primary transition-colors">
+                    GPT Tanjung Priok
+                  </p>
+                  <p className="text-xs text-brand-500 dark:text-brand-400 font-medium">
+                    Growing Together
+                  </p>
+                </div>
+              </Link>
 
-              {!user && (
-                <div className="hidden sm:flex gap-2">
+              {/* Desktop Nav */}
+              <div className="hidden lg:flex items-center gap-0.5">
+                {navLinks.map((link) => (
                   <NavLink
-                    to="/login"
-                    className="btn-primary text-sm !px-5 !py-2"
+                    key={link.to}
+                    to={link.to}
+                    end={link.to === "/"}
+                    className={({ isActive }) =>
+                      `nav-link-modern ${
+                        isActive
+                          ? "active"
+                          : "text-brand-700 dark:text-brand-200 hover:text-primary"
+                      }`
+                    }
                   >
-                    Login
+                    {link.label}
                   </NavLink>
-                </div>
-              )}
-
-              {user && (
-                <div className="hidden md:flex items-center gap-2">
-                  {canAccessDashboard && (
-                    <NavLink
-                      to="/dashboard"
-                      className="rounded-xl border border-brand-200 dark:border-brand-700 px-4 py-2 text-sm font-medium hover:bg-brand-50 dark:hover:bg-brand-800/50 transition-all duration-300"
-                    >
-                      Dashboard
-                    </NavLink>
-                  )}
-                  <button
-                    onClick={logout}
-                    className="rounded-xl bg-rose-500/90 px-4 py-2 text-sm font-medium text-white hover:bg-rose-600 transition-all duration-300"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-
-              {/* Mobile Menu Toggle */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="rounded-xl p-2.5 lg:hidden hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
-              >
-                <div className="w-5 h-4 relative flex flex-col justify-between">
-                  <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 origin-center ${mobileMenuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
-                  <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 ${mobileMenuOpen ? "opacity-0 scale-x-0" : ""}`} />
-                  <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 origin-center ${mobileMenuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu */}
-          <div
-            className={`lg:hidden overflow-hidden transition-all duration-400 ease-out ${
-              mobileMenuOpen ? "max-h-[600px] opacity-100 pb-4" : "max-h-0 opacity-0"
-            }`}
-          >
-            <div className="space-y-1 rounded-2xl bg-brand-50/80 dark:bg-brand-900/60 p-3 backdrop-blur-sm">
-              {navLinks.map((link, i) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  end={link.to === "/"}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `block px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? "bg-primary text-white shadow-sm"
-                        : "text-brand-700 dark:text-brand-200 hover:bg-brand-100 dark:hover:bg-brand-800/50"
-                    }`
-                  }
-                  style={{ animationDelay: `${i * 50}ms` }}
-                >
-                  {link.label}
-                </NavLink>
-              ))}
-              {user && ["admin", "multimedia"].includes(user.role) && (
-                <NavLink
-                  to="/dashboard/articles/manage"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `block px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? "bg-primary text-white shadow-sm"
-                        : "text-brand-700 dark:text-brand-200 hover:bg-brand-100 dark:hover:bg-brand-800/50"
-                    }`
-                  }
-                >
-                  CMS Renungan
-                </NavLink>
-              )}
-
-              <div className="border-t border-brand-200 dark:border-brand-700 mt-2 pt-2">
-                {!user && (
+                ))}
+                {user && ["admin", "multimedia"].includes(user.role) && (
                   <NavLink
-                    to="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block btn-primary text-sm text-center"
+                    to="/dashboard/articles/manage"
+                    className={({ isActive }) =>
+                      `nav-link-modern ${
+                        isActive
+                          ? "active"
+                          : "text-brand-700 dark:text-brand-200 hover:text-primary"
+                      }`
+                    }
                   >
-                    Login
+                    CMS
                   </NavLink>
                 )}
+              </div>
+
+              {/* Right Actions */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleTheme}
+                  className="relative rounded-xl p-2.5 hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
+                  title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+                >
+                  <span className="text-lg transition-transform duration-300 block" style={{ transform: theme === "dark" ? "rotate(180deg)" : "rotate(0deg)" }}>
+                    {theme === "dark" ? "☀️" : "🌙"}
+                  </span>
+                </button>
+
+                {!user && (
+                  <div className="hidden sm:flex gap-2">
+                    <NavLink
+                      to="/login"
+                      className="btn-primary text-sm !px-5 !py-2"
+                    >
+                      Login
+                    </NavLink>
+                  </div>
+                )}
+
                 {user && (
-                  <div className="space-y-1">
+                  <div className="hidden md:flex items-center gap-2">
                     {canAccessDashboard && (
                       <NavLink
                         to="/dashboard"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block px-4 py-2.5 rounded-xl text-sm font-medium border border-brand-200 dark:border-brand-700 text-center hover:bg-brand-100 dark:hover:bg-brand-800/50 transition"
+                        className="rounded-xl border border-brand-200 dark:border-brand-700 px-4 py-2 text-sm font-medium hover:bg-brand-50 dark:hover:bg-brand-800/50 transition-all duration-300"
                       >
                         Dashboard
                       </NavLink>
                     )}
                     <button
-                      onClick={() => {
-                        logout();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full rounded-xl bg-rose-500/90 px-4 py-2.5 text-sm font-medium text-white hover:bg-rose-600 transition"
+                      onClick={logout}
+                      className="rounded-xl bg-rose-500/90 px-4 py-2 text-sm font-medium text-white hover:bg-rose-600 transition-all duration-300"
                     >
                       Logout
                     </button>
                   </div>
                 )}
+
+                {/* Mobile Menu Toggle */}
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="rounded-xl p-2.5 lg:hidden hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
+                >
+                  <div className="w-5 h-4 relative flex flex-col justify-between">
+                    <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 origin-center ${mobileMenuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
+                    <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 ${mobileMenuOpen ? "opacity-0 scale-x-0" : ""}`} />
+                    <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 origin-center ${mobileMenuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Menu */}
+            <div
+              className={`lg:hidden overflow-hidden transition-all duration-400 ease-out ${
+                mobileMenuOpen ? "max-h-[600px] opacity-100 pb-4" : "max-h-0 opacity-0"
+              }`}
+            >
+              <div className="space-y-1 rounded-2xl bg-brand-50/80 dark:bg-brand-900/60 p-3 backdrop-blur-sm">
+                {navLinks.map((link, i) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={link.to === "/"}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `block px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                        isActive
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-brand-700 dark:text-brand-200 hover:bg-brand-100 dark:hover:bg-brand-800/50"
+                      }`
+                    }
+                    style={{ animationDelay: `${i * 50}ms` }}
+                  >
+                    {link.label}
+                  </NavLink>
+                ))}
+                {user && ["admin", "multimedia"].includes(user.role) && (
+                  <NavLink
+                    to="/dashboard/articles/manage"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `block px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                        isActive
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-brand-700 dark:text-brand-200 hover:bg-brand-100 dark:hover:bg-brand-800/50"
+                      }`
+                    }
+                  >
+                    CMS Renungan
+                  </NavLink>
+                )}
+
+                <div className="border-t border-brand-200 dark:border-brand-700 mt-2 pt-2">
+                  {!user && (
+                    <NavLink
+                      to="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block btn-primary text-sm text-center"
+                    >
+                      Login
+                    </NavLink>
+                  )}
+                  {user && (
+                    <div className="space-y-1">
+                      {canAccessDashboard && (
+                        <NavLink
+                          to="/dashboard"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block px-4 py-2.5 rounded-xl text-sm font-medium border border-brand-200 dark:border-brand-700 text-center hover:bg-brand-100 dark:hover:bg-brand-800/50 transition"
+                        >
+                          Dashboard
+                        </NavLink>
+                      )}
+                      <button
+                        onClick={() => {
+                          logout();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full rounded-xl bg-rose-500/90 px-4 py-2.5 text-sm font-medium text-white hover:bg-rose-600 transition"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       {/* Main Content */}
       <main ref={mainRef} className="organic-main container-custom py-10 flex-1">
-        {children}
+        {isAdminSidebarPage ? (
+          <>
+            <div className="admin-mobile-top lg:hidden">
+              <button
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                className="admin-mobile-menu-btn"
+                aria-label="Toggle admin menu"
+              >
+                <span className={`block h-0.5 w-5 rounded-full bg-brand-700 dark:bg-brand-200 transition-all ${mobileMenuOpen ? "translate-y-[6px] rotate-45" : ""}`} />
+                <span className={`mt-1.5 block h-0.5 w-5 rounded-full bg-brand-700 dark:bg-brand-200 transition-all ${mobileMenuOpen ? "opacity-0" : ""}`} />
+                <span className={`mt-1.5 block h-0.5 w-5 rounded-full bg-brand-700 dark:bg-brand-200 transition-all ${mobileMenuOpen ? "-translate-y-[6px] -rotate-45" : ""}`} />
+              </button>
+              <p className="text-sm font-semibold text-brand-900 dark:text-white">Admin Workspace</p>
+              <button
+                onClick={toggleTheme}
+                className="rounded-xl p-2 text-lg transition-all duration-300 hover:bg-brand-100/80 dark:hover:bg-brand-800/60"
+                title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+              >
+                {theme === "dark" ? "☀️" : "🌙"}
+              </button>
+            </div>
+
+            <div className={`admin-mobile-drawer-backdrop lg:hidden ${mobileMenuOpen ? "open" : ""}`} onClick={() => setMobileMenuOpen(false)}>
+              <aside className="admin-mobile-drawer" onClick={(event) => event.stopPropagation()}>
+                <div className="admin-sidebar-head">
+                  <Link to="/" className="flex items-center gap-3" onClick={() => setMobileMenuOpen(false)}>
+                    <BrandLogo />
+                    <div>
+                      <p className="text-sm font-bold text-brand-900 dark:text-white">GPT Tanjung Priok</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                        Admin Workspace
+                      </p>
+                    </div>
+                  </Link>
+                </div>
+                <p className="admin-sidebar-title">Menu Admin</p>
+                <div className="mt-4 space-y-1.5">
+                  {adminSidebarLinks.map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      end={Boolean(link.end)}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `admin-sidebar-link ${
+                          isActive ? "active" : ""
+                        }`
+                      }
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))}
+                </div>
+                <div className="mt-5 border-t border-brand-200/80 pt-4 dark:border-brand-700/80">
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full rounded-xl bg-rose-500/90 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-rose-600"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </aside>
+            </div>
+
+            <div className="admin-workspace grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
+              <aside className="admin-sidebar-panel hidden lg:block">
+                <div className="admin-sidebar-head">
+                  <Link to="/" className="flex items-center gap-3">
+                    <BrandLogo />
+                    <div>
+                      <p className="text-sm font-bold text-brand-900 dark:text-white">GPT Tanjung Priok</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                        Admin Workspace
+                      </p>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={toggleTheme}
+                    className="rounded-xl p-2 text-lg transition-all duration-300 hover:bg-brand-100/80 dark:hover:bg-brand-800/60"
+                    title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+                  >
+                    {theme === "dark" ? "☀️" : "🌙"}
+                  </button>
+                </div>
+                <p className="admin-sidebar-title">Menu Admin</p>
+                <div className="mt-4 space-y-1.5">
+                  {adminSidebarLinks.map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      end={Boolean(link.end)}
+                      className={({ isActive }) =>
+                        `admin-sidebar-link ${
+                          isActive ? "active" : ""
+                        }`
+                      }
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))}
+                </div>
+                <div className="mt-5 border-t border-brand-200/80 pt-4 dark:border-brand-700/80">
+                  <button
+                    onClick={logout}
+                    className="w-full rounded-xl bg-rose-500/90 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-rose-600"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </aside>
+
+              <div className="min-w-0">
+                {children}
+              </div>
+            </div>
+          </>
+        ) : (
+          children
+        )}
       </main>
 
       {/* Footer */}

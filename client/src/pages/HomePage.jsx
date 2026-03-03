@@ -44,7 +44,7 @@ function HomePage() {
           <img
             src={heroImage}
             alt=""
-            className="w-full h-full object-cover"
+            className="hero-bg-media h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-brand-900/90 via-brand-800/75 to-brand-900/50" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />

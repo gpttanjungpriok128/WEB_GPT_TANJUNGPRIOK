@@ -6,7 +6,7 @@ function PageHero({ image, title, titleAccent, subtitle }) {
         <img
           src={image}
           alt=""
-          className="w-full h-full object-cover"
+          className="hero-bg-media h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#03140d]/98 via-[#062417]/94 to-[#03140d]/92" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/56 to-black/34" />

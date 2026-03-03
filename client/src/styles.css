@@ -900,6 +900,154 @@ html {
   background: rgba(8, 12, 10, 0.9);
 }
 
+/* ─── Admin Sidebar ─── */
+.admin-workspace {
+  align-items: start;
+}
+
+.admin-sidebar-panel {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--brand-border) 82%, white 18%);
+  border-radius: 22px 28px 20px 32px / 30px 20px 30px 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(242, 255, 248, 0.84));
+  padding: 1rem;
+}
+
+.dark .admin-sidebar-panel {
+  border-color: rgba(31, 47, 39, 0.95);
+  background:
+    linear-gradient(145deg, rgba(9, 14, 11, 0.95), rgba(11, 16, 13, 0.86));
+}
+
+.admin-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.95rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(20, 132, 88, 0.15);
+}
+
+.dark .admin-sidebar-head {
+  border-bottom-color: rgba(68, 189, 137, 0.2);
+}
+
+.admin-sidebar-title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #106a48;
+}
+
+.dark .admin-sidebar-title {
+  color: #7bd6ad;
+}
+
+.admin-sidebar-link {
+  display: block;
+  border-radius: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #245443;
+  transition: all 0.2s ease;
+}
+
+.admin-sidebar-link:hover {
+  background: rgba(20, 132, 88, 0.08);
+  color: #0e4530;
+}
+
+.admin-sidebar-link.active {
+  background: linear-gradient(135deg, #148458, #22a36e);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(20, 132, 88, 0.24);
+}
+
+.dark .admin-sidebar-link {
+  color: #c5d7ce;
+}
+
+.dark .admin-sidebar-link:hover {
+  background: rgba(20, 132, 88, 0.2);
+  color: #eaf4ef;
+}
+
+.admin-mobile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.1rem;
+}
+
+.admin-mobile-menu-btn {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(20, 132, 88, 0.2);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.5rem 0.55rem;
+}
+
+.dark .admin-mobile-menu-btn {
+  border-color: rgba(68, 189, 137, 0.25);
+  background: rgba(9, 14, 11, 0.82);
+}
+
+.admin-mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(4, 9, 7, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.admin-mobile-drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.admin-mobile-drawer {
+  width: min(84vw, 320px);
+  height: 100%;
+  overflow-y: auto;
+  border-right: 1px solid color-mix(in srgb, var(--brand-border) 82%, white 18%);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(242, 255, 248, 0.9));
+  padding: 1rem;
+  transform: translateX(-105%);
+  transition: transform 0.25s ease;
+}
+
+.admin-mobile-drawer-backdrop.open .admin-mobile-drawer {
+  transform: translateX(0);
+}
+
+.dark .admin-mobile-drawer {
+  border-right-color: rgba(31, 47, 39, 0.95);
+  background:
+    linear-gradient(145deg, rgba(9, 14, 11, 0.96), rgba(11, 16, 13, 0.9));
+}
+
+@media (min-width: 1024px) {
+  .admin-sidebar-panel {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+  }
+}
+
 /* ─── Article Reader ─── */
 .article-reader-modal {
   border-radius: 24px 30px 24px 34px / 30px 24px 34px 26px;
@@ -1056,6 +1204,19 @@ html {
   border-radius: 0.9rem;
   margin: 1.2rem auto;
   max-width: 100%;
+}
+
+/* ─── Hero Background Zoom ─── */
+.hero-bg-media {
+  transform: scale(1.1);
+  transform-origin: center center;
+}
+
+@media (max-width: 767px) {
+  .hero-bg-media {
+    transform: scale(1.26);
+    object-position: 46% center;
+  }
 }
 
 /* ─── iOS Date Input Fix ─── */
