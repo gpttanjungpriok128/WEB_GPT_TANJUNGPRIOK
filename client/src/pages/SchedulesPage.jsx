@@ -104,7 +104,7 @@ function SchedulesPage() {
   );
 
   return (
-    <div className="space-y-10">
+    <div className="page-stack space-y-10">
       {/* Hero */}
       <PageHero
         image={heroImage}

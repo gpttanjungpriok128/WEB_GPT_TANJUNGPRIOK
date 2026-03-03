@@ -52,6 +52,13 @@ function MainLayout({ children }) {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // Always return to top when navigating between pages
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    setNavHidden(false);
+    lastScrollY.current = 0;
+  }, [location.pathname]);
+
   // Page enter animation
   useEffect(() => {
     const mainElement = mainRef.current;
@@ -95,7 +102,7 @@ function MainLayout({ children }) {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="app-shell min-h-screen flex flex-col">
       {/* Navigation */}
       <nav
         className={`nav-glass sticky top-0 z-50 transition-all duration-300 ${
@@ -292,85 +299,108 @@ function MainLayout({ children }) {
       </nav>
 
       {/* Main Content */}
-      <main ref={mainRef} className="container-custom py-10 flex-1">
+      <main ref={mainRef} className="organic-main container-custom py-10 flex-1">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="relative border-t border-brand-200 dark:border-brand-700 mt-16">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-50/40 to-brand-100/60 dark:from-transparent dark:via-brand-950/40 dark:to-brand-950/80 pointer-events-none" />
-        <div className="container-custom relative py-12">
-          <div className="grid gap-10 md:grid-cols-3 mb-10">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <BrandLogo />
-                <div>
-                  <p className="font-bold text-brand-800 dark:text-white">
-                    GPT Tanjung Priok
-                  </p>
-                  <p className="text-xs text-brand-500 dark:text-brand-400 font-medium">
-                    Growing Together
+      <footer className="organic-footer mt-16 border-t border-brand-200 dark:border-brand-700">
+        <div className="container-custom py-10">
+          <div className="organic-footer-card relative overflow-hidden rounded-3xl border border-brand-200/80 bg-white/85 p-6 shadow-sm backdrop-blur md:p-10 dark:border-brand-800 dark:bg-brand-950/75">
+            <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-brand-200/35 blur-3xl dark:bg-brand-700/20" />
+            <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-primary/20 blur-3xl dark:bg-primary/10" />
+
+            <div className="relative grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.9fr]">
+              <div>
+                <div className="mb-4 flex items-center gap-3">
+                  <BrandLogo />
+                  <div>
+                    <p className="text-lg font-bold text-brand-900 dark:text-white">
+                      GPT Tanjung Priok
+                    </p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-brand-500 dark:text-brand-400">
+                      Growing Together
+                    </p>
+                  </div>
+                </div>
+                <p className="max-w-xl text-sm leading-relaxed text-brand-700 dark:text-brand-300">
+                  Komunitas yang berakar dalam Kristus, bertumbuh dalam kasih,
+                  dan berjalan bersama melalui ibadah, renungan, serta pelayanan
+                  yang saling menguatkan.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    to="/schedules"
+                    className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
+                  >
+                    Lihat Jadwal Ibadah
+                  </Link>
+                  <a
+                    href={whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center rounded-xl border border-brand-300 px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-500 hover:text-brand-900 dark:border-brand-700 dark:text-brand-300 dark:hover:border-brand-500 dark:hover:text-white"
+                  >
+                    Hubungi via WhatsApp
+                  </a>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-brand-900 dark:text-white">
+                  Jelajahi
+                </h3>
+                <ul className="space-y-2.5 text-sm">
+                  {[
+                    { to: "/about", label: "Tentang Gereja" },
+                    { to: "/articles", label: "Renungan Harian" },
+                    { to: "/gallery", label: "Galeri Kegiatan" },
+                    { to: "/prayer", label: "Permohonan Doa" },
+                    { to: "/contact", label: "Kontak & Lokasi" },
+                  ].map((link) => (
+                    <li key={link.to}>
+                      <Link
+                        to={link.to}
+                        className="text-brand-700 transition hover:text-primary dark:text-brand-300 dark:hover:text-primary-light"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-brand-900 dark:text-white">
+                  Kontak
+                </h3>
+                <div className="space-y-3 text-sm text-brand-700 dark:text-brand-300">
+                  <a
+                    href={`mailto:${contactEmail}?subject=${encodeURIComponent("Pertanyaan dari Website GPT Tanjung Priok")}`}
+                    className="block transition hover:text-primary dark:hover:text-primary-light"
+                  >
+                    {contactEmail}
+                  </a>
+                  <a
+                    href={whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block transition hover:text-primary dark:hover:text-primary-light"
+                  >
+                    +62 812-8983-3972
+                  </a>
+                  <p className="leading-relaxed text-brand-600 dark:text-brand-400">
+                    Jl. Bugis No.128, Kebon Bawang, Tanjung Priok, Jakarta
+                    Utara 14320
                   </p>
                 </div>
               </div>
-              <p className="text-sm text-brand-600 dark:text-brand-300 leading-relaxed">
-                Komunitas yang berakar dalam Kristus dan bertumbuh dalam kasih untuk saling melayani.
-              </p>
             </div>
-            <div>
-              <h3 className="font-semibold mb-4 text-brand-800 dark:text-white">
-                Navigasi
-              </h3>
-              <ul className="space-y-2.5 text-sm">
-                {[
-                  { to: "/about", label: "Tentang" },
-                  { to: "/schedules", label: "Jadwal" },
-                  { to: "/articles", label: "Renungan" },
-                  { to: "/gallery", label: "Galeri" },
-                  { to: "/contact", label: "Kontak" },
-                ].map((link) => (
-                  <li key={link.to}>
-                    <Link
-                      to={link.to}
-                      className="text-brand-600 dark:text-brand-400 hover:text-primary dark:hover:text-primary-light transition-colors duration-200"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+
+            <div className="relative mt-8 flex flex-col gap-2 border-t border-brand-200/80 pt-5 text-xs text-brand-500 sm:flex-row sm:items-center sm:justify-between dark:border-brand-800 dark:text-brand-400">
+              <p>&copy; 2026 GPT Tanjung Priok</p>
+              <p>Website komunitas untuk ibadah, renungan, dan pelayanan</p>
             </div>
-            <div>
-              <h3 className="font-semibold mb-4 text-brand-800 dark:text-white">
-                Kontak
-              </h3>
-              <div className="space-y-3 text-sm">
-                <a
-                  href={`mailto:${contactEmail}?subject=${encodeURIComponent("Pertanyaan dari Website GPT Tanjung Priok")}`}
-                  className="flex items-start gap-2 text-brand-600 hover:text-primary dark:text-brand-400 dark:hover:text-primary-light transition-colors duration-200"
-                >
-                  <span>📧</span>
-                  <span>{contactEmail}</span>
-                </a>
-                <a
-                  href={whatsappLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start gap-2 text-brand-600 hover:text-primary dark:text-brand-400 dark:hover:text-primary-light transition-colors duration-200"
-                >
-                  <span>📞</span>
-                  <span>+62 812-8983-3972 (WhatsApp)</span>
-                </a>
-                <p className="flex items-start gap-2 text-brand-600 dark:text-brand-400">
-                  <span>📍</span>
-                  <span>Jl. Bugis No.128, Kebon Bawang, Tanjung Priok, Jakarta Utara, 14320</span>
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="section-divider mb-6" />
-          <div className="text-center text-sm text-brand-500 dark:text-brand-400">
-            <p>&copy; 2026 GPT Tanjung Priok. All rights reserved.</p>
           </div>
         </div>
       </footer>

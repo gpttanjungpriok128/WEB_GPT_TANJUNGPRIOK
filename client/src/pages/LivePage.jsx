@@ -76,7 +76,7 @@ function LivePage() {
   };
 
   return (
-    <div className="space-y-10">
+    <div className="page-stack space-y-10">
       {/* Hero */}
       <PageHero
         image={heroImage}
@@ -175,7 +175,7 @@ function LivePage() {
         </h3>
         <ul className="space-y-3 text-sm text-brand-700 dark:text-brand-300">
           {[
-            { icon: "📅", text: <><strong>Minggu Pagi:</strong> 09:00 WIB</> },
+            { icon: "📅", text: <><strong>Minggu:</strong> 09:00 WIB</> },
             { icon: "💡", text: "Live streaming dimulai 15 menit sebelum ibadah dimulai" },
             { icon: "🔄", text: "Koneksi internet stabil diperlukan untuk pengalaman terbaik" },
           ].map((item, i) => (

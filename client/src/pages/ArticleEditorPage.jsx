@@ -91,15 +91,15 @@ function ArticleEditorPage() {
   };
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-bold">{isEditMode ? 'Edit Renungan' : 'CMS Renungan Editor'}</h1>
+    <section className="page-stack editor-shell space-y-4">
+      <h1 className="font-display text-3xl font-bold text-brand-900 dark:text-white">{isEditMode ? 'Edit Renungan' : 'CMS Renungan Editor'}</h1>
 
-      <form onSubmit={submit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-        {isFetching && <p className="text-sm">Memuat...</p>}
+      <form onSubmit={submit} className="editor-card space-y-4 p-4">
+        {isFetching && <p className="text-sm text-brand-600 dark:text-brand-400">Memuat...</p>}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Judul Renungan</label>
+          <label className="text-sm font-medium text-brand-700 dark:text-brand-300">Judul Renungan</label>
           <input
-            className="w-full rounded border border-slate-300 p-2 dark:border-slate-700 dark:bg-slate-950"
+            className="input-modern w-full p-2.5"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -107,15 +107,15 @@ function ArticleEditorPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Konten (Rich Text)</label>
+          <label className="text-sm font-medium text-brand-700 dark:text-brand-300">Konten (Rich Text)</label>
           <RichTextEditor value={content} onChange={setContent} />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Status</label>
+            <label className="text-sm font-medium text-brand-700 dark:text-brand-300">Status</label>
             <select
-              className="w-full rounded border border-slate-300 p-2 dark:border-slate-700 dark:bg-slate-950"
+              className="input-modern w-full p-2.5"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
@@ -126,28 +126,28 @@ function ArticleEditorPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Image</label>
+            <label className="text-sm font-medium text-brand-700 dark:text-brand-300">Image</label>
             <input
               type="file"
               accept="image/*"
               onChange={(e) => setImage(e.target.files?.[0] || null)}
-              className="w-full rounded border border-slate-300 p-2 dark:border-slate-700 dark:bg-slate-950"
+              className="input-modern w-full !p-2"
             />
           </div>
         </div>
 
         <button
           disabled={isSubmitting || isFetching}
-          className="rounded bg-primary px-4 py-2 text-white disabled:opacity-60"
+          className="btn-primary !px-5 !py-2.5 text-sm disabled:opacity-60"
         >
           {isSubmitting ? 'Menyimpan...' : isEditMode ? 'Update Renungan' : 'Simpan Renungan'}
         </button>
 
-        {feedback && <p className="text-sm text-slate-600 dark:text-slate-300">{feedback}</p>}
+        {feedback && <p className="text-sm text-brand-600 dark:text-brand-300">{feedback}</p>}
       </form>
 
-      <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-        <h2 className="font-semibold">Preview</h2>
+      <div className="editor-card space-y-2 p-4">
+        <h2 className="font-semibold text-brand-900 dark:text-white">Preview</h2>
         <div className="prose max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: content }} />
       </div>
     </section>

@@ -7,7 +7,7 @@ function AboutPage() {
   const { user } = useAuth();
 
   return (
-    <div className="space-y-14">
+    <div className="page-stack space-y-14">
       {/* Hero */}
       <PageHero
         image={heroImage}
@@ -192,7 +192,7 @@ function AboutPage() {
       </section>
 
       {/* Call to Action */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 via-primary to-brand-600 px-8 py-14 text-white text-center">
+      <section className="organic-banner relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 via-primary to-brand-600 px-8 py-14 text-white text-center">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute h-48 w-48 rounded-full bg-white/5 animate-float blur-2xl" style={{ top: "10%", right: "10%" }} />
           <div className="absolute h-36 w-36 rounded-full bg-white/5 animate-float-delayed blur-2xl" style={{ bottom: "10%", left: "10%" }} />

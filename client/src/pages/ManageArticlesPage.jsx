@@ -53,22 +53,22 @@ function ManageArticlesPage() {
   };
 
   return (
-    <section className="space-y-4">
+    <section className="page-stack admin-shell space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Manajemen Renungan</h1>
-        <Link to="/dashboard/articles/new" className="rounded bg-primary px-4 py-2 text-white">+ Buat Renungan</Link>
+        <h1 className="font-display text-3xl font-bold text-brand-900 dark:text-white">Manajemen Renungan</h1>
+        <Link to="/dashboard/articles/new" className="btn-primary !px-5 !py-2.5 text-sm">+ Buat Renungan</Link>
       </div>
 
-      {isLoading && <p>Loading...</p>}
+      {isLoading && <p className="text-sm text-brand-600 dark:text-brand-400">Loading...</p>}
       {error && <p className="text-sm text-rose-600">{error}</p>}
 
       <div className="space-y-3">
         {articles.map((article) => (
-          <div key={article.id} className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+          <div key={article.id} className="admin-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="font-semibold">{article.title}</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <h2 className="font-semibold text-brand-900 dark:text-white">{article.title}</h2>
+                <p className="text-sm text-brand-500 dark:text-brand-400">
                   Status: {article.status}
                 </p>
               </div>
@@ -76,21 +76,21 @@ function ManageArticlesPage() {
               <div className="flex flex-wrap gap-2">
                 <Link
                   to={`/dashboard/articles/${article.id}/edit`}
-                  className="rounded bg-amber-600 px-3 py-1 text-sm text-white"
+                  className="rounded-full bg-amber-600 px-3 py-1 text-sm text-white transition-all hover:bg-amber-700"
                 >
                   Edit
                 </Link>
                 <button
                   onClick={() => deleteArticle(article)}
-                  className="rounded bg-rose-600 px-3 py-1 text-sm text-white"
+                  className="rounded-full bg-rose-600 px-3 py-1 text-sm text-white transition-all hover:bg-rose-700"
                 >
                   Hapus
                 </button>
 
                 {user?.role === 'admin' && article.status === 'pending' && (
                   <>
-                    <button onClick={() => reviewArticle(article.id, 'approve')} className="rounded bg-emerald-600 px-3 py-1 text-sm text-white">Approve</button>
-                    <button onClick={() => reviewArticle(article.id, 'reject')} className="rounded bg-slate-700 px-3 py-1 text-sm text-white">Reject</button>
+                    <button onClick={() => reviewArticle(article.id, 'approve')} className="rounded-full bg-emerald-600 px-3 py-1 text-sm text-white transition-all hover:bg-emerald-700">Approve</button>
+                    <button onClick={() => reviewArticle(article.id, 'reject')} className="rounded-full bg-slate-700 px-3 py-1 text-sm text-white transition-all hover:bg-slate-800">Reject</button>
                   </>
                 )}
               </div>

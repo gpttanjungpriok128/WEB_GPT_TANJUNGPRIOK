@@ -36,7 +36,7 @@ function HomePage() {
   }, []);
 
   return (
-    <div className="space-y-16">
+    <div className="page-stack space-y-16">
       {/* Hero Section */}
       <section className="cinematic-hero relative rounded-3xl text-white shadow-xl overflow-hidden">
         {/* Background Image */}
@@ -162,8 +162,10 @@ function HomePage() {
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {featuredArticles.map((article) => (
-              <article
+              <Link
                 key={article.id}
+                to={`/articles?open=${article.id}`}
+                aria-label={`Baca renungan ${article.title}`}
                 className="group overflow-hidden rounded-2xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-900/40 transition-all duration-400 hover:shadow-glass-lg hover:-translate-y-1"
               >
                 <div className="h-44 bg-gradient-to-br from-brand-300 to-primary relative overflow-hidden">
@@ -196,7 +198,7 @@ function HomePage() {
                     <span className="text-primary font-medium">Baca →</span>
                   </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
           <div className="text-center">
@@ -222,7 +224,7 @@ function HomePage() {
               2008.
             </p>
             <Link to="/about" className="btn-outline text-sm">
-              Pelajari Lebih Lanjut →
+              Ketahui Lebih Lanjut →
             </Link>
           </div>
           <div className="rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-800 dark:to-brand-700 p-8 flex items-center justify-center">

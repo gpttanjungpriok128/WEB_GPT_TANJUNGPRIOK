@@ -29,14 +29,14 @@ function RichTextEditor({ value, onChange }) {
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 p-2 dark:border-slate-700">
+    <div className="editor-card overflow-hidden">
+      <div className="editor-toolbar flex flex-wrap gap-2 p-2">
         {commands.map((item) => (
           <button
             type="button"
             key={item.label}
             onClick={() => runCommand(item.command, item.value)}
-            className="rounded border border-slate-300 px-2 py-1 text-sm hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
+            className="rounded-xl border border-brand-200 bg-white/80 px-2.5 py-1 text-sm text-brand-700 transition-all hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-950 dark:text-brand-300 dark:hover:bg-brand-800/70"
           >
             {item.label}
           </button>
@@ -45,7 +45,7 @@ function RichTextEditor({ value, onChange }) {
       <div
         ref={editorRef}
         contentEditable
-        className="min-h-56 p-3 outline-none"
+        className="min-h-56 p-3 outline-none text-brand-800 dark:text-brand-200"
         onInput={(e) => onChange(e.currentTarget.innerHTML)}
       />
     </div>

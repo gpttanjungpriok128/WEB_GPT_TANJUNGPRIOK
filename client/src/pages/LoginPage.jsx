@@ -158,7 +158,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-280px)] flex items-center justify-center py-12">
+    <div className="page-stack auth-shell min-h-[calc(100vh-280px)] flex items-center justify-center py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="text-5xl mb-4">🔐</div>
@@ -170,7 +170,7 @@ function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={submit} className="glass-card p-8 space-y-5">
+        <form onSubmit={submit} className="glass-card auth-card p-8 space-y-5">
           <div className="space-y-2">
             <label className="text-sm font-medium text-brand-700 dark:text-brand-300">Email</label>
             <input

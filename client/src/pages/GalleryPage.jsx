@@ -189,7 +189,7 @@ function GalleryPage() {
   ) : null;
 
   return (
-    <div className="space-y-8">
+    <div className="page-stack space-y-8">
       <PageHero
         image={heroImage}
         title="Galeri"

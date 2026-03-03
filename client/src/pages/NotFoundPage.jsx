@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 function NotFoundPage() {
   return (
-    <div className="min-h-[calc(100vh-280px)] flex items-center justify-center">
+    <div className="page-stack min-h-[calc(100vh-280px)] flex items-center justify-center">
       <div className="text-center space-y-6">
         <div className="relative inline-block">
           <div className="text-8xl md:text-9xl font-extrabold gradient-text animate-text-reveal">
