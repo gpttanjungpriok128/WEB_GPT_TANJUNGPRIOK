@@ -1057,3 +1057,26 @@ html {
   margin: 1.2rem auto;
   max-width: 100%;
 }
+
+/* ─── iOS Date Input Fix ─── */
+.ios-date-fix[type="date"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: block;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.ios-date-fix[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+.ios-date-fix[type="date"]::-webkit-datetime-edit {
+  min-width: 0;
+  padding: 0;
+}
+
+.ios-date-fix[type="date"]::-webkit-calendar-picker-indicator {
+  margin: 0;
+}

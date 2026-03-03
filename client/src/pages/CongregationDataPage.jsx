@@ -151,6 +151,52 @@ function CongregationDataPage() {
     });
   };
 
+  const exportMembersToExcel = async () => {
+    if (!members.length) return;
+    const XLSX = await import("xlsx");
+
+    const headers = [
+      "No",
+      "Nama Lengkap",
+      "Tanggal Lahir",
+      "Kategori",
+      "Telephone",
+      "Alamat",
+      "Diinput Oleh",
+    ];
+
+    const rows = members.map((member, index) => [
+      index + 1,
+      member.fullName || "-",
+      formatBirthDate(member.birthDate),
+      categoryLabel(member.category),
+      member.phone || "-",
+      member.address || "-",
+      member.submitter?.name
+        ? `${member.submitter.name} (${member.submitter.email})`
+        : "-",
+    ]);
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    worksheet["!cols"] = [
+      { wch: 6 },
+      { wch: 28 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 40 },
+      { wch: 34 },
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Jemaat");
+    XLSX.writeFile(
+      workbook,
+      `data-jemaat-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      { compression: true },
+    );
+  };
+
   if (!canAccess) {
     return (
       <section className="glass-card p-8 text-center">
@@ -222,7 +268,7 @@ function CongregationDataPage() {
               type="date"
               value={form.birthDate}
               onChange={(e) => setForm((prev) => ({ ...prev, birthDate: e.target.value }))}
-              className="input-modern"
+              className="input-modern ios-date-fix min-w-0"
             />
           </div>
 
@@ -320,6 +366,14 @@ function CongregationDataPage() {
 
               <button type="button" onClick={() => fetchMembers()} className="btn-primary !px-6 !py-2.5">
                 Terapkan
+              </button>
+              <button
+                type="button"
+                onClick={exportMembersToExcel}
+                disabled={isLoading || members.length === 0}
+                className="btn-outline !px-6 !py-2.5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Export Excel
               </button>
             </div>
           </section>
