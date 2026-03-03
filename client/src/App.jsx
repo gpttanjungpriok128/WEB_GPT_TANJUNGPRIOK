@@ -14,6 +14,7 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import ArticleEditorPage from "./pages/ArticleEditorPage";
 import ManageArticlesPage from "./pages/ManageArticlesPage";
+import CongregationDataPage from "./pages/CongregationDataPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
@@ -52,6 +53,13 @@ function App() {
           <Route
             path="/dashboard/articles/manage"
             element={<ManageArticlesPage />}
+          />
+        </Route>
+
+        <Route element={<ProtectedRoute roles={["admin", "jemaat"]} />}>
+          <Route
+            path="/dashboard/congregation"
+            element={<CongregationDataPage />}
           />
         </Route>
 

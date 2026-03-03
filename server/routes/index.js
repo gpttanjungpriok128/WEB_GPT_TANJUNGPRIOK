@@ -8,6 +8,7 @@ const prayerRequestRoutes = require('./prayerRequestRoutes');
 const userRoutes = require('./userRoutes');
 const liveStreamRoutes = require('./liveStreamRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
+const congregationMemberRoutes = require('./congregationMemberRoutes');
 
 const router = express.Router();
 
@@ -19,5 +20,6 @@ router.use('/prayer-requests', prayerRequestRoutes);
 router.use('/users', userRoutes);
 router.use('/live-stream', liveStreamRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/congregation-members', congregationMemberRoutes);
 
 module.exports = router;

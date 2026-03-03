@@ -1,15 +1,25 @@
-const { User, Article, Gallery, PrayerRequest, Schedule } = require('../models');
+const { User, Article, Gallery, PrayerRequest, Schedule, CongregationMember } = require('../models');
 
 async function getDashboardStats(req, res, next) {
   try {
-    const [users, articles, pendingArticles, galleries, prayerRequests, unreadPrayerRequests, schedules] = await Promise.all([
+    const [
+      users,
+      articles,
+      pendingArticles,
+      galleries,
+      prayerRequests,
+      unreadPrayerRequests,
+      schedules,
+      congregationMembers
+    ] = await Promise.all([
       User.count(),
       Article.count(),
       Article.count({ where: { status: 'pending' } }),
       Gallery.count(),
       PrayerRequest.count(),
       PrayerRequest.count({ where: { isRead: false } }),
-      Schedule.count()
+      Schedule.count(),
+      CongregationMember.count()
     ]);
 
     return res.status(200).json({
@@ -19,7 +29,8 @@ async function getDashboardStats(req, res, next) {
       galleries,
       prayerRequests,
       unreadPrayerRequests,
-      schedules
+      schedules,
+      congregationMembers
     });
   } catch (error) {
     return next(error);

@@ -81,7 +81,10 @@ function DashboardPage() {
               { to: "/gallery", icon: "🖼️", title: "Upload Galeri", desc: "Tambah foto kegiatan gereja ke halaman galeri." },
               { to: "/live", icon: "📺", title: "Halaman Live", desc: "Atur link live streaming langsung dari halaman Live." },
               ...(user?.role === "admin"
-                ? [{ to: "/prayer", icon: "🙏", title: "Prayer Request", desc: "Lihat dan tandai permohonan doa jemaat di halaman Doa." }]
+                ? [
+                  { to: "/prayer", icon: "🙏", title: "Prayer Request", desc: "Lihat dan tandai permohonan doa jemaat di halaman Doa." },
+                  { to: "/dashboard/congregation", icon: "📇", title: "Data Jemaat", desc: "Tambah, edit, dan kelola pendataan jemaat." }
+                ]
                 : []),
             ].map((action, i) => (
               <Link
@@ -118,6 +121,7 @@ function DashboardPage() {
                 "Menyetujui atau menolak renungan dari multimedia",
                 "Mengelola jadwal ibadah dan galeri",
                 "Mengelola data pengguna dan permissions",
+                "Mengelola pendataan jemaat",
                 "Melihat statistik dan laporan lengkap",
                 "Mengelola link live streaming di halaman Live",
                 "Menangani prayer request jemaat di halaman Doa",
@@ -158,6 +162,7 @@ function DashboardPage() {
                 "Menonton galeri foto kegiatan gereja",
                 "Mengirimkan permohonan doa kepada gereja",
                 "Menyaksikan live streaming ibadah",
+                "Mengisi pendataan diri dan keluarga",
               ].map((text, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">✓</span>
