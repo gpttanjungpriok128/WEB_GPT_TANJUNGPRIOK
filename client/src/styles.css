@@ -1142,6 +1142,11 @@ html {
   color: #dbeee4;
 }
 
+.dark .article-reader-content [style*="color"],
+.dark .article-reader-content font[color] {
+  color: #dbeee4 !important;
+}
+
 .article-reader-content > *:first-child {
   margin-top: 0;
 }
@@ -1160,7 +1165,7 @@ html {
 .dark .article-reader-content h1,
 .dark .article-reader-content h2,
 .dark .article-reader-content h3 {
-  color: #f2f9f5;
+  color: #f2f9f5 !important;
 }
 
 .article-reader-content p {
@@ -1197,7 +1202,7 @@ html {
 }
 
 .dark .article-reader-content a {
-  color: #7bd6ad;
+  color: #7bd6ad !important;
 }
 
 .article-reader-content img {
