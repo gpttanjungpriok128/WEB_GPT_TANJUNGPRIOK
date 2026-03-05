@@ -23,6 +23,7 @@ router.post('/login', loginValidation, validate, login);
 router.post('/google', googleLoginValidation, validate, loginWithGoogle);
 router.get('/google/client', getGoogleClientConfig);
 router.get('/me', authenticate, me);
+router.post('/profile-photo', authenticate, uploadImage.single('photo'), updateProfilePhoto);
 router.put('/profile-photo', authenticate, uploadImage.single('photo'), updateProfilePhoto);
 
 module.exports = router;
