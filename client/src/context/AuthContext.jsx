@@ -54,6 +54,16 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const updateProfilePhoto = async (file) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    const { data } = await api.put('/auth/profile-photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    setUser(data.user);
+    return data;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -68,6 +78,7 @@ export function AuthProvider({ children }) {
       login,
       register,
       loginWithGoogle,
+      updateProfilePhoto,
       logout
     }),
     [user, token, loading]

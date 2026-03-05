@@ -10,7 +10,7 @@ async function authenticate(req, res, next) {
 
     const token = authHeader.split(' ')[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findByPk(payload.id, { attributes: ['id', 'name', 'email', 'role'] });
+    const user = await User.findByPk(payload.id, { attributes: ['id', 'name', 'email', 'role', 'profileImage'] });
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid token user' });
@@ -32,7 +32,7 @@ async function optionalAuthenticate(req, res, next) {
 
     const token = authHeader.split(' ')[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findByPk(payload.id, { attributes: ['id', 'name', 'email', 'role'] });
+    const user = await User.findByPk(payload.id, { attributes: ['id', 'name', 'email', 'role', 'profileImage'] });
 
     if (user) {
       req.user = user;

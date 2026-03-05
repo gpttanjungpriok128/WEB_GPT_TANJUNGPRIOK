@@ -27,6 +27,10 @@ const User = sequelize.define('User', {
     type: DataTypes.ENUM('admin', 'multimedia', 'jemaat'),
     allowNull: false,
     defaultValue: 'jemaat'
+  },
+  profileImage: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 });
 

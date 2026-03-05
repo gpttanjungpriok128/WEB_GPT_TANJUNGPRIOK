@@ -20,7 +20,8 @@ async function createUser(req, res, next) {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      profileImage: user.profileImage || null
     });
   } catch (error) {
     return next(error);
@@ -48,7 +49,8 @@ async function updateUser(req, res, next) {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      profileImage: user.profileImage || null
     });
   } catch (error) {
     return next(error);
