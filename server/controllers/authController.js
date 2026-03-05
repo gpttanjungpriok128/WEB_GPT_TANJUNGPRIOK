@@ -1,44 +1,15 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
 const { User } = require('../models');
 const { generateToken } = require('../utils/jwt');
-
-const uploadsDir = path.join(__dirname, '..', 'uploads');
 
 function serializeUser(user) {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role,
-    profileImage: user.profileImage || null
+    role: user.role
   };
-}
-
-function isLocalUploadPath(imagePath) {
-  return typeof imagePath === 'string' && imagePath.startsWith('/uploads/');
-}
-
-async function removeLocalProfileImage(imagePath) {
-  if (!isLocalUploadPath(imagePath)) {
-    return;
-  }
-
-  const fileName = path.basename(imagePath);
-  if (!fileName) {
-    return;
-  }
-
-  const filePath = path.join(uploadsDir, fileName);
-  try {
-    await fs.promises.unlink(filePath);
-  } catch (error) {
-    if (error.code !== 'ENOENT') {
-      throw error;
-    }
-  }
 }
 
 async function register(req, res, next) {
@@ -202,36 +173,4 @@ async function loginWithGoogle(req, res, next) {
   }
 }
 
-async function updateProfilePhoto(req, res, next) {
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ message: 'Foto profil wajib diunggah' });
-    }
-
-    const user = await User.findByPk(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User tidak ditemukan' });
-    }
-
-    const oldImage = user.profileImage;
-    user.profileImage = `/uploads/${req.file.filename}`;
-    await user.save();
-
-    if (oldImage && oldImage !== user.profileImage) {
-      await removeLocalProfileImage(oldImage);
-    }
-
-    return res.status(200).json({
-      message: 'Foto profil berhasil diperbarui',
-      user: serializeUser(user)
-    });
-  } catch (error) {
-    return next(error);
-  }
-}
-
-module.exports = { register, login, me, loginWithGoogle, getGoogleClientConfig, updateProfilePhoto };
+module.exports = { register, login, me, loginWithGoogle, getGoogleClientConfig };

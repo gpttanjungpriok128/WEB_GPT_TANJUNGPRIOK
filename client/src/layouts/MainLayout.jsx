@@ -12,15 +12,12 @@ function MainLayout({ children }) {
   );
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
-  const { user, logout, updateProfilePhoto } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [isUploadingProfilePhoto, setIsUploadingProfilePhoto] = useState(false);
-  const [profilePhotoError, setProfilePhotoError] = useState("");
   const location = useLocation();
-  const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
   const canAccessDashboard = ["admin", "multimedia"].includes(user?.role);
   const isAdminSidebarPage =
     user?.role === "admin" &&
@@ -33,16 +30,8 @@ function MainLayout({ children }) {
   const mainRef = useRef(null);
   const lastScrollY = useRef(0);
   const profileMenuRef = useRef(null);
-  const profilePhotoInputRef = useRef(null);
 
   const profileInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "U";
-
-  const resolveProfileImageUrl = (imagePath) => {
-    if (!imagePath) return "";
-    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
-    const normalizedPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
-    return `${serverUrl}${normalizedPath}`;
-  };
 
   const navLinks = [
     { to: "/", label: "Home" },
@@ -87,7 +76,6 @@ function MainLayout({ children }) {
   useEffect(() => {
     setMobileMenuOpen(false);
     setProfileMenuOpen(false);
-    setProfilePhotoError("");
   }, [location.pathname]);
 
   useEffect(() => {
@@ -122,25 +110,6 @@ function MainLayout({ children }) {
     setNavHidden(false);
     lastScrollY.current = 0;
   }, [location.pathname]);
-
-  const handleProfilePhotoChange = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    setIsUploadingProfilePhoto(true);
-    setProfilePhotoError("");
-    try {
-      await updateProfilePhoto(file);
-      setProfileMenuOpen(false);
-    } catch (error) {
-      setProfilePhotoError(
-        error.response?.data?.message || "Gagal memperbarui foto profil.",
-      );
-    } finally {
-      setIsUploadingProfilePhoto(false);
-    }
-  };
 
   // Page enter animation
   useEffect(() => {
@@ -280,43 +249,19 @@ function MainLayout({ children }) {
                         Dashboard
                       </NavLink>
                     )}
-                    <button
-                      onClick={logout}
-                      className="rounded-xl bg-rose-500/90 px-4 py-2 text-sm font-medium text-white hover:bg-rose-600 transition-all duration-300"
-                    >
-                      Logout
-                    </button>
                   </div>
                 )}
 
                 {user && (
                   <div ref={profileMenuRef} className="relative">
-                    <input
-                      ref={profilePhotoInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      onChange={handleProfilePhotoChange}
-                      className="hidden"
-                    />
                     <button
-                      onClick={() => {
-                        setProfilePhotoError("");
-                        setProfileMenuOpen((prev) => !prev);
-                      }}
+                      onClick={() => setProfileMenuOpen((prev) => !prev)}
                       className="relative h-10 w-10 overflow-hidden rounded-full border border-brand-200 bg-white shadow-sm transition-all hover:scale-[1.03] hover:border-brand-300 dark:border-brand-700 dark:bg-brand-900"
                       title="Profil"
                     >
-                      {user?.profileImage ? (
-                        <img
-                          src={resolveProfileImageUrl(user.profileImage)}
-                          alt={`Foto profil ${user.name}`}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-brand-700 dark:text-brand-200">
-                          {profileInitial}
-                        </span>
-                      )}
+                      <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-brand-700 dark:text-brand-200">
+                        {profileInitial}
+                      </span>
                     </button>
 
                     {profileMenuOpen && (
@@ -325,17 +270,15 @@ function MainLayout({ children }) {
                           {user?.name || "Pengguna"}
                         </p>
                         <button
-                          onClick={() => profilePhotoInputRef.current?.click()}
-                          disabled={isUploadingProfilePhoto}
-                          className="mt-3 w-full rounded-xl border border-brand-200 px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-brand-700 dark:text-brand-200 dark:hover:bg-brand-800/60"
+                          onClick={() => {
+                            logout();
+                            setProfileMenuOpen(false);
+                            setMobileMenuOpen(false);
+                          }}
+                          className="mt-3 w-full rounded-xl bg-rose-500/90 px-3 py-2 text-sm font-medium text-white transition hover:bg-rose-600"
                         >
-                          {isUploadingProfilePhoto ? "Mengunggah..." : "Edit Photo Profile"}
+                          Logout
                         </button>
-                        {profilePhotoError && (
-                          <p className="mt-2 text-xs text-rose-600 dark:text-rose-300">
-                            {profilePhotoError}
-                          </p>
-                        )}
                       </div>
                     )}
                   </div>
@@ -362,6 +305,16 @@ function MainLayout({ children }) {
               }`}
             >
               <div className="space-y-1 rounded-2xl bg-brand-50/80 dark:bg-brand-900/60 p-3 backdrop-blur-sm">
+                {user && (
+                  <div className="mb-2 flex items-center gap-3 rounded-xl border border-brand-200/80 bg-white/70 px-3 py-2.5 dark:border-brand-700 dark:bg-brand-900/50">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-300 bg-brand-100 text-sm font-semibold text-brand-800 dark:border-brand-600 dark:bg-brand-800 dark:text-brand-200">
+                      {profileInitial}
+                    </div>
+                    <p className="truncate text-sm font-semibold text-brand-900 dark:text-white">
+                      {user?.name || "Pengguna"}
+                    </p>
+                  </div>
+                )}
                 {navLinks.map((link, i) => (
                   <NavLink
                     key={link.to}
@@ -417,15 +370,6 @@ function MainLayout({ children }) {
                           Dashboard
                         </NavLink>
                       )}
-                      <button
-                        onClick={() => {
-                          logout();
-                          setMobileMenuOpen(false);
-                        }}
-                        className="w-full rounded-xl bg-rose-500/90 px-4 py-2.5 text-sm font-medium text-white hover:bg-rose-600 transition"
-                      >
-                        Logout
-                      </button>
                     </div>
                   )}
                 </div>
