@@ -1,28 +1,37 @@
 require('dotenv').config();
 
-module.exports = {
-  development: {
+function isTrue(value) {
+  return ['true', '1', 'yes', 'on'].includes(String(value || '').toLowerCase());
+}
+
+function buildDbConfig() {
+  const config = {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT),
     dialect: 'postgres'
-  },
-  test: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
-    dialect: 'postgres'
-  },
-  production: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
-    dialect: 'postgres'
+  };
+
+  if (isTrue(process.env.DB_SSL)) {
+    const rejectUnauthorized = !['false', '0', 'no', 'off'].includes(
+      String(process.env.DB_SSL_REJECT_UNAUTHORIZED || '').toLowerCase()
+    );
+
+    config.dialectOptions = {
+      ssl: {
+        require: true,
+        rejectUnauthorized
+      }
+    };
   }
+
+  return config;
+}
+
+module.exports = {
+  development: buildDbConfig(),
+  test: buildDbConfig(),
+  production: buildDbConfig()
 };
