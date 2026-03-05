@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
 import heroImage from "../img/hero-articles.jpeg";
@@ -10,12 +10,15 @@ function ArticlesPage() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ totalPages: 1 });
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState(null);
-  const [readingProgress, setReadingProgress] = useState(0);
-  const readerBodyRef = useRef(null);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const openArticleId = searchParams.get("open");
   const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
+
+  useEffect(() => {
+    if (!openArticleId) return;
+    navigate(`/articles/${openArticleId}`, { replace: true });
+  }, [openArticleId, navigate]);
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -62,89 +65,6 @@ function ArticlesPage() {
     return `${serverUrl}${imagePath}`;
   };
 
-  const openArticleModal = (article) => {
-    setSelectedArticle(article);
-    setSearchParams((currentParams) => {
-      const nextParams = new URLSearchParams(currentParams);
-      nextParams.set("open", String(article.id));
-      return nextParams;
-    }, { replace: true });
-  };
-
-  const closeArticleModal = useCallback(() => {
-    setSelectedArticle(null);
-    setSearchParams((currentParams) => {
-      const nextParams = new URLSearchParams(currentParams);
-      nextParams.delete("open");
-      return nextParams;
-    }, { replace: true });
-  }, [setSearchParams]);
-
-  useEffect(() => {
-    if (!openArticleId) return;
-
-    const matchedFromList = articles.find(
-      (article) => String(article.id) === String(openArticleId),
-    );
-    if (matchedFromList) {
-      setSelectedArticle(matchedFromList);
-      return;
-    }
-
-    let isCancelled = false;
-    const fetchSelectedArticle = async () => {
-      try {
-        const res = await api.get(`/articles/${openArticleId}`);
-        if (!isCancelled) {
-          setSelectedArticle(res.data);
-        }
-      } catch {
-        if (!isCancelled) {
-          setSearchParams((currentParams) => {
-            const nextParams = new URLSearchParams(currentParams);
-            nextParams.delete("open");
-            return nextParams;
-          }, { replace: true });
-        }
-      }
-    };
-    fetchSelectedArticle();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [openArticleId, articles, setSearchParams]);
-
-  useEffect(() => {
-    if (!selectedArticle) {
-      document.body.style.overflow = "";
-      setReadingProgress(0);
-      return;
-    }
-    document.body.style.overflow = "hidden";
-    const closeWithEsc = (event) => {
-      if (event.key === "Escape") closeArticleModal();
-    };
-    window.addEventListener("keydown", closeWithEsc);
-    return () => {
-      window.removeEventListener("keydown", closeWithEsc);
-      document.body.style.overflow = "";
-    };
-  }, [selectedArticle, closeArticleModal]);
-
-  const handleReaderScroll = () => {
-    const bodyElement = readerBodyRef.current;
-    if (!bodyElement) return;
-    const { scrollTop, scrollHeight, clientHeight } = bodyElement;
-    const maxScroll = scrollHeight - clientHeight;
-    if (maxScroll <= 0) {
-      setReadingProgress(0);
-      return;
-    }
-    const percent = Math.min(100, Math.max(0, (scrollTop / maxScroll) * 100));
-    setReadingProgress(percent);
-  };
-
   return (
     <div className="page-stack space-y-8">
       {/* Hero */}
@@ -181,7 +101,7 @@ function ArticlesPage() {
           {articles.map((article) => (
             <article
               key={article.id}
-              onClick={() => openArticleModal(article)}
+              onClick={() => navigate(`/articles/${article.id}`)}
               className="group overflow-hidden rounded-2xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-900/40 transition-all duration-400 cursor-pointer hover:shadow-glass-lg hover:-translate-y-1"
             >
               <div className="h-48 bg-gradient-to-br from-brand-300 via-brand-400 to-primary relative overflow-hidden">
@@ -271,73 +191,6 @@ function ArticlesPage() {
           >
             Berikutnya →
           </button>
-        </div>
-      )}
-
-      {/* Reflection Modal */}
-      {selectedArticle && (
-        <div
-          className="modal-overlay article-reader-overlay"
-          onClick={closeArticleModal}
-        >
-          <article
-            onClick={(event) => event.stopPropagation()}
-            className="modal-content article-reader-modal flex h-[100dvh] w-full max-w-[1040px] flex-col overflow-hidden border border-brand-200 bg-white shadow-2xl dark:border-brand-700 dark:bg-brand-950 md:mx-4 md:h-[92vh] md:rounded-2xl"
-          >
-            <div className="article-reader-progress">
-              <div className="article-reader-progress-fill" style={{ width: `${readingProgress}%` }} />
-            </div>
-
-            <header className="article-reader-header">
-              <button
-                onClick={closeArticleModal}
-                className="article-reader-close"
-              >
-                ✕
-              </button>
-
-              <div className="space-y-3 pr-14">
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="rounded-full bg-primary px-3 py-1 font-semibold uppercase tracking-wide text-white">
-                    Renungan
-                  </span>
-                  <span className="rounded-full border border-brand-200 dark:border-brand-700 px-3 py-1 font-medium text-brand-600 dark:text-brand-300">
-                    {selectedArticle.status}
-                  </span>
-                </div>
-                <h2 className="font-display text-xl font-bold leading-tight text-brand-900 dark:text-white sm:text-2xl md:text-4xl">
-                  {selectedArticle.title}
-                </h2>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-brand-600 dark:text-brand-400">
-                  <span>{formatDate(getPublishedDate(selectedArticle))}</span>
-                  <span>•</span>
-                  <span>{getReadDuration(selectedArticle.content)}</span>
-                </div>
-              </div>
-            </header>
-
-            <div
-              ref={readerBodyRef}
-              onScroll={handleReaderScroll}
-              className="article-reader-body overflow-y-auto"
-            >
-              {selectedArticle.image && (
-                <figure className="article-reader-figure">
-                  <img
-                    src={resolveImageUrl(selectedArticle.image)}
-                    alt={selectedArticle.title}
-                    className="h-full w-full object-cover"
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                    }}
-                  />
-                </figure>
-              )}
-              <div className="article-reader-content">
-                <div dangerouslySetInnerHTML={{ __html: selectedArticle.content }} />
-              </div>
-            </div>
-          </article>
         </div>
       )}
     </div>

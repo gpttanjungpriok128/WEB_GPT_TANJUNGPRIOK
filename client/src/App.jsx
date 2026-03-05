@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import SchedulesPage from "./pages/SchedulesPage";
 import ArticlesPage from "./pages/ArticlesPage";
+import ArticleDetailPage from "./pages/ArticleDetailPage";
 import GalleryPage from "./pages/GalleryPage";
 import LivePage from "./pages/LivePage";
 import PrayerPage from "./pages/PrayerPage";
@@ -25,6 +26,7 @@ function App() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/schedules" element={<SchedulesPage />} />
         <Route path="/articles" element={<ArticlesPage />} />
+        <Route path="/articles/:id" element={<ArticleDetailPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<LoginPage />} />
