@@ -277,12 +277,12 @@ function ArticlesPage() {
       {/* Reflection Modal */}
       {selectedArticle && (
         <div
-          className="modal-overlay"
+          className="modal-overlay article-reader-overlay"
           onClick={closeArticleModal}
         >
           <article
             onClick={(event) => event.stopPropagation()}
-            className="modal-content article-reader-modal mx-4 flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-950 shadow-2xl"
+            className="modal-content article-reader-modal flex h-[100dvh] w-full max-w-[1040px] flex-col overflow-hidden border border-brand-200 bg-white shadow-2xl dark:border-brand-700 dark:bg-brand-950 md:mx-4 md:h-[92vh] md:rounded-2xl"
           >
             <div className="article-reader-progress">
               <div className="article-reader-progress-fill" style={{ width: `${readingProgress}%` }} />
@@ -305,7 +305,7 @@ function ArticlesPage() {
                     {selectedArticle.status}
                   </span>
                 </div>
-                <h2 className="font-display text-2xl font-bold leading-tight md:text-4xl text-brand-900 dark:text-white">
+                <h2 className="font-display text-xl font-bold leading-tight text-brand-900 dark:text-white sm:text-2xl md:text-4xl">
                   {selectedArticle.title}
                 </h2>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-brand-600 dark:text-brand-400">

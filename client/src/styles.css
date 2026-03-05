@@ -1049,8 +1049,23 @@ html {
 }
 
 /* ─── Article Reader ─── */
+.article-reader-overlay {
+  z-index: 80;
+  padding: 0;
+}
+
 .article-reader-modal {
-  border-radius: 24px 30px 24px 34px / 30px 24px 34px 26px;
+  border-radius: 0;
+}
+
+@media (min-width: 768px) {
+  .article-reader-overlay {
+    padding: 1rem;
+  }
+
+  .article-reader-modal {
+    border-radius: 24px 30px 24px 34px / 30px 24px 34px 26px;
+  }
 }
 
 .article-reader-progress {
@@ -1071,7 +1086,7 @@ html {
   top: 0;
   z-index: 8;
   border-bottom: 1px solid color-mix(in srgb, var(--brand-border) 76%, white 24%);
-  padding: 1.25rem 1.5rem;
+  padding: 0.95rem 1rem 1.05rem;
   background:
     linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(245, 255, 250, 0.88));
   backdrop-filter: blur(8px);
@@ -1086,11 +1101,11 @@ html {
 
 .article-reader-close {
   position: absolute;
-  right: 1rem;
-  top: 1rem;
+  right: 0.8rem;
+  top: 0.75rem;
   display: inline-flex;
-  height: 2.25rem;
-  width: 2.25rem;
+  height: 2rem;
+  width: 2rem;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
@@ -1113,10 +1128,21 @@ html {
 }
 
 .article-reader-body {
-  padding: 1rem 1rem 2rem;
+  padding: 0.85rem 0.9rem 2rem;
 }
 
 @media (min-width: 768px) {
+  .article-reader-header {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .article-reader-close {
+    right: 1rem;
+    top: 1rem;
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
   .article-reader-body {
     padding: 1.1rem 1.4rem 2.3rem;
   }
@@ -1124,18 +1150,26 @@ html {
 
 .article-reader-figure {
   overflow: hidden;
-  border-radius: 16px 24px 16px 28px / 20px 14px 26px 18px;
-  max-height: 340px;
-  margin: 0 auto 1.25rem;
+  border-radius: 14px 18px 14px 20px / 16px 12px 20px 14px;
+  max-height: 300px;
+  margin: 0 auto 1rem;
+}
+
+@media (min-width: 768px) {
+  .article-reader-figure {
+    border-radius: 16px 24px 16px 28px / 20px 14px 26px 18px;
+    max-height: 360px;
+    margin: 0 auto 1.25rem;
+  }
 }
 
 .article-reader-content {
-  max-width: 760px;
+  max-width: 68ch;
   margin: 0 auto;
   color: #123528;
-  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.08rem);
-  line-height: 1.95;
-  letter-spacing: 0.0015em;
+  font-size: clamp(0.98rem, 0.93rem + 0.18vw, 1.04rem);
+  line-height: 1.78;
+  letter-spacing: 0.001em;
 }
 
 .dark .article-reader-content {
@@ -1145,6 +1179,16 @@ html {
 .dark .article-reader-content [style*="color"],
 .dark .article-reader-content font[color] {
   color: #dbeee4 !important;
+}
+
+.article-reader-content * {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.article-reader-content :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)[style*="font-size"] {
+  font-size: inherit !important;
+  line-height: inherit !important;
 }
 
 .article-reader-content > *:first-child {
@@ -1162,6 +1206,18 @@ html {
   color: #0f3727;
 }
 
+.article-reader-content h1 {
+  font-size: clamp(1.45rem, 1.18rem + 1vw, 2rem);
+}
+
+.article-reader-content h2 {
+  font-size: clamp(1.3rem, 1.1rem + 0.8vw, 1.75rem);
+}
+
+.article-reader-content h3 {
+  font-size: clamp(1.15rem, 1.02rem + 0.55vw, 1.4rem);
+}
+
 .dark .article-reader-content h1,
 .dark .article-reader-content h2,
 .dark .article-reader-content h3 {
@@ -1169,7 +1225,7 @@ html {
 }
 
 .article-reader-content p {
-  margin: 1.05em 0;
+  margin: 0.95em 0;
 }
 
 .article-reader-content blockquote {
@@ -1207,8 +1263,19 @@ html {
 
 .article-reader-content img {
   border-radius: 0.9rem;
-  margin: 1.2rem auto;
+  margin: 1rem auto;
   max-width: 100%;
+}
+
+@media (max-width: 767px) {
+  .article-reader-header {
+    padding-right: 3.5rem;
+  }
+
+  .article-reader-content {
+    max-width: 100%;
+    line-height: 1.72;
+  }
 }
 
 /* ─── Hero Background Zoom ─── */
