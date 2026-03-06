@@ -30,6 +30,8 @@ function MainLayout({ children }) {
   const mainRef = useRef(null);
   const lastScrollY = useRef(0);
   const profileMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const mobileMenuToggleRef = useRef(null);
 
   const profileInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "U";
 
@@ -103,6 +105,31 @@ function MainLayout({ children }) {
       window.removeEventListener("keydown", closeOnEsc);
     };
   }, [profileMenuOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen || isAdminSidebarPage) return;
+
+    const closeOnOutsideClick = (event) => {
+      const target = event.target;
+      if (mobileMenuRef.current?.contains(target)) return;
+      if (mobileMenuToggleRef.current?.contains(target)) return;
+      setMobileMenuOpen(false);
+    };
+
+    const closeOnScroll = () => {
+      setMobileMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("touchstart", closeOnOutsideClick);
+    window.addEventListener("scroll", closeOnScroll, { passive: true });
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("touchstart", closeOnOutsideClick);
+      window.removeEventListener("scroll", closeOnScroll);
+    };
+  }, [mobileMenuOpen, isAdminSidebarPage]);
 
   // Always return to top when navigating between pages
   useEffect(() => {
@@ -286,6 +313,7 @@ function MainLayout({ children }) {
 
                 {/* Mobile Menu Toggle */}
                 <button
+                  ref={mobileMenuToggleRef}
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   className="rounded-xl p-2.5 lg:hidden hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
                 >
@@ -300,6 +328,7 @@ function MainLayout({ children }) {
 
             {/* Mobile Menu */}
             <div
+              ref={mobileMenuRef}
               className={`lg:hidden overflow-hidden transition-all duration-400 ease-out ${
                 mobileMenuOpen ? "max-h-[600px] opacity-100 pb-4" : "max-h-0 opacity-0"
               }`}
