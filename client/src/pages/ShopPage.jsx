@@ -553,7 +553,6 @@ function ShopPage() {
           </div>
         )}
       </section>
-      </section>
 
       {/* ── Product Detail Modal ──────────────────── */}
       {selectedProduct && (
