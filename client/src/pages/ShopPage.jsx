@@ -7,8 +7,8 @@ import lightJohnImage from "../img/store/you-are-the-light.png";
 import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
+import { clampQuantity, getStockForSize, getTotalStock } from "../utils/storeStock";
 
-const SHOP_WHATSAPP_NUMBER = "6282118223784"; // Format: +62 821-1822-3784
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 
 const FALLBACK_PRODUCTS = [
@@ -75,6 +75,14 @@ const formatRupiah = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
+function getDefaultSize(product) {
+  const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
+  if (!sizes.length) return "M";
+
+  const firstAvailable = sizes.find((size) => getStockForSize(product, size) > 0);
+  return firstAvailable || sizes[0] || "M";
+}
+
 function ShopPage() {
   const [products, setProducts] = useState(FALLBACK_PRODUCTS);
   const [selections, setSelections] = useState({});
@@ -106,7 +114,7 @@ function ShopPage() {
       for (const product of products) {
         if (!next[product.id]) {
           next[product.id] = {
-            size: product.sizes?.[2] || product.sizes?.[0] || "M",
+            size: getDefaultSize(product),
             quantity: 1,
           };
         }
@@ -161,17 +169,16 @@ function ShopPage() {
   };
 
   const addToCart = (product) => {
-    if (Number(product.stock) <= 0) {
-      return;
-    }
-
     const selection = selections[product.id] || {
-      size: product.sizes?.[0] || "M",
+      size: getDefaultSize(product),
       quantity: 1,
     };
 
-    const quantity = Math.max(1, Number(selection.quantity) || 1);
-    const size = selection.size || product.sizes?.[0] || "M";
+    const size = selection.size || getDefaultSize(product);
+    const sizeStock = getStockForSize(product, size);
+    if (sizeStock <= 0) return;
+
+    const quantity = clampQuantity(selection.quantity, sizeStock);
     const variantKey = `${product.id}-${size}`;
     const normalizedPrimaryImage = normalizeStoreImagePath(product.imageUrl);
     const normalizedImageUrls = Array.isArray(product.imageUrls)
@@ -188,10 +195,7 @@ function ShopPage() {
       if (existingItemIndex >= 0) {
         return previous.map((item, index) => {
           if (index !== existingItemIndex) return item;
-          const nextQty = Math.min(
-            item.quantity + quantity,
-            Number(product.stock) || 99,
-          );
+          const nextQty = clampQuantity(item.quantity + quantity, sizeStock);
           return {
             ...item,
             quantity: nextQty,
@@ -199,6 +203,8 @@ function ShopPage() {
             imageUrls: Array.isArray(item.imageUrls) && item.imageUrls.length > 0
               ? item.imageUrls
               : normalizedImageUrls,
+            stock: sizeStock,
+            stockBySize: product.stockBySize || {},
           };
         });
       }
@@ -215,7 +221,8 @@ function ShopPage() {
           size,
           color: product.color || "-",
           quantity,
-          stock: Number(product.stock) || 0,
+          stock: sizeStock,
+          stockBySize: product.stockBySize || {},
         },
       ];
     });
@@ -233,7 +240,7 @@ function ShopPage() {
     setCartItems((previous) =>
       previous.map((item) => {
         if (item.variantKey !== variantKey) return item;
-        const boundedQty = Math.min(99, safeQuantity, item.stock || 99);
+        const boundedQty = clampQuantity(safeQuantity, item.stock || 99);
         return { ...item, quantity: boundedQty };
       }),
     );
@@ -347,6 +354,7 @@ function ShopPage() {
               const effectivePrice = Number(
                 product.finalPrice ?? product.basePrice ?? 0,
               );
+              const totalStock = getTotalStock(product);
 
               return (
                 <Link
@@ -412,12 +420,12 @@ function ShopPage() {
                         </span>
                         <span
                           className={`text-sm ${
-                            Number(product.stock) <= 0
+                            totalStock <= 0
                               ? "text-rose-500 font-bold"
                               : "text-brand-700 font-bold dark:text-brand-300"
                           }`}
                         >
-                          {Number(product.stock) <= 0 ? "Habis" : product.stock}
+                          {totalStock <= 0 ? "Habis" : totalStock}
                         </span>
                       </div>
                     </div>

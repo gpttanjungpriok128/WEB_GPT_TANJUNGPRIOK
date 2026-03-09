@@ -1,0 +1,195 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import api from "../services/api";
+import PageHero from "../components/PageHero";
+import heroImage from "../img/store/you-are-the-light.png";
+
+const ORDER_STATUS_LABEL = {
+  new: "Belum Dikonfirmasi",
+  confirmed: "Dikonfirmasi",
+  packed: "Sedang Dikemas",
+  completed: "Selesai",
+  cancelled: "Dibatalkan",
+};
+
+const ORDER_STATUS_BADGE = {
+  new: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  confirmed: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  packed: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
+  completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  cancelled: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+};
+
+function formatRupiah(amount) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number(amount) || 0);
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function MyOrdersPage() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchMyOrders = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const { data } = await api.get("/store/my-orders", {
+        params: { page: 1, limit: 50 },
+      });
+      setOrders(Array.isArray(data?.data) ? data.data : []);
+    } catch (err) {
+      setOrders([]);
+      setError(err?.response?.data?.message || "Gagal memuat data pesanan.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyOrders();
+  }, []);
+
+  const activeOrders = useMemo(
+    () => orders.filter((order) => order.status !== "completed" && order.status !== "cancelled"),
+    [orders],
+  );
+
+  return (
+    <div>
+      <PageHero
+        title="Pesanan Saya"
+        subtitle="Riwayat pesanan Anda dan status konfirmasi admin"
+        image={heroImage}
+      />
+
+      <div className="page-stack space-y-5">
+        <section className="rounded-2xl border border-brand-200 bg-white/85 p-4 dark:border-brand-700 dark:bg-brand-900/50">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-brand-800 dark:text-brand-200">
+                Total pesanan: {orders.length}
+              </p>
+              <p className="text-xs text-brand-500 dark:text-brand-400">
+                Pesanan aktif: {activeOrders.length} • Estimasi pre-order 5 hari kerja setelah konfirmasi.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={fetchMyOrders}
+                className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+              >
+                Refresh
+              </button>
+              <Link
+                to="/shop"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
+              >
+                Belanja Lagi
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {error && (
+          <section className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300">
+            {error}
+          </section>
+        )}
+
+        {loading ? (
+          <section className="flex justify-center py-16">
+            <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
+          </section>
+        ) : orders.length === 0 ? (
+          <section className="rounded-2xl border border-brand-200 bg-white/80 p-10 text-center dark:border-brand-700 dark:bg-brand-900/40">
+            <p className="text-base font-semibold text-brand-800 dark:text-brand-200">
+              Belum ada pesanan
+            </p>
+            <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
+              Pesanan yang sudah checkout akan muncul di halaman ini.
+            </p>
+            <Link to="/shop" className="btn-primary mt-6 inline-block">
+              Mulai Belanja
+            </Link>
+          </section>
+        ) : (
+          <section className="space-y-3">
+            {orders.map((order) => (
+              <article
+                key={order.id}
+                className="rounded-2xl border border-brand-200 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-900/50"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-base font-bold text-brand-900 dark:text-white">
+                      {order.orderCode}
+                    </p>
+                    <p className="text-xs text-brand-500 dark:text-brand-400">
+                      Dibuat: {formatDateTime(order.createdAt)}
+                    </p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ORDER_STATUS_BADGE[order.status] || ORDER_STATUS_BADGE.new}`}>
+                    {ORDER_STATUS_LABEL[order.status] || order.status}
+                  </span>
+                </div>
+
+                <div className="mt-3 grid gap-2 text-xs text-brand-600 dark:text-brand-300 sm:grid-cols-2">
+                  <p>Pengiriman: {order.shippingMethod || "-"}</p>
+                  <p>Pembayaran: {order.paymentMethod || "-"}</p>
+                  <p>Subtotal: {formatRupiah(order.subtotal)}</p>
+                  <p>Ongkir: {formatRupiah(order.shippingCost)}</p>
+                  <p className="sm:col-span-2 font-semibold text-primary">
+                    Total: {formatRupiah(order.totalAmount)}
+                  </p>
+                </div>
+
+                {Array.isArray(order.items) && order.items.length > 0 && (
+                  <div className="mt-3 rounded-xl border border-brand-200 bg-brand-50/70 p-3 dark:border-brand-700 dark:bg-brand-900/30">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                      Item Pesanan
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {order.items.map((item) => (
+                        <p key={item.id} className="text-sm text-brand-700 dark:text-brand-300">
+                          {item.productName} • Size {item.size} • Qty {item.quantity}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="mt-3 text-xs text-brand-500 dark:text-brand-400">
+                  Konfirmasi admin:{" "}
+                  <span className="font-semibold text-brand-700 dark:text-brand-300">
+                    {order.status === "new" ? "Belum" : "Sudah / Sedang diproses"}
+                  </span>
+                </p>
+              </article>
+            ))}
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default MyOrdersPage;

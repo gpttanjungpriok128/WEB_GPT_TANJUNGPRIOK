@@ -5,6 +5,12 @@ import worshipSmokeImage from "../img/store/made-to-worship.png";
 import lightJohnImage from "../img/store/you-are-the-light.png";
 import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
 import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
+import {
+  clampQuantity,
+  getStockForSize,
+  getTotalStock,
+  normalizeSizeKey,
+} from "../utils/storeStock";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 
@@ -98,6 +104,14 @@ function getImageWithFallback(product, fallbackProducts) {
   return imageUrls.length > 0 ? imageUrls : [worshipSmokeImage];
 }
 
+function getDefaultSize(product) {
+  const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
+  if (!sizes.length) return "M";
+
+  const firstAvailable = sizes.find((size) => getStockForSize(product, size) > 0);
+  return firstAvailable || sizes[0] || "M";
+}
+
 function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -137,13 +151,13 @@ function ProductDetailPage() {
         const { data } = await api.get(`/store/products/${slug}`);
         if (data?.data) {
           setProduct(data.data);
-          setSelectedSize(data.data.sizes?.[0] || "M");
+          setSelectedSize(getDefaultSize(data.data));
           const imgs = getImageWithFallback(data.data, FALLBACK_PRODUCTS);
           setImages(imgs);
         } else {
           const found = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
           setProduct(found);
-          setSelectedSize(found?.sizes?.[0] || "M");
+          setSelectedSize(getDefaultSize(found));
           if (found) {
             const imgs = getImageWithFallback(found, FALLBACK_PRODUCTS);
             setImages(imgs);
@@ -152,7 +166,7 @@ function ProductDetailPage() {
       } catch {
         const found = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
         setProduct(found);
-        setSelectedSize(found?.sizes?.[0] || "M");
+        setSelectedSize(getDefaultSize(found));
         if (found) {
           const imgs = getImageWithFallback(found, FALLBACK_PRODUCTS);
           setImages(imgs);
@@ -165,14 +179,21 @@ function ProductDetailPage() {
     fetchProduct();
   }, [slug]);
 
+  useEffect(() => {
+    if (!product || !selectedSize) return;
+    const maxQty = getStockForSize(product, selectedSize) || 1;
+    setQuantity((previous) => clampQuantity(previous, maxQty));
+  }, [product, selectedSize]);
+
   const addToCart = () => {
     if (!product) return;
     if (!selectedSize) {
       setFeedback("Pilih ukuran terlebih dahulu");
       return;
     }
-    if (Number(product.stock) <= 0) {
-      setFeedback("Produk ini sedang habis");
+    const sizeStock = getStockForSize(product, selectedSize);
+    if (sizeStock <= 0) {
+      setFeedback(`Stok ukuran ${normalizeSizeKey(selectedSize)} sedang habis`);
       return;
     }
 
@@ -192,9 +213,9 @@ function ProductDetailPage() {
       );
 
       if (existingItemIndex >= 0) {
-        const nextQty = Math.min(
+        const nextQty = clampQuantity(
           savedCart[existingItemIndex].quantity + quantity,
-          Number(product.stock) || 99,
+          sizeStock,
         );
         savedCart[existingItemIndex].quantity = nextQty;
         savedCart[existingItemIndex].image =
@@ -204,6 +225,8 @@ function ProductDetailPage() {
           savedCart[existingItemIndex].imageUrls.length > 0
             ? savedCart[existingItemIndex].imageUrls
             : normalizedImageUrls;
+        savedCart[existingItemIndex].stock = sizeStock;
+        savedCart[existingItemIndex].stockBySize = product.stockBySize || {};
       } else {
         savedCart.push({
           variantKey,
@@ -214,8 +237,9 @@ function ProductDetailPage() {
           imageUrls: normalizedImageUrls,
           size: selectedSize,
           color: product.color || "-",
-          quantity: Math.min(quantity, Number(product.stock) || 99),
-          stock: Number(product.stock) || 0,
+          quantity: clampQuantity(quantity, sizeStock),
+          stock: sizeStock,
+          stockBySize: product.stockBySize || {},
         });
       }
 
@@ -253,6 +277,11 @@ function ProductDetailPage() {
   }
 
   const effectivePrice = Number(product.finalPrice ?? product.basePrice ?? 0);
+  const sizes = Array.isArray(product.sizes) && product.sizes.length > 0
+    ? product.sizes
+    : ["S", "M", "L", "XL"];
+  const totalStock = getTotalStock(product);
+  const selectedSizeStock = getStockForSize(product, selectedSize);
 
   const handleImageError = (index) => {
     setFailedImages((prev) => new Set([...prev, index]));
@@ -449,15 +478,18 @@ function ProductDetailPage() {
               </span>
               <span
                 className={
-                  Number(product.stock) <= 0
+                  totalStock <= 0
                     ? "font-bold text-rose-600"
                     : "font-semibold text-emerald-600 dark:text-emerald-400"
                 }
               >
-                {Number(product.stock) <= 0
+                {totalStock <= 0
                   ? "Habis"
-                  : `${product.stock} pcs tersedia`}
+                  : `${totalStock} pcs tersedia`}
               </span>
+            </p>
+            <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
+              Ukuran {normalizeSizeKey(selectedSize)}: {selectedSizeStock} pcs
             </p>
           </div>
 
@@ -482,19 +514,29 @@ function ProductDetailPage() {
               📏 Pilih Ukuran
             </label>
             <div className="grid grid-cols-4 gap-2">
-              {(product.sizes || ["S", "M", "L", "XL"]).map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`rounded-lg py-2 font-semibold transition ${
-                    selectedSize === size
-                      ? "bg-primary text-white border-2 border-primary"
-                      : "border-2 border-brand-200 bg-white text-brand-700 hover:border-primary dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+              {sizes.map((size) => {
+                const sizeStock = getStockForSize(product, size);
+                const isOutOfStock = sizeStock <= 0;
+
+                return (
+                  <button
+                    key={size}
+                    onClick={() => {
+                      setSelectedSize(size);
+                      setQuantity((prev) => clampQuantity(prev, getStockForSize(product, size)));
+                    }}
+                    disabled={isOutOfStock}
+                    className={`rounded-lg py-2 font-semibold transition ${
+                      selectedSize === size
+                        ? "bg-primary text-white border-2 border-primary"
+                        : "border-2 border-brand-200 bg-white text-brand-700 hover:border-primary dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300"
+                    } ${isOutOfStock ? "cursor-not-allowed opacity-40" : ""}`}
+                    title={isOutOfStock ? `Ukuran ${size} habis` : `${sizeStock} pcs tersedia`}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -513,17 +555,17 @@ function ProductDetailPage() {
               <input
                 type="number"
                 min="1"
-                max={Number(product.stock) || 99}
+                max={selectedSizeStock || 1}
                 value={quantity}
                 onChange={(e) =>
-                  setQuantity(Math.max(1, Number(e.target.value) || 1))
+                  setQuantity(clampQuantity(e.target.value, selectedSizeStock || 1))
                 }
                 className="input-modern w-20 text-center"
               />
               <button
                 onClick={() =>
                   setQuantity(
-                    Math.min(Number(product.stock) || 99, quantity + 1),
+                    clampQuantity(quantity + 1, selectedSizeStock || 1),
                   )
                 }
                 className="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-200 bg-white font-bold transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:hover:bg-brand-900"
@@ -531,7 +573,7 @@ function ProductDetailPage() {
                 +
               </button>
               <span className="text-sm text-brand-600 dark:text-brand-400">
-                Max: {Number(product.stock) || 0} pcs
+                Max: {selectedSizeStock || 0} pcs
               </span>
             </div>
           </div>
@@ -553,7 +595,7 @@ function ProductDetailPage() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
               onClick={addToCart}
-              disabled={Number(product.stock) <= 0}
+              disabled={selectedSizeStock <= 0}
               className="btn-outline flex flex-1 items-center justify-center gap-2 !py-3 font-semibold disabled:opacity-50"
             >
               <svg

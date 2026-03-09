@@ -13,6 +13,7 @@ import ContactPage from "./pages/ContactPage";
 import ShopPage from "./pages/ShopPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
+import MyOrdersPage from "./pages/MyOrdersPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -52,6 +53,7 @@ function App() {
         >
           <Route path="/live" element={<LivePage />} />
           <Route path="/prayer" element={<PrayerPage />} />
+          <Route path="/my-orders" element={<MyOrdersPage />} />
         </Route>
 
         <Route element={<ProtectedRoute roles={["admin", "multimedia"]} />}>

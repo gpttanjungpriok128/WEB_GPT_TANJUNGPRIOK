@@ -39,6 +39,21 @@ const createProductValidation = [
       if (typeof value === 'string') return true;
       throw new Error('Ukuran produk harus array atau teks dipisah koma');
     }),
+  body('stockBySize')
+    .optional()
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true;
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return true;
+        } catch {
+          throw new Error('Stok per ukuran harus format JSON object');
+        }
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) return true;
+      throw new Error('Stok per ukuran tidak valid');
+    }),
   body('isActive').optional().custom((value) => {
     if (typeof value === 'boolean') return true;
     if (['true', 'false', '1', '0'].includes(String(value).toLowerCase())) return true;
@@ -68,6 +83,21 @@ const updateProductValidation = [
       if (Array.isArray(value)) return true;
       if (typeof value === 'string') return true;
       throw new Error('Ukuran produk harus array atau teks dipisah koma');
+    }),
+  body('stockBySize')
+    .optional()
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true;
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return true;
+        } catch {
+          throw new Error('Stok per ukuran harus format JSON object');
+        }
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) return true;
+      throw new Error('Stok per ukuran tidak valid');
     }),
   body('isActive').optional().custom((value) => {
     if (typeof value === 'boolean') return true;

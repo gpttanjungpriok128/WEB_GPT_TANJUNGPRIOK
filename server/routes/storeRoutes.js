@@ -3,6 +3,7 @@ const {
   getPublicProducts,
   getPublicProductBySlug,
   createOrder,
+  getMyOrders,
   getAdminProducts,
   createAdminProduct,
   updateAdminProduct,
@@ -13,7 +14,7 @@ const {
   updateAdminSettings,
   getAdminAnalytics
 } = require('../controllers/storeController');
-const { authenticate, authorizeRoles } = require('../middleware/authMiddleware');
+const { authenticate, optionalAuthenticate, authorizeRoles } = require('../middleware/authMiddleware');
 const { uploadImage } = require('../middleware/uploadMiddleware');
 const { validate } = require('../middleware/validationMiddleware');
 const {
@@ -28,7 +29,8 @@ const router = express.Router();
 
 router.get('/products', getPublicProducts);
 router.get('/products/:slug', getPublicProductBySlug);
-router.post('/orders', createOrderValidation, validate, createOrder);
+router.post('/orders', optionalAuthenticate, createOrderValidation, validate, createOrder);
+router.get('/my-orders', authenticate, getMyOrders);
 
 router.get('/admin/products', authenticate, authorizeRoles('admin'), getAdminProducts);
 router.post('/admin/products', authenticate, authorizeRoles('admin'), uploadImage.array('images', 8), createProductValidation, validate, createAdminProduct);

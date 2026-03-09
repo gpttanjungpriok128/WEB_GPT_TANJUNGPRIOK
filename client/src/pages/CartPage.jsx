@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
 import cartHeroImage from "../img/store/made-to-worship.png";
 import {
@@ -8,6 +9,7 @@ import {
   normalizeStoreImagePath,
   resolveStoreImageUrl,
 } from "../utils/storeImage";
+import { clampQuantity, getStockForSize } from "../utils/storeStock";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const DEFAULT_SHIPPING_COST = 15000;
@@ -31,14 +33,18 @@ function normalizeCartItem(item = {}) {
       ? [primaryImage]
       : [];
 
+  const variantStock = getStockForSize(item, item.size);
+
   return {
     ...item,
     image: primaryImage,
     imageUrls,
+    stock: Math.max(0, Number(variantStock) || 0),
   };
 }
 
 function CartPage() {
+  const { user } = useAuth();
   const [cartItems, setCartItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [failedImageKeys, setFailedImageKeys] = useState(new Set());
@@ -123,7 +129,7 @@ function CartPage() {
 
   // Update quantity
   const updateQuantity = (index, newQuantity) => {
-    const qty = Math.max(1, Math.min(Number(newQuantity) || 1, cartItems[index].stock || 99));
+    const qty = clampQuantity(newQuantity, cartItems[index].stock || 99);
     const updated = [...cartItems];
     updated[index].quantity = qty;
     setCartItems(updated);
@@ -169,7 +175,7 @@ function CartPage() {
   };
 
   // Process checkout
-  const proceedCheckout = () => {
+  const proceedCheckout = async () => {
     if (selectedItemsList.length === 0) {
       setCheckoutError("Pilih minimal 1 produk untuk checkout");
       return;
@@ -187,33 +193,58 @@ function CartPage() {
       return;
     }
 
+    const hasInvalidProduct = selectedItemsList.some(
+      (item) => !Number.isInteger(Number(item.productId)) || Number(item.productId) <= 0,
+    );
+    if (hasInvalidProduct) {
+      setCheckoutError("Ada item lama/tidak valid di keranjang. Hapus lalu tambah ulang produk.");
+      return;
+    }
+
     setIsSubmittingOrder(true);
+    setCheckoutError("");
+    setCheckoutInfo("");
 
     try {
-      const message = [
-        "Shalom GTshirt, saya ingin pesan kaos rohani:",
-        "",
-        ...selectedItemsList.map(
-          (item, idx) =>
-            `${idx + 1}. ${item.name} | Size ${item.size} | ${item.color} | Qty ${item.quantity} | ${formatRupiah(item.price * item.quantity)}`
-        ),
-        "",
-        `Subtotal: ${formatRupiah(subtotal)}`,
-        `Ongkir Estimasi: ${formatRupiah(shipping)}`,
-        `Total: ${formatRupiah(grandTotal)}`,
-        "",
-        "Data Pemesan:",
-        `Nama: ${checkoutForm.name}`,
-        `No. WhatsApp: ${checkoutForm.phone}`,
-        `Alamat: ${checkoutForm.address}`,
-        `Pengiriman: ${checkoutForm.shippingMethod}`,
-        `Pembayaran: ${checkoutForm.paymentMethod}`,
-        `Catatan: ${checkoutForm.notes || "-"}`,
-      ].join("\n");
+      const payload = {
+        name: checkoutForm.name.trim(),
+        phone: checkoutForm.phone.trim(),
+        address: checkoutForm.address.trim(),
+        shippingMethod: checkoutForm.shippingMethod,
+        paymentMethod: checkoutForm.paymentMethod,
+        notes: checkoutForm.notes.trim(),
+        items: selectedItemsList.map((item) => ({
+          productId: Number(item.productId),
+          size: String(item.size || "").toUpperCase(),
+          quantity: Math.max(1, Number(item.quantity) || 1),
+        })),
+      };
 
-      const whatsappUrl = `https://wa.me/6282118223784?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, "_blank");
-      setCheckoutInfo("✓ Pesanan dikirim ke WhatsApp. Tunggu konfirmasi dari tim.");
+      const { data } = await api.post("/store/orders", payload);
+      const orderCode = data?.data?.orderCode;
+      const whatsappLink = data?.data?.whatsappLink;
+
+      const selectedIndexSet = new Set([...selectedItems]);
+      const remainingItems = cartItems.filter((_, index) => !selectedIndexSet.has(index));
+      setCartItems(remainingItems);
+      setSelectedItems(new Set(remainingItems.map((_, i) => i)));
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(remainingItems));
+
+      setCheckoutInfo(
+        orderCode
+          ? `Pesanan ${orderCode} berhasil dibuat. Lanjutkan konfirmasi via WhatsApp. Estimasi pre-order 5 hari kerja.`
+          : "Pesanan berhasil dibuat. Lanjutkan konfirmasi via WhatsApp. Estimasi pre-order 5 hari kerja.",
+      );
+
+      if (whatsappLink) {
+        window.open(whatsappLink, "_blank", "noopener,noreferrer");
+      }
+    } catch (error) {
+      const message =
+        error?.response?.data?.errors?.[0]?.msg
+        || error?.response?.data?.message
+        || "Checkout gagal. Silakan coba lagi.";
+      setCheckoutError(message);
     } finally {
       setIsSubmittingOrder(false);
     }
@@ -429,7 +460,7 @@ function CartPage() {
           >
             <h4 className="font-bold text-brand-900 dark:text-white">Lengkapi Data Checkout</h4>
             <p className="text-xs text-brand-600 dark:text-brand-400">
-              Setelah cek produk di keranjang, isi data pemesan untuk lanjut pesan via WhatsApp.
+              Setelah cek produk di keranjang, isi data pemesan untuk simpan order lalu lanjut konfirmasi via WhatsApp.
             </p>
 
             <div className="space-y-3">
@@ -496,8 +527,17 @@ function CartPage() {
               disabled={isSubmittingOrder || selectedItemsList.length === 0}
               className="w-full bg-primary px-4 py-2.5 rounded-lg text-white font-semibold transition hover:bg-primary/90 disabled:opacity-50"
             >
-              {isSubmittingOrder ? "Processing..." : "Pesan via WhatsApp"}
+              {isSubmittingOrder ? "Processing..." : "Checkout & Konfirmasi WhatsApp"}
             </button>
+
+            {user && (
+              <Link
+                to="/my-orders"
+                className="inline-flex w-full items-center justify-center rounded-lg border border-brand-300 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+              >
+                Lihat Pesanan Saya
+              </Link>
+            )}
           </div>
         </section>
 

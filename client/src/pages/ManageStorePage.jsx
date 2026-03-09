@@ -20,21 +20,7 @@ const API_BASE =
   import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") ||
   "http://localhost:5000";
 
-const initialProductForm = {
-  name: "",
-  slug: "",
-  description: "",
-  verse: "",
-  color: "",
-  basePrice: 0,
-  stock: 0,
-  sizesText: "S, M, L, XL, XXL",
-  promoType: "none",
-  promoValue: 0,
-  promoStartAt: "",
-  promoEndAt: "",
-  isActive: true,
-};
+const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"];
 
 function formatRupiah(amount) {
   return new Intl.NumberFormat("id-ID", {
@@ -85,10 +71,51 @@ function toLocalDatetimeInput(value) {
 }
 
 function normalizeSizePayload(text) {
-  return String(text || "")
+  const parsed = String(text || "")
     .split(",")
     .map((item) => item.trim().toUpperCase())
     .filter(Boolean);
+  return parsed.length > 0 ? parsed : [...DEFAULT_SIZES];
+}
+
+function normalizeStockBySizeMap(stockBySize, sizes = DEFAULT_SIZES) {
+  const source = stockBySize && typeof stockBySize === "object" && !Array.isArray(stockBySize)
+    ? stockBySize
+    : {};
+
+  return sizes.reduce((accumulator, size) => {
+    const normalizedSize = String(size || "").trim().toUpperCase();
+    if (!normalizedSize) return accumulator;
+
+    const matchedKey = Object.keys(source).find(
+      (key) => String(key).trim().toUpperCase() === normalizedSize,
+    );
+    const rawValue = matchedKey ? source[matchedKey] : 0;
+    accumulator[normalizedSize] = Math.max(0, Number(rawValue) || 0);
+    return accumulator;
+  }, {});
+}
+
+function sumStockBySize(stockBySize = {}) {
+  return Object.values(stockBySize).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
+}
+
+function createInitialProductForm() {
+  return {
+    name: "",
+    slug: "",
+    description: "",
+    verse: "",
+    color: "",
+    basePrice: 0,
+    sizesText: DEFAULT_SIZES.join(", "),
+    stockBySize: normalizeStockBySizeMap({}, DEFAULT_SIZES),
+    promoType: "none",
+    promoValue: 0,
+    promoStartAt: "",
+    promoEndAt: "",
+    isActive: true,
+  };
 }
 
 function resolveImageUrl(src) {
@@ -102,7 +129,7 @@ function ManageStorePage() {
   const [activeTab, setActiveTab] = useState("produk");
 
   // ── Product State ──────────────────────────
-  const [productForm, setProductForm] = useState(initialProductForm);
+  const [productForm, setProductForm] = useState(() => createInitialProductForm());
   const [editingProductId, setEditingProductId] = useState(null);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -220,6 +247,21 @@ function ManageStorePage() {
     ];
   }, [analytics]);
 
+  const productFormSizes = useMemo(
+    () => normalizeSizePayload(productForm.sizesText),
+    [productForm.sizesText],
+  );
+
+  const productFormStockBySize = useMemo(
+    () => normalizeStockBySizeMap(productForm.stockBySize, productFormSizes),
+    [productForm.stockBySize, productFormSizes],
+  );
+
+  const productFormTotalStock = useMemo(
+    () => sumStockBySize(productFormStockBySize),
+    [productFormStockBySize],
+  );
+
   // ── Image helpers ────────────────────────────
   const clearImages = () => {
     imagePreviews.forEach((url) => {
@@ -266,11 +308,16 @@ function ManageStorePage() {
   // ── Product form ─────────────────────────────
   const resetProductForm = () => {
     setEditingProductId(null);
-    setProductForm(initialProductForm);
+    setProductForm(createInitialProductForm());
     clearImages();
   };
 
   const fillProductForm = (product) => {
+    const sizes = Array.isArray(product.sizes) && product.sizes.length > 0
+      ? product.sizes.map((size) => String(size).toUpperCase())
+      : [...DEFAULT_SIZES];
+    const stockBySize = normalizeStockBySizeMap(product.stockBySize, sizes);
+
     setEditingProductId(product.id);
     setProductForm({
       name: product.name || "",
@@ -279,8 +326,8 @@ function ManageStorePage() {
       verse: product.verse || "",
       color: product.color || "",
       basePrice: product.basePrice || 0,
-      stock: product.stock || 0,
-      sizesText: Array.isArray(product.sizes) ? product.sizes.join(", ") : "S, M, L, XL, XXL",
+      sizesText: sizes.join(", "),
+      stockBySize,
       promoType: product.promoType || "none",
       promoValue: product.promoValue || 0,
       promoStartAt: toLocalDatetimeInput(product.promoStartAt),
@@ -298,9 +345,33 @@ function ManageStorePage() {
   };
 
   const handleProductFormChange = (field, value) => {
+    setProductForm((previous) => {
+      if (field === "sizesText") {
+        const sizes = normalizeSizePayload(value);
+        return {
+          ...previous,
+          sizesText: value,
+          stockBySize: normalizeStockBySizeMap(previous.stockBySize, sizes),
+        };
+      }
+
+      return {
+        ...previous,
+        [field]: value,
+      };
+    });
+  };
+
+  const handleStockBySizeChange = (size, value) => {
+    const normalizedSize = String(size || "").trim().toUpperCase();
+    if (!normalizedSize) return;
+
     setProductForm((previous) => ({
       ...previous,
-      [field]: value,
+      stockBySize: {
+        ...(previous.stockBySize || {}),
+        [normalizedSize]: Math.max(0, Number(value) || 0),
+      },
     }));
   };
 
@@ -316,7 +387,9 @@ function ManageStorePage() {
       return;
     }
 
-    const sizes = normalizeSizePayload(productForm.sizesText);
+    const sizes = productFormSizes;
+    const stockBySize = normalizeStockBySizeMap(productForm.stockBySize, sizes);
+    const totalStock = sumStockBySize(stockBySize);
 
     const formData = new FormData();
     formData.append("name", productForm.name);
@@ -325,7 +398,8 @@ function ManageStorePage() {
     formData.append("verse", productForm.verse);
     formData.append("color", productForm.color);
     formData.append("basePrice", String(Number(productForm.basePrice) || 0));
-    formData.append("stock", String(Number(productForm.stock) || 0));
+    formData.append("stock", String(totalStock));
+    formData.append("stockBySize", JSON.stringify(stockBySize));
     sizes.forEach((s) => formData.append("sizes", s));
     formData.append("promoType", productForm.promoType);
     formData.append(
@@ -685,18 +759,6 @@ function ManageStorePage() {
                 onChange={(event) => handleProductFormChange("basePrice", event.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Stok
-              </label>
-              <input
-                type="number"
-                min="0"
-                className="input-modern"
-                value={productForm.stock}
-                onChange={(event) => handleProductFormChange("stock", event.target.value)}
-              />
-            </div>
             <div className="space-y-1.5 md:col-span-2">
               <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                 Ukuran (pisahkan koma)
@@ -707,6 +769,35 @@ function ManageStorePage() {
                 onChange={(event) => handleProductFormChange("sizesText", event.target.value)}
                 placeholder="S, M, L, XL, XXL"
               />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                  Stok per Ukuran
+                </label>
+                <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">
+                  Total stok: {productFormTotalStock}
+                </span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4">
+                {productFormSizes.map((size) => (
+                  <label
+                    key={size}
+                    className="rounded-xl border border-brand-200 bg-white/70 p-2 text-xs dark:border-brand-700 dark:bg-brand-900/45"
+                  >
+                    <span className="mb-1 block font-semibold text-brand-700 dark:text-brand-300">
+                      {size}
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input-modern !py-2 !text-sm"
+                      value={productFormStockBySize[size] ?? 0}
+                      onChange={(event) => handleStockBySizeChange(size, event.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -880,6 +971,13 @@ function ManageStorePage() {
                     <span>Size: {Array.isArray(product.sizes) ? product.sizes.join("/") : "-"}</span>
                     <span>Foto: {Array.isArray(product.imageUrls) ? product.imageUrls.length : 0}</span>
                   </div>
+                  {product.stockBySize && (
+                    <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                      Stok per ukuran: {Object.entries(product.stockBySize)
+                        .map(([size, qty]) => `${String(size).toUpperCase()}=${Number(qty) || 0}`)
+                        .join(" • ")}
+                    </p>
+                  )}
                   {product.promoIsActive && (
                     <p className="mt-1 text-xs font-semibold text-primary">
                       Promo aktif: {product.promoLabel}
@@ -975,6 +1073,11 @@ function ManageStorePage() {
                       <p className="text-xs text-brand-500 dark:text-brand-400">
                         {order.customerName} • {order.customerPhone}
                       </p>
+                      {order.user?.email && (
+                        <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                          Akun: {order.user.email}
+                        </p>
+                      )}
                     </div>
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>
                       {mapOrderStatusLabel(order.status)}
@@ -986,6 +1089,9 @@ function ManageStorePage() {
                   </div>
                   <div className="mt-1 text-xs font-semibold text-primary">
                     Total: {formatRupiah(order.totalAmount)}
+                  </div>
+                  <div className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">
+                    Potong stok: {order.stockDeductedAt ? `Sudah (${formatDateTime(order.stockDeductedAt)})` : "Belum"}
                   </div>
                   {Array.isArray(order.items) && order.items.length > 0 && (
                     <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">

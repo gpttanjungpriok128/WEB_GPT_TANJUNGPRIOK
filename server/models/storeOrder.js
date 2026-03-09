@@ -12,6 +12,9 @@ const StoreOrder = sequelize.define('StoreOrder', {
     allowNull: false,
     unique: true
   },
+  userId: {
+    type: DataTypes.INTEGER
+  },
   customerName: {
     type: DataTypes.STRING,
     allowNull: false
@@ -59,6 +62,9 @@ const StoreOrder = sequelize.define('StoreOrder', {
     type: DataTypes.STRING,
     allowNull: false,
     defaultValue: 'whatsapp'
+  },
+  stockDeductedAt: {
+    type: DataTypes.DATE
   },
   whatsappMessage: {
     type: DataTypes.TEXT

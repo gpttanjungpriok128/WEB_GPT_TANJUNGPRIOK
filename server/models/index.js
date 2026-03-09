@@ -21,6 +21,8 @@ User.hasMany(StoreProduct, { foreignKey: 'createdBy', as: 'createdStoreProducts'
 User.hasMany(StoreProduct, { foreignKey: 'updatedBy', as: 'updatedStoreProducts' });
 StoreProduct.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 StoreProduct.belongsTo(User, { foreignKey: 'updatedBy', as: 'updater' });
+User.hasMany(StoreOrder, { foreignKey: 'userId', as: 'storeOrders' });
+StoreOrder.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 StoreOrder.hasMany(StoreOrderItem, { foreignKey: 'orderId', as: 'items' });
 StoreOrderItem.belongsTo(StoreOrder, { foreignKey: 'orderId', as: 'order' });
 StoreProduct.hasMany(StoreOrderItem, { foreignKey: 'productId', as: 'orderItems' });

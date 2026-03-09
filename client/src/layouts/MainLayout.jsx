@@ -42,6 +42,7 @@ function MainLayout({ children }) {
     { to: "/articles", label: "Renungan" },
     { to: "/gallery", label: "Galeri" },
     { to: "/shop", label: "Toko" },
+    ...(user ? [{ to: "/my-orders", label: "Pesanan Saya" }] : []),
     ...(user ? [{ to: "/live", label: "Live" }, { to: "/prayer", label: "Doa" }] : []),
     ...(user && ["admin", "jemaat"].includes(user.role)
       ? [{ to: "/dashboard/congregation", label: "Data Jemaat" }]

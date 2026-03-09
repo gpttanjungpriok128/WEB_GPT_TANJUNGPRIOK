@@ -64,6 +64,11 @@ const StoreProduct = sequelize.define('StoreProduct', {
     allowNull: false,
     defaultValue: 0
   },
+  stockBySize: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     allowNull: false,

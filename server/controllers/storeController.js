@@ -6,7 +6,8 @@ const {
   StoreProduct,
   StoreOrder,
   StoreOrderItem,
-  StoreSetting
+  StoreSetting,
+  User
 } = require('../models');
 
 const DEFAULT_SHIPPING_COST = 15000;
@@ -119,6 +120,94 @@ function normalizeSizes(value) {
   return unique.length ? unique : fallback;
 }
 
+function parseStockBySizeInput(value) {
+  if (value === undefined || value === null || value === '') return null;
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value;
+  }
+
+  return null;
+}
+
+function distributeStockBySize(totalStock, sizes) {
+  const safeSizes = normalizeSizes(sizes);
+  const safeTotal = Math.max(0, Number(totalStock) || 0);
+  const perSize = safeSizes.length > 0 ? Math.floor(safeTotal / safeSizes.length) : 0;
+  let remainder = safeSizes.length > 0 ? safeTotal % safeSizes.length : 0;
+
+  return safeSizes.reduce((accumulator, size) => {
+    const extra = remainder > 0 ? 1 : 0;
+    if (remainder > 0) remainder -= 1;
+    accumulator[size] = perSize + extra;
+    return accumulator;
+  }, {});
+}
+
+function normalizeStockBySize(stockBySizeValue, sizes, fallbackStock = 0) {
+  const safeSizes = normalizeSizes(sizes);
+  const source = parseStockBySizeInput(stockBySizeValue);
+
+  if (!source) {
+    return distributeStockBySize(fallbackStock, safeSizes);
+  }
+
+  const normalized = {};
+  for (const size of safeSizes) {
+    const matchedKey = Object.keys(source).find((key) => key.toUpperCase() === size);
+    normalized[size] = Math.max(0, toInteger(matchedKey ? source[matchedKey] : 0, 0));
+  }
+
+  return normalized;
+}
+
+function totalStockFromMap(stockBySize = {}) {
+  return Object.values(stockBySize).reduce(
+    (total, qty) => total + Math.max(0, toInteger(qty, 0)),
+    0
+  );
+}
+
+function getProductStockInfo(product) {
+  const sizes = normalizeSizes(product?.sizes);
+  const stockBySize = normalizeStockBySize(
+    product?.stockBySize,
+    sizes,
+    Number(product?.stock) || 0
+  );
+  const totalStock = totalStockFromMap(stockBySize);
+
+  return { sizes, stockBySize, totalStock };
+}
+
+function subtractStockBySize(currentStockBySize, deductionsBySize, sizes) {
+  const safeSizes = normalizeSizes(sizes);
+  const nextStockBySize = { ...currentStockBySize };
+
+  for (const size of safeSizes) {
+    const currentQty = Math.max(0, toInteger(nextStockBySize[size], 0));
+    const deductionQty = Math.max(0, toInteger(deductionsBySize[size], 0));
+    nextStockBySize[size] = Math.max(0, currentQty - deductionQty);
+  }
+
+  return {
+    stockBySize: nextStockBySize,
+    stock: totalStockFromMap(nextStockBySize)
+  };
+}
+
 function toInteger(value, defaultValue = 0) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : defaultValue;
@@ -199,6 +288,7 @@ function formatRupiah(value) {
 function serializeProduct(product) {
   const pricing = calculateProductPricing(product);
   const imageUrls = normalizeProductImages(product);
+  const { sizes, stockBySize, totalStock } = getProductStockInfo(product);
 
   return {
     id: product.id,
@@ -218,8 +308,9 @@ function serializeProduct(product) {
     promoEndAt: product.promoEndAt,
     promoIsActive: pricing.promoIsActive,
     promoLabel: pricing.promoLabel,
-    sizes: normalizeSizes(product.sizes),
-    stock: Number(product.stock) || 0,
+    sizes,
+    stockBySize,
+    stock: totalStock,
     isActive: Boolean(product.isActive),
     createdAt: product.createdAt,
     updatedAt: product.updatedAt
@@ -300,6 +391,32 @@ function buildProductPayload(body = {}, userId, options = {}) {
   payload.updatedBy = userId;
 
   return payload;
+}
+
+function applyStockConfiguration(payload, body = {}, existingProduct = null) {
+  const sizes = normalizeSizes(payload.sizes ?? existingProduct?.sizes);
+  const hasStockBySize = body.stockBySize !== undefined;
+  const hasStock = payload.stock !== undefined;
+
+  let stockBySize = null;
+
+  if (hasStockBySize) {
+    stockBySize = normalizeStockBySize(body.stockBySize, sizes, 0);
+  } else if (hasStock) {
+    stockBySize = distributeStockBySize(payload.stock, sizes);
+  } else if (existingProduct) {
+    stockBySize = normalizeStockBySize(
+      existingProduct.stockBySize,
+      sizes,
+      Number(existingProduct.stock) || 0
+    );
+  } else {
+    stockBySize = distributeStockBySize(0, sizes);
+  }
+
+  payload.sizes = sizes;
+  payload.stockBySize = stockBySize;
+  payload.stock = totalStockFromMap(stockBySize);
 }
 
 async function ensureUniqueSlug(slug, excludeId = null) {
@@ -456,25 +573,11 @@ async function createOrder(req, res, next) {
       return res.status(400).json({ message: 'Sebagian produk tidak tersedia atau sudah nonaktif' });
     }
 
-    const qtyByProductId = normalizedItems.reduce((accumulator, item) => {
-      accumulator[item.productId] = (accumulator[item.productId] || 0) + item.quantity;
+    const qtyByVariant = normalizedItems.reduce((accumulator, item) => {
+      const key = `${item.productId}:${item.size}`;
+      accumulator[key] = (accumulator[key] || 0) + item.quantity;
       return accumulator;
     }, {});
-
-    for (const [productId, totalRequestedQty] of Object.entries(qtyByProductId)) {
-      const product = productMap.get(Number(productId));
-      if (!product) continue;
-      if (Number(product.stock) <= 0) {
-        await transaction.rollback();
-        return res.status(400).json({ message: `Produk ${product.name} sedang habis` });
-      }
-      if (totalRequestedQty > Number(product.stock)) {
-        await transaction.rollback();
-        return res.status(400).json({
-          message: `Stok ${product.name} tidak mencukupi. Stok tersedia: ${product.stock}`
-        });
-      }
-    }
 
     let subtotal = 0;
     const orderItems = [];
@@ -483,11 +586,26 @@ async function createOrder(req, res, next) {
       const product = productMap.get(item.productId);
       if (!product) continue;
 
-      const productSizes = normalizeSizes(product.sizes);
-      if (!productSizes.includes(item.size)) {
+      const { sizes, stockBySize } = getProductStockInfo(product);
+      if (!sizes.includes(item.size)) {
         await transaction.rollback();
         return res.status(400).json({
           message: `Ukuran ${item.size} tidak tersedia untuk ${product.name}`
+        });
+      }
+
+      const requestedQty = qtyByVariant[`${item.productId}:${item.size}`] || 0;
+      const availableSizeStock = Math.max(0, toInteger(stockBySize[item.size], 0));
+      if (availableSizeStock <= 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: `Stok ${product.name} ukuran ${item.size} sedang habis`
+        });
+      }
+      if (requestedQty > availableSizeStock) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: `Stok ${product.name} ukuran ${item.size} tidak mencukupi. Tersedia: ${availableSizeStock}`
         });
       }
 
@@ -518,6 +636,7 @@ async function createOrder(req, res, next) {
     const orderCode = await generateOrderCode(transaction);
     const order = await StoreOrder.create({
       orderCode,
+      userId: req.user?.id || null,
       customerName: String(req.body.name || '').trim(),
       customerPhone: normalizePhone(req.body.phone),
       customerAddress: String(req.body.address || '').trim(),
@@ -528,21 +647,14 @@ async function createOrder(req, res, next) {
       shippingCost,
       totalAmount,
       status: 'new',
-      channel: 'whatsapp'
+      channel: 'whatsapp',
+      stockDeductedAt: null
     }, { transaction });
 
     await StoreOrderItem.bulkCreate(
       orderItems.map((item) => ({ ...item, orderId: order.id })),
       { transaction }
     );
-
-    for (const [productId, totalRequestedQty] of Object.entries(qtyByProductId)) {
-      await StoreProduct.decrement('stock', {
-        by: totalRequestedQty,
-        where: { id: Number(productId) },
-        transaction
-      });
-    }
 
     const whatsappMessage = buildWhatsappMessage(order, orderItems);
     await order.update({ whatsappMessage }, { transaction });
@@ -559,6 +671,7 @@ async function createOrder(req, res, next) {
         shippingCost: order.shippingCost,
         totalAmount: order.totalAmount,
         status: order.status,
+        stockDeductedAt: order.stockDeductedAt,
         whatsappLink
       }
     });
@@ -609,6 +722,7 @@ async function createAdminProduct(req, res, next) {
     }
 
     const payload = buildProductPayload(req.body, req.user.id);
+    applyStockConfiguration(payload, req.body);
     if (!payload.slug) {
       await removeImageFiles(uploadedPaths);
       return res.status(400).json({ message: 'Slug produk tidak valid' });
@@ -647,6 +761,7 @@ async function updateAdminProduct(req, res, next) {
 
     const oldImages = normalizeProductImages(product);
     const payload = buildProductPayload(req.body, req.user.id, { partial: true });
+    applyStockConfiguration(payload, req.body, product);
 
     if (payload.slug) {
       const slugUnique = await ensureUniqueSlug(payload.slug, product.id);
@@ -716,6 +831,48 @@ async function getAdminOrders(req, res, next) {
 
     const { rows, count } = await StoreOrder.findAndCountAll({
       where,
+      include: [
+        { model: StoreOrderItem, as: 'items' },
+        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'role'] }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
+
+    return res.status(200).json({
+      data: rows,
+      meta: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.max(1, Math.ceil(count / limit))
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getMyOrders(req, res, next) {
+  try {
+    const page = Math.max(1, toInteger(req.query.page, 1));
+    const limit = Math.min(50, Math.max(1, toInteger(req.query.limit, 12)));
+    const offset = (page - 1) * limit;
+
+    const where = { userId: req.user.id };
+    const search = String(req.query.search || '').trim();
+
+    if (search) {
+      where[Op.or] = [
+        { orderCode: { [Op.iLike]: `%${search}%` } },
+        { customerName: { [Op.iLike]: `%${search}%` } },
+        { customerPhone: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const { rows, count } = await StoreOrder.findAndCountAll({
+      where,
       include: [{ model: StoreOrderItem, as: 'items' }],
       order: [['createdAt', 'DESC']],
       limit,
@@ -737,23 +894,106 @@ async function getAdminOrders(req, res, next) {
 }
 
 async function updateAdminOrderStatus(req, res, next) {
+  const transaction = await sequelize.transaction();
+
   try {
-    const order = await StoreOrder.findByPk(req.params.id);
+    const order = await StoreOrder.findByPk(req.params.id, {
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
     if (!order) {
+      await transaction.rollback();
       return res.status(404).json({ message: 'Order tidak ditemukan' });
     }
 
     const status = String(req.body.status || '').trim();
     if (!ORDER_STATUSES.includes(status)) {
+      await transaction.rollback();
       return res.status(400).json({ message: 'Status order tidak valid' });
     }
 
-    await order.update({ status });
+    const updatePayload = { status };
+
+    if (status === 'confirmed' && !order.stockDeductedAt) {
+      const orderWithItems = await StoreOrder.findByPk(order.id, {
+        include: [{ model: StoreOrderItem, as: 'items' }],
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+
+      const orderItems = Array.isArray(orderWithItems?.items) ? orderWithItems.items : [];
+      if (!orderItems.length) {
+        await transaction.rollback();
+        return res.status(400).json({ message: 'Order tidak memiliki item untuk dikonfirmasi' });
+      }
+
+      const productIds = [...new Set(orderItems.map((item) => item.productId).filter(Boolean))];
+      const products = await StoreProduct.findAll({
+        where: { id: productIds },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+      const productMap = new Map(products.map((product) => [product.id, product]));
+
+      const deductionMap = {};
+      for (const item of orderItems) {
+        if (!item.productId) continue;
+        if (!deductionMap[item.productId]) {
+          deductionMap[item.productId] = {};
+        }
+        const size = String(item.size || '').trim().toUpperCase();
+        deductionMap[item.productId][size] = (deductionMap[item.productId][size] || 0) + (Number(item.quantity) || 0);
+      }
+
+      for (const [productIdText, deductionBySize] of Object.entries(deductionMap)) {
+        const productId = Number(productIdText);
+        const product = productMap.get(productId);
+        if (!product) {
+          await transaction.rollback();
+          return res.status(400).json({ message: 'Produk pada order sudah tidak ditemukan' });
+        }
+
+        const { sizes, stockBySize } = getProductStockInfo(product);
+
+        for (const [size, deductionQty] of Object.entries(deductionBySize)) {
+          if (!sizes.includes(size)) {
+            await transaction.rollback();
+            return res.status(400).json({
+              message: `Ukuran ${size} untuk ${product.name} tidak tersedia`
+            });
+          }
+
+          const currentSizeStock = Math.max(0, toInteger(stockBySize[size], 0));
+          if (deductionQty > currentSizeStock) {
+            await transaction.rollback();
+            return res.status(400).json({
+              message: `Stok ${product.name} ukuran ${size} tidak mencukupi untuk konfirmasi`
+            });
+          }
+        }
+
+        const nextStock = subtractStockBySize(stockBySize, deductionBySize, sizes);
+        await product.update(
+          {
+            stockBySize: nextStock.stockBySize,
+            stock: nextStock.stock
+          },
+          { transaction }
+        );
+      }
+
+      updatePayload.stockDeductedAt = new Date();
+    }
+
+    await order.update(updatePayload, { transaction });
+    await transaction.commit();
+
     return res.status(200).json({
       message: 'Status order berhasil diperbarui',
       data: order
     });
   } catch (error) {
+    await transaction.rollback();
     return next(error);
   }
 }
@@ -901,6 +1141,7 @@ module.exports = {
   getPublicProducts,
   getPublicProductBySlug,
   createOrder,
+  getMyOrders,
   getAdminProducts,
   createAdminProduct,
   updateAdminProduct,
