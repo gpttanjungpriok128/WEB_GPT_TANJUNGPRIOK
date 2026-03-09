@@ -2,23 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
+import StoreOrderProgress from "../components/StoreOrderProgress";
 import heroImage from "../img/store/you-are-the-light.png";
-
-const ORDER_STATUS_LABEL = {
-  new: "Belum Dikonfirmasi",
-  confirmed: "Dikonfirmasi",
-  packed: "Sedang Dikemas",
-  completed: "Selesai",
-  cancelled: "Dibatalkan",
-};
-
-const ORDER_STATUS_BADGE = {
-  new: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  confirmed: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  packed: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
-  completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-  cancelled: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
-};
+import { ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
 
 function formatRupiah(amount) {
   return new Intl.NumberFormat("id-ID", {
@@ -177,12 +163,9 @@ function MyOrdersPage() {
                   </div>
                 )}
 
-                <p className="mt-3 text-xs text-brand-500 dark:text-brand-400">
-                  Konfirmasi admin:{" "}
-                  <span className="font-semibold text-brand-700 dark:text-brand-300">
-                    {order.status === "new" ? "Belum" : "Sudah / Sedang diproses"}
-                  </span>
-                </p>
+                <div className="mt-4">
+                  <StoreOrderProgress status={order.status} />
+                </div>
               </article>
             ))}
           </section>

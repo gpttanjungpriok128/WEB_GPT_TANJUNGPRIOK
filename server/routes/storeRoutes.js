@@ -4,6 +4,7 @@ const {
   getPublicProductBySlug,
   createOrder,
   getMyOrders,
+  trackPublicOrder,
   getAdminProducts,
   createAdminProduct,
   updateAdminProduct,
@@ -30,6 +31,7 @@ const router = express.Router();
 router.get('/products', getPublicProducts);
 router.get('/products/:slug', getPublicProductBySlug);
 router.post('/orders', optionalAuthenticate, createOrderValidation, validate, createOrder);
+router.get('/orders/track', trackPublicOrder);
 router.get('/my-orders', authenticate, getMyOrders);
 
 router.get('/admin/products', authenticate, authorizeRoles('admin'), getAdminProducts);

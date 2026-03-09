@@ -317,6 +317,41 @@ function serializeProduct(product) {
   };
 }
 
+function serializeCustomerOrder(order) {
+  return {
+    id: order.id,
+    orderCode: order.orderCode,
+    customerName: order.customerName,
+    customerPhone: order.customerPhone,
+    customerAddress: order.customerAddress,
+    shippingMethod: order.shippingMethod,
+    paymentMethod: order.paymentMethod,
+    notes: order.notes || '',
+    subtotal: Number(order.subtotal) || 0,
+    shippingCost: Number(order.shippingCost) || 0,
+    totalAmount: Number(order.totalAmount) || 0,
+    status: order.status,
+    channel: order.channel,
+    stockDeductedAt: order.stockDeductedAt,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    items: Array.isArray(order.items)
+      ? order.items.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        productSlug: item.productSlug,
+        size: item.size,
+        color: item.color || '',
+        unitPrice: Number(item.unitPrice) || 0,
+        quantity: Number(item.quantity) || 0,
+        lineTotal: Number(item.lineTotal) || 0,
+        promoLabel: item.promoLabel || ''
+      }))
+      : []
+  };
+}
+
 function buildProductPayload(body = {}, userId, options = {}) {
   const { partial = false } = options;
   const payload = {};
@@ -880,13 +915,48 @@ async function getMyOrders(req, res, next) {
     });
 
     return res.status(200).json({
-      data: rows,
+      data: rows.map(serializeCustomerOrder),
       meta: {
         page,
         limit,
         total: count,
         totalPages: Math.max(1, Math.ceil(count / limit))
       }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function trackPublicOrder(req, res, next) {
+  try {
+    const orderCode = String(req.query.orderCode || '').trim();
+    const customerPhone = normalizePhone(req.query.phone);
+
+    if (!orderCode) {
+      return res.status(400).json({ message: 'Kode pesanan wajib diisi' });
+    }
+
+    if (!customerPhone) {
+      return res.status(400).json({ message: 'Nomor WhatsApp wajib diisi' });
+    }
+
+    const order = await StoreOrder.findOne({
+      where: {
+        orderCode: { [Op.iLike]: orderCode },
+        customerPhone
+      },
+      include: [{ model: StoreOrderItem, as: 'items' }]
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: 'Pesanan tidak ditemukan. Pastikan kode pesanan dan nomor WhatsApp sesuai.'
+      });
+    }
+
+    return res.status(200).json({
+      data: serializeCustomerOrder(order)
     });
   } catch (error) {
     return next(error);
@@ -1142,6 +1212,7 @@ module.exports = {
   getPublicProductBySlug,
   createOrder,
   getMyOrders,
+  trackPublicOrder,
   getAdminProducts,
   createAdminProduct,
   updateAdminProduct,

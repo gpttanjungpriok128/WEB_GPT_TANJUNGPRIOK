@@ -12,6 +12,7 @@ import {
 import { clampQuantity, getStockForSize } from "../utils/storeStock";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
+const TRACKING_STORAGE_KEY = "gpt_tanjungpriok_last_order_tracking_v1";
 const DEFAULT_SHIPPING_COST = 15000;
 
 const formatRupiah = (amount) =>
@@ -53,6 +54,7 @@ function CartPage() {
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutInfo, setCheckoutInfo] = useState("");
+  const [latestOrderCode, setLatestOrderCode] = useState("");
   const [checkoutForm, setCheckoutForm] = useState({
     name: "",
     phone: "",
@@ -234,6 +236,14 @@ function CartPage() {
         orderCode
           ? `Pesanan ${orderCode} berhasil dibuat. Lanjutkan konfirmasi via WhatsApp. Estimasi pre-order 5 hari kerja.`
           : "Pesanan berhasil dibuat. Lanjutkan konfirmasi via WhatsApp. Estimasi pre-order 5 hari kerja.",
+      );
+      setLatestOrderCode(orderCode || "");
+      window.localStorage.setItem(
+        TRACKING_STORAGE_KEY,
+        JSON.stringify({
+          orderCode: orderCode || "",
+          phone: checkoutForm.phone.trim(),
+        }),
       );
 
       if (whatsappLink) {
@@ -536,6 +546,15 @@ function CartPage() {
                 className="inline-flex w-full items-center justify-center rounded-lg border border-brand-300 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
               >
                 Lihat Pesanan Saya
+              </Link>
+            )}
+
+            {latestOrderCode && (
+              <Link
+                to={`/track-order?orderCode=${encodeURIComponent(latestOrderCode)}`}
+                className="inline-flex w-full items-center justify-center rounded-lg border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-primary/15"
+              >
+                Lacak Status Pesanan
               </Link>
             )}
           </div>
