@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
 import worshipSmokeImage from "../img/store/MADE TO WORSHIP.png";
@@ -125,6 +125,7 @@ function resolveImageUrl(imageUrl) {
 }
 
 function ShopPage() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState(FALLBACK_PRODUCTS);
   const [selections, setSelections] = useState({});
   const [cartItems, setCartItems] = useState([]);
@@ -134,9 +135,6 @@ function ShopPage() {
   const [lastAddedProduct, setLastAddedProduct] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutInfo, setCheckoutInfo] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [showCartDrawer, setShowCartDrawer] = useState(false);
-  const [showInvoice, setShowInvoice] = useState(false);
   const [checkoutForm, setCheckoutForm] = useState({
     name: "",
     phone: "",
@@ -436,9 +434,9 @@ function ShopPage() {
             </p>
           </div>
           <button
-            onClick={() => setShowCartDrawer(true)}
             className="relative rounded-full bg-primary/20 p-3 text-primary transition hover:bg-primary/30 dark:bg-primary/30 dark:hover:bg-primary/40"
             title="Buka keranjang belanja"
+            disabled={true}
           >
             <svg
               className="h-6 w-6"
@@ -473,19 +471,15 @@ function ShopPage() {
         ) : (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => {
-              const selection = selections[product.id] || {
-                size: product.sizes?.[0] || "M",
-                quantity: 1,
-              };
               const effectivePrice = Number(
                 product.finalPrice ?? product.basePrice ?? 0,
               );
 
               return (
-                <article
+                <Link
                   key={product.id}
-                  className="group cursor-pointer overflow-hidden rounded-3xl border border-brand-200 bg-white/90 shadow-sm transition hover:shadow-lg hover:border-primary dark:border-brand-700 dark:bg-brand-900/70"
-                  onClick={() => setSelectedProduct(product)}
+                  to={`/shop/${product.slug}`}
+                  className="group overflow-hidden rounded-3xl border border-brand-200 bg-white/90 shadow-sm transition hover:shadow-lg hover:border-primary dark:border-brand-700 dark:bg-brand-900/70"
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-brand-100/60 dark:bg-brand-800/30 relative">
                     <img
@@ -551,428 +545,23 @@ function ShopPage() {
                       </span>
                     </p>
                   </div>
-                </article>
+                </Link>
               );
             })}
           </div>
         )}
       </section>
 
-      {/* ── Product Detail Modal ──────────────────── */}
-      {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full md:max-w-2xl rounded-t-3xl md:rounded-3xl bg-white dark:bg-brand-950 shadow-xl">
-            <div className="sticky top-0 flex items-center justify-between border-b border-brand-200 bg-white dark:border-brand-700 dark:bg-brand-900/50 p-5 md:p-6">
-              <h2 className="text-xl font-bold text-brand-900 dark:text-white line-clamp-1">
-                Detail Produk
-              </h2>
-              <button
-                onClick={() => setSelectedProduct(null)}
-                className="text-brand-500 transition hover:text-brand-900 dark:text-brand-400 dark:hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-6 p-5 md:p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-              <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-brand-100 dark:bg-brand-800">
-                <img
-                  src={resolveImageUrl(selectedProduct.imageUrl)}
-                  alt={selectedProduct.name}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-                    {selectedProduct.verse || "GTshirt"}
-                  </p>
-                  <h1 className="mt-1 text-2xl font-bold text-brand-900 dark:text-white">
-                    {selectedProduct.name}
-                  </h1>
-                </div>
-
-                <p className="text-sm leading-relaxed text-brand-600 dark:text-brand-300">
-                  {selectedProduct.description ||
-                    "Kaos rohani minimalist streetwear."}
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  {selectedProduct.promoIsActive &&
-                  Number(selectedProduct.discountAmount) > 0 ? (
-                    <>
-                      <p className="text-sm text-brand-500 line-through dark:text-brand-400">
-                        {formatRupiah(Number(selectedProduct.basePrice) || 0)}
-                      </p>
-                      <span className="text-2xl font-black text-primary">
-                        {formatRupiah(
-                          Number(
-                            selectedProduct.finalPrice ??
-                              selectedProduct.basePrice ??
-                              0,
-                          ),
-                        )}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-2xl font-black text-primary">
-                      {formatRupiah(
-                        Number(
-                          selectedProduct.finalPrice ??
-                            selectedProduct.basePrice ??
-                            0,
-                        ),
-                      )}
-                    </span>
-                  )}
-                  <span className="rounded-lg border border-brand-200 px-3 py-1 text-xs font-semibold text-brand-600 dark:border-brand-700 dark:text-brand-300">
-                    {selectedProduct.color || "-"}
-                  </span>
-                </div>
-
-                {selectedProduct.promoIsActive && (
-                  <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300">
-                    {selectedProduct.promoLabel || "Promo aktif"}
-                  </p>
-                )}
-
-                <div className="space-y-2 rounded-xl border border-brand-200 bg-brand-50/80 p-3 dark:border-brand-700 dark:bg-brand-900/30">
-                  <p className="text-xs font-semibold text-brand-600 dark:text-brand-300">
-                    Informasi Produk:
-                  </p>
-                  <ul className="space-y-1 text-xs text-brand-600 dark:text-brand-300">
-                    <li>🎨 Warna: {selectedProduct.color || "-"}</li>
-                    <li>
-                      📏 Ukuran:{" "}
-                      {selectedProduct.sizes?.join(", ") || "S, M, L, XL, XXL"}
-                    </li>
-                    <li>📦 Stok: {selectedProduct.stock ?? 0} pcs</li>
-                    <li>✝️ Ayat: {selectedProduct.verse || "-"}</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="sticky bottom-0 space-y-3 border-t border-brand-200 bg-white pt-4 dark:border-brand-700 dark:bg-brand-950">
-                <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
-                  <select
-                    className="input-modern !py-3"
-                    value={
-                      selections[selectedProduct.id]?.size ||
-                      selectedProduct.sizes?.[0] ||
-                      "M"
-                    }
-                    onChange={(event) =>
-                      updateSelection(
-                        selectedProduct.id,
-                        "size",
-                        event.target.value,
-                      )
-                    }
-                  >
-                    {(selectedProduct.sizes || ["M"]).map((size) => (
-                      <option key={size} value={size}>
-                        Size {size}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min="1"
-                    max="20"
-                    className="input-modern !py-3"
-                    value={selections[selectedProduct.id]?.quantity || 1}
-                    onChange={(event) =>
-                      updateSelection(
-                        selectedProduct.id,
-                        "quantity",
-                        event.target.value,
-                      )
-                    }
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    addToCart(selectedProduct);
-                    setSelectedProduct(null);
-                  }}
-                  disabled={(Number(selectedProduct.stock) || 0) <= 0}
-                  className="btn-primary w-full !py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {(Number(selectedProduct.stock) || 0) <= 0
-                    ? "❌ Habis"
-                    : "✅ Tambah ke Keranjang"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
+      {/* ── Product Detail Page via Navigation ──────────────────── */}
+      {/* Detail produk sekarang ditampilkan di halaman terpisah: /shop/:slug */}
 
       {/* ── Cart Drawer Modal ──────────────────── */}
-      {showCartDrawer && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full md:max-w-2xl rounded-t-3xl md:rounded-3xl bg-white dark:bg-brand-950 shadow-xl max-h-[90vh] flex flex-col">
-            <div className="sticky top-0 flex items-center justify-between border-b border-brand-200 bg-white dark:border-brand-700 dark:bg-brand-900/50 p-5 md:p-6">
-              <h2 className="text-xl font-bold text-brand-900 dark:text-white">
-                {showInvoice ? "📄 Invoice Pesanan" : "🛒 Keranjang Belanja"}
-              </h2>
-              {cartItems.length > 0 && !showInvoice && (
-                <button
-                  type="button"
-                  onClick={clearCart}
-                  className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
-                >
-                  Kosongkan
-                </button>
-              )}
-              {showInvoice && (
-                <button
-                  type="button"
-                  onClick={() => setShowInvoice(false)}
-                  className="text-xs font-semibold text-brand-600 transition hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-200"
-                >
-                  ← Kembali
-                </button>
-              )}
-              {!showInvoice && (
-                <button
-                  onClick={() => setShowCartDrawer(false)}
-                  className="text-brand-500 transition hover:text-brand-900 dark:text-brand-400 dark:hover:text-white"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 md:p-6">
-              {showInvoice ? (
-                // Invoice View
-                cartItems.length === 0 ? (
-                  <div className="flex h-full items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-brand-600 dark:text-brand-400">
-                        Keranjang kosong
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="rounded-2xl border border-brand-200 bg-brand-50/80 p-4 dark:border-brand-700 dark:bg-brand-900/30">
-                      <p className="text-xs font-semibold text-brand-600 dark:text-brand-300">
-                        INVOICE PESANAN
-                      </p>
-                      <p className="mt-2 text-xs text-brand-500 dark:text-brand-400">
-                        {new Date().toLocaleDateString("id-ID", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h3 className="font-semibold text-brand-900 dark:text-white">
-                        📦 Detail Pesanan:
-                      </h3>
-                      {cartItems.map((item) => (
-                        <div
-                          key={item.variantKey}
-                          className="rounded-lg border border-brand-200 bg-white/50 p-3 dark:border-brand-700 dark:bg-brand-900/30"
-                        >
-                          <div className="flex gap-3">
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="h-16 w-16 rounded-lg object-cover"
-                            />
-                            <div className="flex-1">
-                              <p className="font-semibold text-brand-900 dark:text-white">
-                                {item.name}
-                              </p>
-                              <p className="text-xs text-brand-500 dark:text-brand-400">
-                                Size {item.size}
-                              </p>
-                              <p className="mt-1 text-sm font-semibold text-primary">
-                                {formatRupiah(item.price)}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xs text-brand-600 dark:text-brand-300">
-                                Qty: {item.quantity}
-                              </p>
-                              <p className="mt-1 font-bold text-brand-900 dark:text-white">
-                                {formatRupiah(item.price * item.quantity)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="rounded-xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-950/40 space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-brand-600 dark:text-brand-300">
-                          Subtotal
-                        </span>
-                        <span className="font-semibold text-brand-900 dark:text-white">
-                          {formatRupiah(subtotal)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-brand-600 dark:text-brand-300">
-                          Estimasi Ongkir ({checkoutForm.shippingMethod})
-                        </span>
-                        <span className="font-semibold text-brand-900 dark:text-white">
-                          {formatRupiah(shipping)}
-                        </span>
-                      </div>
-                      <div className="border-t border-brand-200 pt-2 dark:border-brand-700">
-                        <div className="flex items-center justify-between text-base font-bold">
-                          <span className="text-brand-900 dark:text-white">
-                            TOTAL
-                          </span>
-                          <span className="text-primary text-xl">
-                            {formatRupiah(grandTotal)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 dark:bg-blue-900/20 dark:border-blue-900/40">
-                      <p className="text-xs text-blue-700 dark:text-blue-300">
-                        <span className="font-semibold">
-                          💳 Metode Pembayaran:
-                        </span>{" "}
-                        {checkoutForm.paymentMethod}
-                      </p>
-                      <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
-                        <span className="font-semibold">🚚 Pengiriman:</span>{" "}
-                        {checkoutForm.shippingMethod}
-                      </p>
-                    </div>
-                  </div>
-                )
-              ) : // Cart Items View
-              cartItems.length === 0 ? (
-                <div className="flex h-full items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-brand-600 dark:text-brand-400">
-                      Keranjang belanja kosong
-                    </p>
-                    <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                      Klik produk untuk mulai berbelanja
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {lastAddedProduct && (
-                    <p className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
-                      ✓ {lastAddedProduct} berhasil dimasukkan
-                    </p>
-                  )}
-                  {cartItems.map((item) => (
-                    <div
-                      key={item.variantKey}
-                      className="rounded-2xl border border-brand-200 bg-brand-50/60 p-3 dark:border-brand-700 dark:bg-brand-900/50"
-                    >
-                      <div className="flex gap-3">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="h-16 w-16 rounded-xl object-cover"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="line-clamp-2 text-sm font-semibold text-brand-900 dark:text-white">
-                            {item.name}
-                          </p>
-                          <p className="mt-0.5 text-xs text-brand-500 dark:text-brand-400">
-                            Size {item.size} • {item.color}
-                          </p>
-                          <p className="mt-1 text-xs font-semibold text-primary">
-                            {formatRupiah(item.price)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between gap-2">
-                        <input
-                          type="number"
-                          min="1"
-                          max={item.stock || 99}
-                          className="input-modern !w-[90px] !py-1.5"
-                          value={item.quantity}
-                          onChange={(event) =>
-                            updateCartQuantity(
-                              item.variantKey,
-                              event.target.value,
-                            )
-                          }
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(item.variantKey)}
-                          className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
-                        >
-                          Hapus
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {cartItems.length > 0 && (
-              <div className="sticky bottom-0 border-t border-brand-200 bg-white dark:border-brand-700 dark:bg-brand-900/50 p-5 md:p-6 space-y-3">
-                {!showInvoice && (
-                  <>
-                    <div className="mt-4 space-y-2 rounded-2xl border border-brand-200 bg-white/80 p-4 text-sm dark:border-brand-700 dark:bg-brand-950/40">
-                      <div className="flex items-center justify-between text-brand-600 dark:text-brand-300">
-                        <span>Subtotal</span>
-                        <span>{formatRupiah(subtotal)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-brand-600 dark:text-brand-300">
-                        <span>Estimasi Ongkir</span>
-                        <span>{formatRupiah(shipping)}</span>
-                      </div>
-                      <div className="flex items-center justify-between border-t border-brand-200 pt-2 text-base font-bold text-brand-900 dark:border-brand-700 dark:text-white">
-                        <span>Total</span>
-                        <span>{formatRupiah(grandTotal)}</span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowInvoice(true)}
-                      className="w-full rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600"
-                    >
-                      👁️ Lihat Invoice
-                    </button>
-                  </>
-                )}
-
-                {showInvoice && (
-                  <button
-                    type="button"
-                    onClick={() => setShowInvoice(false)}
-                    className="w-full rounded-xl border border-brand-300 px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-900/40"
-                  >
-                    ← Kembali ke Keranjang
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Cart Drawer modal has been removed. Cart functionality is now handled */}
+      {/* through the Checkout section below for a cleaner checkout flow. */}
 
       {/* ── Checkout Section ──────────────────── */}
-      {cartItems.length > 0 && !showCartDrawer && (
+      {cartItems.length > 0 && (
         <section className="glass-card p-6 md:p-8 sticky bottom-0">
           <div className="grid gap-6 md:grid-cols-[1fr_auto]">
             <div className="space-y-3">
@@ -1054,13 +643,6 @@ function ShopPage() {
                 className="btn-primary !rounded-xl !px-6 !py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
               >
                 {isSubmittingOrder ? "Processing..." : "Checkout"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCartDrawer(true)}
-                className="rounded-xl border border-blue-300 bg-blue-50 px-6 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30 whitespace-nowrap"
-              >
-                View Invoice
               </button>
             </div>
           </div>

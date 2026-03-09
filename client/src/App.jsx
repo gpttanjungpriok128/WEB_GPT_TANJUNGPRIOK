@@ -11,6 +11,7 @@ import LivePage from "./pages/LivePage";
 import PrayerPage from "./pages/PrayerPage";
 import ContactPage from "./pages/ContactPage";
 import ShopPage from "./pages/ShopPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -31,6 +32,7 @@ function App() {
         <Route path="/articles/:id" element={<ArticleDetailPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/shop" element={<ShopPage />} />
+        <Route path="/shop/:slug" element={<ProductDetailPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
