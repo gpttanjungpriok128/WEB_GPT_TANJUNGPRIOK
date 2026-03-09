@@ -276,12 +276,12 @@ function ProductDetailPage() {
         {/* ── Left: Image Gallery ──────────────────────── */}
         <div className="space-y-4">
           {/* Main Image */}
-          <div className="overflow-hidden rounded-2xl bg-brand-100 dark:bg-brand-800 aspect-[1/1.2]">
+          <div className="overflow-hidden rounded-2xl bg-white dark:bg-brand-900/50 aspect-square border border-brand-100 dark:border-brand-800">
             <img
               src={resolveImageUrl(images[selectedImageIndex])}
               alt={product.name}
               onError={() => handleImageError(selectedImageIndex)}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal"
             />
           </div>
 
@@ -302,7 +302,7 @@ function ProductDetailPage() {
                     src={resolveImageUrl(image)}
                     alt={`Foto ${index + 1}`}
                     onError={() => handleImageError(index)}
-                    className="h-20 w-full object-cover"
+                    className="h-20 w-full object-contain p-1 bg-white dark:bg-brand-900/50 mix-blend-multiply dark:mix-blend-normal"
                   />
                 </button>
               ))}
@@ -528,51 +528,6 @@ function ProductDetailPage() {
               <li>✓ Sablon: High-quality printing</li>
             </ul>
           </div>
-        </div>
-      </section>
-
-      {/* ── Related Products Section ──────────────────── */}
-      <section className="space-y-6 border-t border-brand-200 pt-8 dark:border-brand-700">
-        <div>
-          <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
-            Produk Lainnya
-          </h2>
-          <p className="mt-1 text-sm text-brand-600 dark:text-brand-400">
-            Lihat koleksi GTshirt yang lain
-          </p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {FALLBACK_PRODUCTS.filter((p) => p.id !== product.id).map((p) => (
-            <Link
-              key={p.id}
-              to={`/shop/${p.slug}`}
-              className="group overflow-hidden rounded-2xl border border-brand-200 bg-white/90 shadow-sm transition hover:shadow-lg hover:border-primary dark:border-brand-700 dark:bg-brand-900/70"
-            >
-              <div className="relative aspect-[4/3] overflow-hidden bg-brand-100 dark:bg-brand-800">
-                <img
-                  src={resolveImageUrl(p.imageUrl)}
-                  alt={p.name}
-                  className="h-full w-full object-cover transition group-hover:scale-105"
-                />
-              </div>
-              <div className="p-4 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-                  {p.verse || "GTshirt"}
-                </p>
-                <h3 className="font-bold text-brand-900 dark:text-white line-clamp-2">
-                  {p.name}
-                </h3>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-black text-primary">
-                    {formatRupiah(Number(p.finalPrice ?? p.basePrice ?? 0))}
-                  </span>
-                  <span className="text-xs font-semibold text-brand-600 dark:text-brand-300">
-                    Stok: {p.stock}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
         </div>
       </section>
     </div>

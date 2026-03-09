@@ -185,16 +185,12 @@ function ShopPage() {
           ? data.data.filter((item) => item.isActive !== false)
           : [];
 
-        if (apiProducts.length > 0) {
-          setProducts(apiProducts);
-          setIsUsingFallbackProducts(false);
-        } else {
-          setProducts(FALLBACK_PRODUCTS);
-          setIsUsingFallbackProducts(true);
-        }
+        setProducts(apiProducts);
+        // Removed fallback logic completely
+        setIsUsingFallbackProducts(false);
       } catch {
-        setProducts(FALLBACK_PRODUCTS);
-        setIsUsingFallbackProducts(true);
+        setProducts([]); // Set empty array instead of fallbacks
+        setIsUsingFallbackProducts(false);
       } finally {
         setIsLoadingProducts(false);
       }
@@ -405,6 +401,15 @@ function ShopPage() {
     }
   };
 
+  // Create a ref for the checkout section
+  const checkoutRef = require("react").useRef(null);
+
+  const scrollToCheckout = () => {
+    if (checkoutRef.current) {
+      checkoutRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <div className="page-stack space-y-8">
       <PageHero
@@ -413,14 +418,6 @@ function ShopPage() {
         titleAccent="Toko Kaos Rohani"
         subtitle="Koleksi kaos minimalist streetwear untuk jemaat. Produk, harga, dan promo dikelola langsung dari dashboard admin GTshirt."
       />
-
-      {isUsingFallbackProducts && (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-900/20 dark:text-amber-300">
-          Data produk API belum tersedia, sehingga sementara menampilkan katalog
-          lokal. Produk dari dashboard admin akan tampil otomatis setelah data
-          toko tersedia.
-        </section>
-      )}
 
       <section className="grid gap-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -434,9 +431,10 @@ function ShopPage() {
             </p>
           </div>
           <button
-            className="relative rounded-full bg-primary/20 p-3 text-primary transition hover:bg-primary/30 dark:bg-primary/30 dark:hover:bg-primary/40"
+            onClick={scrollToCheckout}
+            className={`relative rounded-full p-3 transition ${totalItems > 0 ? 'bg-primary text-white hover:bg-primary/90 shadow-md' : 'bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/30 dark:hover:bg-primary/40'}`}
             title="Buka keranjang belanja"
-            disabled={true}
+            disabled={totalItems === 0}
           >
             <svg
               className="h-6 w-6"
@@ -457,7 +455,7 @@ function ShopPage() {
               />
             </svg>
             {totalItems > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-xs font-bold text-white">
+              <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-xs font-bold text-white shadow-sm ring-2 ring-white dark:ring-brand-900">
                 {totalItems}
               </span>
             )}
@@ -468,8 +466,19 @@ function ShopPage() {
           <div className="flex justify-center py-20">
             <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
           </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="mb-4 rounded-full bg-brand-50 p-6 dark:bg-brand-900/30">
+              <svg className="h-12 w-12 text-brand-400 dark:text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a2.25 2.25 0 0 0 2.25-2.25v-.75a2.25 2.25 0 0 0-2.25-2.25H15m0-3h-3m-3 0H6a2.25 2.25 0 0 0-2.25 2.25v.75A2.25 2.25 0 0 0 6 12h3m0 0v7.5a.75.75 0 0 1-.75.75h-3A2.25 2.25 0 0 1 0 18v-7.5" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 21v-4.5" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-brand-900 dark:text-white">Belum ada produk terbaru</h3>
+            <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">Nantikan koleksi apparel rohani terbaru dari kami. Pastikan kamu selalu cek halaman ini secara berkala!</p>
+          </div>
         ) : (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => {
               const effectivePrice = Number(
                 product.finalPrice ?? product.basePrice ?? 0,
@@ -479,71 +488,75 @@ function ShopPage() {
                 <Link
                   key={product.id}
                   to={`/shop/${product.slug}`}
-                  className="group overflow-hidden rounded-3xl border border-brand-200 bg-white/90 shadow-sm transition hover:shadow-lg hover:border-primary dark:border-brand-700 dark:bg-brand-900/70"
+                  className="group flex flex-col overflow-hidden rounded-3xl border border-brand-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 dark:border-brand-700 dark:bg-brand-900/40"
                 >
-                  <div className="aspect-[4/3] overflow-hidden bg-brand-100/60 dark:bg-brand-800/30 relative">
+                  <div className="relative aspect-square overflow-hidden bg-brand-50 dark:bg-brand-800/30 p-4">
                     <img
                       src={resolveImageUrl(product.imageUrl)}
                       alt={product.name}
-                      className="h-full w-full object-cover transition group-hover:scale-105"
+                      className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 group-hover:scale-110"
                     />
-                    <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20 flex items-center justify-center">
-                      <span className="text-white/0 transition group-hover:text-white/100 text-lg font-bold">
-                        👁️ Lihat Detail
+                    <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-brand-900/10 flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[2px]">
+                      <span className="translate-y-4 rounded-full bg-white/95 px-6 py-2.5 text-sm font-bold text-brand-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 dark:bg-brand-800 dark:text-white">
+                        Lihat Produk
                       </span>
                     </div>
                   </div>
-                  <div className="space-y-3 p-5">
-                    <div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="mb-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
                         {product.verse || "GTshirt"}
                       </p>
-                      <h3 className="mt-1 text-lg font-bold text-brand-900 dark:text-white line-clamp-2">
+                      <h3 className="mt-1 text-lg font-bold text-brand-900 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                         {product.name}
                       </h3>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        {product.promoIsActive &&
-                        Number(product.discountAmount) > 0 ? (
-                          <>
-                            <p className="text-xs text-brand-500 line-through dark:text-brand-400">
-                              {formatRupiah(Number(product.basePrice) || 0)}
-                            </p>
-                            <span className="text-lg font-black text-primary">
+                    <div className="mt-auto space-y-3">
+                      <div className="flex items-end justify-between gap-2">
+                        <div>
+                          {product.promoIsActive &&
+                          Number(product.discountAmount) > 0 ? (
+                            <div className="flex flex-col">
+                              <span className="text-xs text-brand-500 line-through dark:text-brand-400">
+                                {formatRupiah(Number(product.basePrice) || 0)}
+                              </span>
+                              <span className="text-[1.125rem] font-black text-rose-500">
+                                {formatRupiah(effectivePrice)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[1.125rem] font-black text-brand-900 dark:text-white">
                               {formatRupiah(effectivePrice)}
                             </span>
-                          </>
-                        ) : (
-                          <span className="text-lg font-black text-primary">
-                            {formatRupiah(effectivePrice)}
-                          </span>
-                        )}
+                          )}
+                        </div>
+                        <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-600 dark:bg-brand-800 dark:text-brand-300">
+                          {product.color || "-"}
+                        </span>
                       </div>
-                      <span className="rounded-lg border border-brand-200 px-2 py-1 text-xs font-semibold text-brand-600 dark:border-brand-700 dark:text-brand-300">
-                        {product.color || "-"}
-                      </span>
+
+                      {product.promoIsActive && (
+                        <p className="inline-block rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+                          {product.promoLabel || "Harga Spesial"}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between pt-2 border-t border-brand-100 dark:border-brand-800">
+                        <span className="text-xs font-medium text-brand-500 dark:text-brand-400">
+                          Stok Tersedia
+                        </span>
+                        <span
+                          className={`text-sm ${
+                            Number(product.stock) <= 0
+                              ? "text-rose-500 font-bold"
+                              : "text-brand-700 font-bold dark:text-brand-300"
+                          }`}
+                        >
+                          {Number(product.stock) <= 0 ? "Habis" : product.stock}
+                        </span>
+                      </div>
                     </div>
-
-                    {product.promoIsActive && (
-                      <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300">
-                        {product.promoLabel || "Promo aktif"}
-                      </p>
-                    )}
-
-                    <p className="text-xs text-brand-500 dark:text-brand-400">
-                      Stok:{" "}
-                      <span
-                        className={
-                          Number(product.stock) <= 0
-                            ? "text-rose-500 font-bold"
-                            : "font-semibold"
-                        }
-                      >
-                        {product.stock ?? 0}
-                      </span>
-                    </p>
                   </div>
                 </Link>
               );
@@ -561,7 +574,7 @@ function ShopPage() {
 
       {/* ── Checkout Section ──────────────────── */}
       {cartItems.length > 0 && (
-        <section className="glass-card p-6 md:p-8 sticky bottom-0">
+        <section ref={checkoutRef} className="glass-card shadow-xl border-primary/20 p-6 md:p-8 relative mt-12 bg-gradient-to-br from-white to-brand-50 dark:from-brand-900/50 dark:to-brand-800/20">
           <div className="grid gap-6 md:grid-cols-[1fr_auto]">
             <div className="space-y-3">
               <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-300">
