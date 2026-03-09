@@ -4,12 +4,18 @@ function isTrue(value) {
   return ['true', '1', 'yes', 'on'].includes(String(value || '').toLowerCase());
 }
 
+function normalizeDbHost(value) {
+  return String(value || '').trim().toLowerCase() === 'localhost'
+    ? '127.0.0.1'
+    : value;
+}
+
 function buildDbConfig() {
   const config = {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
+    host: normalizeDbHost(process.env.DB_HOST),
     port: Number(process.env.DB_PORT),
     dialect: 'postgres'
   };
@@ -22,15 +28,7 @@ function buildDbConfig() {
     config.dialectOptions = {
       ssl: {
         require: true,
-        rejectUnauthorized: false // Force false for Render/production DBs
-      }
-    };
-  } else {
-    // Fallback for Render external connections which often require SSL implicitly
-    config.dialectOptions = {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
+        rejectUnauthorized
       }
     };
   }

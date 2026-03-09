@@ -5,13 +5,19 @@ function isTrue(value) {
   return ['true', '1', 'yes', 'on'].includes(String(value || '').toLowerCase());
 }
 
+function normalizeDbHost(value) {
+  return String(value || '').trim().toLowerCase() === 'localhost'
+    ? '127.0.0.1'
+    : value;
+}
+
 const dbSslEnabled = isTrue(process.env.DB_SSL);
 const rejectUnauthorized = !['false', '0', 'no', 'off'].includes(
   String(process.env.DB_SSL_REJECT_UNAUTHORIZED || '').toLowerCase()
 );
 
 const sequelizeOptions = {
-  host: process.env.DB_HOST,
+  host: normalizeDbHost(process.env.DB_HOST),
   port: Number(process.env.DB_PORT),
   dialect: 'postgres',
   logging: false

@@ -1,11 +1,38 @@
 const app = require('./app');
 const bcrypt = require('bcrypt');
+const { spawn } = require('child_process');
 const { sequelize, LiveStreamSetting, User, Schedule } = require('./models');
 
 const DEFAULT_PORT = Number(process.env.PORT || 5000);
 
 function isTrue(value) {
   return ['true', '1', 'yes', 'on'].includes(String(value || '').toLowerCase());
+}
+
+async function runPendingMigrations() {
+  if (isTrue(process.env.SKIP_AUTO_MIGRATE)) {
+    return;
+  }
+
+  const command = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
+  await new Promise((resolve, reject) => {
+    const child = spawn(command, ['run', 'migrate'], {
+      cwd: __dirname,
+      stdio: 'inherit',
+      env: process.env
+    });
+
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(`Automatic migration failed with exit code ${code}`));
+    });
+  });
 }
 
 function startHttpServer(preferredPort, retries = 1) {
@@ -150,6 +177,7 @@ async function ensureDefaultSchedules(forceUpdate = false) {
 
 async function bootstrap() {
   try {
+    await runPendingMigrations();
     await sequelize.authenticate();
     await sequelize.sync();
 
