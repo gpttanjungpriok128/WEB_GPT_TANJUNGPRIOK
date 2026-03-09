@@ -3,10 +3,14 @@ import { Link } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
 import cartHeroImage from "../img/store/made-to-worship.png";
+import {
+  collectCartImageCandidates,
+  normalizeStoreImagePath,
+  resolveStoreImageUrl,
+} from "../utils/storeImage";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const DEFAULT_SHIPPING_COST = 15000;
-const SERVER_URL = (import.meta.env.VITE_SERVER_URL || "http://localhost:5001").replace(/\/$/, "");
 
 const formatRupiah = (amount) =>
   new Intl.NumberFormat("id-ID", {
@@ -15,45 +19,30 @@ const formatRupiah = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
-function resolveImageUrl(imageUrl) {
-  if (!imageUrl) return "";
-  if (
-    imageUrl.startsWith("http://") ||
-    imageUrl.startsWith("https://") ||
-    imageUrl.startsWith("data:") ||
-    imageUrl.startsWith("blob:")
-  ) {
-    return imageUrl;
-  }
-  if (imageUrl.startsWith("/assets/") || imageUrl.startsWith("/src/")) {
-    return imageUrl;
-  }
-  if (imageUrl.startsWith("/")) {
-    return SERVER_URL ? `${SERVER_URL}${imageUrl}` : imageUrl;
-  }
-  return imageUrl;
-}
+function normalizeCartItem(item = {}) {
+  const normalizedImage = normalizeStoreImagePath(item.image);
+  const normalizedImageUrls = Array.isArray(item.imageUrls)
+    ? item.imageUrls.map(normalizeStoreImagePath).filter(Boolean)
+    : [];
+  const primaryImage = normalizedImage || normalizedImageUrls[0] || "";
+  const imageUrls = normalizedImageUrls.length > 0
+    ? normalizedImageUrls
+    : primaryImage
+      ? [primaryImage]
+      : [];
 
-function normalizeStoredImageUrl(imageUrl) {
-  if (typeof imageUrl !== "string") return "";
-
-  const assetsPathIndex = imageUrl.indexOf("/assets/");
-  if (assetsPathIndex >= 0) {
-    return imageUrl.slice(assetsPathIndex);
-  }
-
-  const srcPathIndex = imageUrl.indexOf("/src/");
-  if (srcPathIndex >= 0) {
-    return imageUrl.slice(srcPathIndex);
-  }
-
-  return imageUrl;
+  return {
+    ...item,
+    image: primaryImage,
+    imageUrls,
+  };
 }
 
 function CartPage() {
   const [cartItems, setCartItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [failedImageKeys, setFailedImageKeys] = useState(new Set());
+  const [imageIndexByKey, setImageIndexByKey] = useState({});
   const [shippingCost, setShippingCost] = useState(DEFAULT_SHIPPING_COST);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
@@ -72,13 +61,11 @@ function CartPage() {
     try {
       const saved = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || "[]");
       const normalizedSaved = Array.isArray(saved)
-        ? saved.map((item) => ({
-            ...item,
-            image: normalizeStoredImageUrl(item?.image),
-          }))
+        ? saved.map(normalizeCartItem)
         : [];
       setCartItems(normalizedSaved);
       setSelectedItems(new Set(normalizedSaved.map((_, i) => i)));
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(normalizedSaved));
     } catch {
       setCartItems([]);
     }
@@ -152,6 +139,11 @@ function CartPage() {
       setFailedImageKeys((previous) => {
         const next = new Set(previous);
         next.delete(removedItem.variantKey);
+        return next;
+      });
+      setImageIndexByKey((previous) => {
+        const next = { ...previous };
+        delete next[removedItem.variantKey];
         return next;
       });
     }
@@ -308,7 +300,10 @@ function CartPage() {
           {/* Cart Items */}
           <div className="space-y-3">
             {cartItems.map((item, index) => {
-              const imageSrc = resolveImageUrl(item.image);
+              const imageCandidates = collectCartImageCandidates(item);
+              const activeImageIndex = imageIndexByKey[item.variantKey] || 0;
+              const activeImagePath = imageCandidates[activeImageIndex] || "";
+              const imageSrc = resolveStoreImageUrl(activeImagePath);
               const isImageBroken = failedImageKeys.has(item.variantKey);
 
               return (
@@ -334,9 +329,21 @@ function CartPage() {
                           <img
                             src={imageSrc}
                             alt={item.name}
-                            onError={() =>
-                              setFailedImageKeys((previous) => new Set(previous).add(item.variantKey))
-                            }
+                            onError={() => {
+                              if (activeImageIndex < imageCandidates.length - 1) {
+                                setImageIndexByKey((previous) => ({
+                                  ...previous,
+                                  [item.variantKey]: activeImageIndex + 1,
+                                }));
+                                return;
+                              }
+
+                              setFailedImageKeys((previous) => {
+                                const next = new Set(previous);
+                                next.add(item.variantKey);
+                                return next;
+                              });
+                            }}
                             className="h-full w-full object-cover"
                           />
                         ) : (

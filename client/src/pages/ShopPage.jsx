@@ -6,11 +6,10 @@ import worshipSmokeImage from "../img/store/made-to-worship.png";
 import lightJohnImage from "../img/store/you-are-the-light.png";
 import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
+import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
 
 const SHOP_WHATSAPP_NUMBER = "6282118223784"; // Format: +62 821-1822-3784
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
-const SHIPPING_COST = 15000;
-const SERVER_URL = (import.meta.env.VITE_SERVER_URL || "http://localhost:5001").replace(/\/$/, "");
 
 const FALLBACK_PRODUCTS = [
   {
@@ -75,27 +74,6 @@ const formatRupiah = (amount) =>
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(amount);
-
-
-
-function resolveImageUrl(imageUrl) {
-  if (!imageUrl) return "";
-  if (
-    imageUrl.startsWith("http://") ||
-    imageUrl.startsWith("https://") ||
-    imageUrl.startsWith("data:") ||
-    imageUrl.startsWith("blob:")
-  ) {
-    return imageUrl;
-  }
-  if (imageUrl.startsWith("/assets/") || imageUrl.startsWith("/src/")) {
-    return imageUrl;
-  }
-  if (imageUrl.startsWith("/")) {
-    return SERVER_URL ? `${SERVER_URL}${imageUrl}` : imageUrl;
-  }
-  return imageUrl;
-}
 
 function ShopPage() {
   const [products, setProducts] = useState(FALLBACK_PRODUCTS);
@@ -195,6 +173,12 @@ function ShopPage() {
     const quantity = Math.max(1, Number(selection.quantity) || 1);
     const size = selection.size || product.sizes?.[0] || "M";
     const variantKey = `${product.id}-${size}`;
+    const normalizedPrimaryImage = normalizeStoreImagePath(product.imageUrl);
+    const normalizedImageUrls = Array.isArray(product.imageUrls)
+      ? product.imageUrls.map(normalizeStoreImagePath).filter(Boolean)
+      : normalizedPrimaryImage
+        ? [normalizedPrimaryImage]
+        : [];
 
     setCartItems((previous) => {
       const existingItemIndex = previous.findIndex(
@@ -208,7 +192,14 @@ function ShopPage() {
             item.quantity + quantity,
             Number(product.stock) || 99,
           );
-          return { ...item, quantity: nextQty };
+          return {
+            ...item,
+            quantity: nextQty,
+            image: item.image || normalizedPrimaryImage,
+            imageUrls: Array.isArray(item.imageUrls) && item.imageUrls.length > 0
+              ? item.imageUrls
+              : normalizedImageUrls,
+          };
         });
       }
 
@@ -219,7 +210,8 @@ function ShopPage() {
           productId: product.id,
           name: product.name,
           price: Number(product.finalPrice ?? product.basePrice ?? 0),
-          image: resolveImageUrl(product.imageUrl),
+          image: normalizedPrimaryImage,
+          imageUrls: normalizedImageUrls,
           size,
           color: product.color || "-",
           quantity,
@@ -364,7 +356,7 @@ function ShopPage() {
                 >
                   <div className="relative aspect-square overflow-hidden bg-brand-50 dark:bg-brand-800/30 p-4">
                     <img
-                      src={resolveImageUrl(product.imageUrl)}
+                      src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}
                       className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 group-hover:scale-110"
                     />

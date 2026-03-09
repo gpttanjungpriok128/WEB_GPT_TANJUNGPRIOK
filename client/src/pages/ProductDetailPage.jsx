@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
 import worshipSmokeImage from "../img/store/made-to-worship.png";
 import lightJohnImage from "../img/store/you-are-the-light.png";
 import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
+import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
 
-const SHOP_WHATSAPP_NUMBER = "6282118223784"; // Format: +62 821-1822-3784
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
-const SHIPPING_COST = 15000;
-const SERVER_URL = (import.meta.env.VITE_SERVER_URL || "http://localhost:5001").replace(/\/$/, "");
 
 const FALLBACK_PRODUCTS = [
   {
@@ -77,25 +75,6 @@ const formatRupiah = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
-function resolveImageUrl(imageUrl) {
-  if (!imageUrl) return "";
-  if (
-    imageUrl.startsWith("http://") ||
-    imageUrl.startsWith("https://") ||
-    imageUrl.startsWith("data:") ||
-    imageUrl.startsWith("blob:")
-  ) {
-    return imageUrl;
-  }
-  if (imageUrl.startsWith("/assets/") || imageUrl.startsWith("/src/")) {
-    return imageUrl;
-  }
-  if (imageUrl.startsWith("/")) {
-    return SERVER_URL ? `${SERVER_URL}${imageUrl}` : imageUrl;
-  }
-  return imageUrl;
-}
-
 function getImageWithFallback(product, fallbackProducts) {
   if (!product) return worshipSmokeImage;
 
@@ -130,6 +109,26 @@ function ProductDetailPage() {
   const [images, setImages] = useState([]);
   const [failedImages, setFailedImages] = useState(new Set());
   const [feedback, setFeedback] = useState("");
+  const [cartCount, setCartCount] = useState(0);
+
+  const syncCartCount = () => {
+    try {
+      const rawCart = window.localStorage.getItem(CART_STORAGE_KEY);
+      const parsedCart = rawCart ? JSON.parse(rawCart) : [];
+      const list = Array.isArray(parsedCart) ? parsedCart : [];
+      const count = list.reduce((total, item) => total + (Number(item?.quantity) || 0), 0);
+      setCartCount(count);
+    } catch {
+      setCartCount(0);
+    }
+  };
+
+  useEffect(() => {
+    syncCartCount();
+    const handleStorage = () => syncCartCount();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -182,6 +181,12 @@ function ProductDetailPage() {
       const parsedCart = rawCart ? JSON.parse(rawCart) : [];
       const savedCart = Array.isArray(parsedCart) ? parsedCart : [];
       const variantKey = `${product.id}-${selectedSize}`;
+      const normalizedPrimaryImage = normalizeStoreImagePath(product.imageUrl);
+      const normalizedImageUrls = Array.isArray(product.imageUrls)
+        ? product.imageUrls.map(normalizeStoreImagePath).filter(Boolean)
+        : normalizedPrimaryImage
+          ? [normalizedPrimaryImage]
+          : [];
       const existingItemIndex = savedCart.findIndex(
         (item) => item.variantKey === variantKey,
       );
@@ -192,13 +197,21 @@ function ProductDetailPage() {
           Number(product.stock) || 99,
         );
         savedCart[existingItemIndex].quantity = nextQty;
+        savedCart[existingItemIndex].image =
+          savedCart[existingItemIndex].image || normalizedPrimaryImage;
+        savedCart[existingItemIndex].imageUrls =
+          Array.isArray(savedCart[existingItemIndex].imageUrls) &&
+          savedCart[existingItemIndex].imageUrls.length > 0
+            ? savedCart[existingItemIndex].imageUrls
+            : normalizedImageUrls;
       } else {
         savedCart.push({
           variantKey,
           productId: product.id,
           name: product.name,
           price: Number(product.finalPrice ?? product.basePrice ?? 0),
-          image: resolveImageUrl(product.imageUrl),
+          image: normalizedPrimaryImage,
+          imageUrls: normalizedImageUrls,
           size: selectedSize,
           color: product.color || "-",
           quantity: Math.min(quantity, Number(product.stock) || 99),
@@ -207,6 +220,7 @@ function ProductDetailPage() {
       }
 
       window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(savedCart));
+      syncCartCount();
       setFeedback(`${product.name} berhasil ditambahkan ke keranjang!`);
       setQuantity(1);
       setTimeout(() => setFeedback(""), 3000);
@@ -262,17 +276,49 @@ function ProductDetailPage() {
   return (
     <div className="page-stack space-y-8">
       {/* ── Breadcrumb ──────────────────────── */}
-      <nav className="flex items-center gap-2 text-sm text-brand-600 dark:text-brand-400">
+      <nav className="flex flex-wrap items-center justify-between gap-3 text-sm text-brand-600 dark:text-brand-400">
+        <div className="flex min-w-0 items-center gap-2">
+          <Link
+            to="/shop"
+            className="transition hover:text-brand-900 dark:hover:text-white"
+          >
+            Toko
+          </Link>
+          <span>/</span>
+          <span className="truncate text-brand-900 dark:text-white font-semibold">
+            {product.name}
+          </span>
+        </div>
+
         <Link
-          to="/shop"
-          className="transition hover:text-brand-900 dark:hover:text-white"
+          to="/cart"
+          className="relative inline-flex items-center gap-2 rounded-xl border border-brand-300 bg-white px-3 py-2 font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/60"
         >
-          Toko
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.8}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+            />
+          </svg>
+          <span>Keranjang</span>
+          {cartCount > 0 && (
+            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white">
+              {cartCount}
+            </span>
+          )}
         </Link>
-        <span>/</span>
-        <span className="text-brand-900 dark:text-white font-semibold">
-          {product.name}
-        </span>
       </nav>
 
       {/* ── Product Detail Section ──────────────────────── */}
@@ -282,7 +328,7 @@ function ProductDetailPage() {
           {/* Main Image */}
           <div className="overflow-hidden rounded-2xl bg-white dark:bg-brand-900/50 aspect-square border border-brand-100 dark:border-brand-800">
             <img
-              src={resolveImageUrl(images[selectedImageIndex])}
+              src={resolveStoreImageUrl(images[selectedImageIndex])}
               alt={product.name}
               onError={() => handleImageError(selectedImageIndex)}
               className="h-full w-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal"
@@ -303,7 +349,7 @@ function ProductDetailPage() {
                   }`}
                 >
                   <img
-                    src={resolveImageUrl(image)}
+                    src={resolveStoreImageUrl(image)}
                     alt={`Foto ${index + 1}`}
                     onError={() => handleImageError(index)}
                     className="h-20 w-full object-contain p-1 bg-white dark:bg-brand-900/50 mix-blend-multiply dark:mix-blend-normal"
@@ -530,6 +576,35 @@ function ProductDetailPage() {
               </svg>
               <span>Tambah ke Keranjang</span>
             </button>
+            <Link
+              to="/cart"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-brand-300 bg-white px-4 py-3 text-center font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/60"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+                />
+              </svg>
+              <span>Lihat Keranjang</span>
+              {cartCount > 0 && (
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
             <Link
               to="/shop"
               className="flex-1 rounded-xl bg-primary px-4 py-3 text-center font-semibold text-white transition hover:bg-primary/90"
