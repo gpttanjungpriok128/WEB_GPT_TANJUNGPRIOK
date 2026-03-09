@@ -174,9 +174,9 @@ function ProductDetailPage() {
     }
 
     try {
-      const savedCart = JSON.parse(
-        window.localStorage.getItem(CART_STORAGE_KEY) || "[]",
-      );
+      const rawCart = window.localStorage.getItem(CART_STORAGE_KEY);
+      const parsedCart = rawCart ? JSON.parse(rawCart) : [];
+      const savedCart = Array.isArray(parsedCart) ? parsedCart : [];
       const variantKey = `${product.id}-${selectedSize}`;
       const existingItemIndex = savedCart.findIndex(
         (item) => item.variantKey === variantKey,

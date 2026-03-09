@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
 import worshipSmokeImage from "../img/store/made-to-worship.png";
@@ -94,29 +94,29 @@ function resolveImageUrl(imageUrl) {
 }
 
 function ShopPage() {
-  const navigate = useNavigate();
   const [products, setProducts] = useState(FALLBACK_PRODUCTS);
   const [selections, setSelections] = useState({});
   const [cartItems, setCartItems] = useState([]);
+  const [isCartHydrated, setIsCartHydrated] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isUsingFallbackProducts, setIsUsingFallbackProducts] = useState(false);
 
   useEffect(() => {
     try {
-      const savedCart = window.localStorage.getItem(CART_STORAGE_KEY);
-      if (!savedCart) return;
-      const parsed = JSON.parse(savedCart);
-      if (Array.isArray(parsed)) {
-        setCartItems(parsed);
-      }
+      const rawCart = window.localStorage.getItem(CART_STORAGE_KEY);
+      const parsed = rawCart ? JSON.parse(rawCart) : [];
+      setCartItems(Array.isArray(parsed) ? parsed : []);
     } catch {
       setCartItems([]);
+    } finally {
+      setIsCartHydrated(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!isCartHydrated) return;
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
-  }, [cartItems]);
+  }, [cartItems, isCartHydrated]);
 
   useEffect(() => {
     setSelections((previous) => {

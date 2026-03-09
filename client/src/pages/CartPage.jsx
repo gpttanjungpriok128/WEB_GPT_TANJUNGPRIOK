@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import PageHero from "../components/PageHero";
-import cartHeroImage from "../img/store/MADE TO WORSHIP.png";
+import cartHeroImage from "../img/store/made-to-worship.png";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const SHIPPING_COST = 15000;
@@ -26,13 +26,11 @@ function resolveImageUrl(imageUrl) {
 }
 
 function CartPage() {
-  const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutInfo, setCheckoutInfo] = useState("");
-  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [checkoutForm, setCheckoutForm] = useState({
     name: "",
     phone: "",
@@ -120,7 +118,7 @@ function CartPage() {
   };
 
   // Process checkout
-  const proceedCheckout = async () => {
+  const proceedCheckout = () => {
     if (selectedItemsList.length === 0) {
       setCheckoutError("Pilih minimal 1 produk untuk checkout");
       return;
@@ -138,30 +136,36 @@ function CartPage() {
       return;
     }
 
-    const message = [
-      "Shalom GTshirt, saya ingin pesan kaos rohani:",
-      "",
-      ...selectedItemsList.map(
-        (item, idx) =>
-          `${idx + 1}. ${item.name} | Size ${item.size} | ${item.color} | Qty ${item.quantity} | ${formatRupiah(item.price * item.quantity)}`
-      ),
-      "",
-      `Subtotal: ${formatRupiah(subtotal)}`,
-      `Ongkir Estimasi: ${formatRupiah(shipping)}`,
-      `Total: ${formatRupiah(grandTotal)}`,
-      "",
-      "Data Pemesan:",
-      `Nama: ${checkoutForm.name}`,
-      `No. WhatsApp: ${checkoutForm.phone}`,
-      `Alamat: ${checkoutForm.address}`,
-      `Pengiriman: ${checkoutForm.shippingMethod}`,
-      `Pembayaran: ${checkoutForm.paymentMethod}`,
-      `Catatan: ${checkoutForm.notes || "-"}`,
-    ].join("\n");
+    setIsSubmittingOrder(true);
 
-    const whatsappUrl = `https://wa.me/6282118223784?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, "_blank");
-    setCheckoutInfo("✓ Pesanan dikirim ke WhatsApp. Tunggu konfirmasi dari tim.");
+    try {
+      const message = [
+        "Shalom GTshirt, saya ingin pesan kaos rohani:",
+        "",
+        ...selectedItemsList.map(
+          (item, idx) =>
+            `${idx + 1}. ${item.name} | Size ${item.size} | ${item.color} | Qty ${item.quantity} | ${formatRupiah(item.price * item.quantity)}`
+        ),
+        "",
+        `Subtotal: ${formatRupiah(subtotal)}`,
+        `Ongkir Estimasi: ${formatRupiah(shipping)}`,
+        `Total: ${formatRupiah(grandTotal)}`,
+        "",
+        "Data Pemesan:",
+        `Nama: ${checkoutForm.name}`,
+        `No. WhatsApp: ${checkoutForm.phone}`,
+        `Alamat: ${checkoutForm.address}`,
+        `Pengiriman: ${checkoutForm.shippingMethod}`,
+        `Pembayaran: ${checkoutForm.paymentMethod}`,
+        `Catatan: ${checkoutForm.notes || "-"}`,
+      ].join("\n");
+
+      const whatsappUrl = `https://wa.me/6282118223784?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank");
+      setCheckoutInfo("✓ Pesanan dikirim ke WhatsApp. Tunggu konfirmasi dari tim.");
+    } finally {
+      setIsSubmittingOrder(false);
+    }
   };
 
   if (cartItems.length === 0) {
@@ -315,6 +319,84 @@ function CartPage() {
               Cotton Combed 24s • Unisex fit • High-quality printing • Ready stock • Siap dikirim dalam 1-2 hari kerja
             </p>
           </div>
+
+          {/* Checkout Form */}
+          <div
+            id="checkout-form"
+            className="rounded-2xl border border-brand-200 bg-white/90 p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-4"
+          >
+            <h4 className="font-bold text-brand-900 dark:text-white">Lengkapi Data Checkout</h4>
+            <p className="text-xs text-brand-600 dark:text-brand-400">
+              Setelah cek produk di keranjang, isi data pemesan untuk lanjut pesan via WhatsApp.
+            </p>
+
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Nama lengkap"
+                className="input-modern"
+                value={checkoutForm.name}
+                onChange={(e) => handleCheckoutField("name", e.target.value)}
+              />
+              <input
+                type="tel"
+                placeholder="No. WhatsApp"
+                className="input-modern"
+                value={checkoutForm.phone}
+                onChange={(e) => handleCheckoutField("phone", e.target.value)}
+              />
+              <textarea
+                placeholder="Alamat lengkap pengiriman"
+                className="input-modern min-h-[80px] resize-y"
+                value={checkoutForm.address}
+                onChange={(e) => handleCheckoutField("address", e.target.value)}
+              />
+              <select
+                className="input-modern"
+                value={checkoutForm.shippingMethod}
+                onChange={(e) => handleCheckoutField("shippingMethod", e.target.value)}
+              >
+                <option>Kurir Jabodetabek</option>
+                <option>Ambil di Gereja</option>
+              </select>
+              <select
+                className="input-modern"
+                value={checkoutForm.paymentMethod}
+                onChange={(e) => handleCheckoutField("paymentMethod", e.target.value)}
+              >
+                <option>Transfer Bank</option>
+                <option>QRIS</option>
+                <option>Bayar Tunai di Gereja</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Catatan (opsional)"
+                className="input-modern text-sm"
+                value={checkoutForm.notes}
+                onChange={(e) => handleCheckoutField("notes", e.target.value)}
+              />
+            </div>
+
+            {checkoutError && (
+              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900/80 dark:bg-rose-900/30 dark:text-rose-300">
+                {checkoutError}
+              </p>
+            )}
+
+            {checkoutInfo && (
+              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
+                {checkoutInfo}
+              </p>
+            )}
+
+            <button
+              onClick={proceedCheckout}
+              disabled={isSubmittingOrder || selectedItemsList.length === 0}
+              className="w-full bg-primary px-4 py-2.5 rounded-lg text-white font-semibold transition hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isSubmittingOrder ? "Processing..." : "Pesan via WhatsApp"}
+            </button>
+          </div>
         </section>
 
         {/* ── Right: Checkout Summary ──────────────────── */}
@@ -343,13 +425,9 @@ function CartPage() {
               <span className="text-2xl text-primary">{formatRupiah(grandTotal)}</span>
             </div>
 
-            <button
-              onClick={() => setShowCheckoutForm(!showCheckoutForm)}
-              disabled={selectedItemsList.length === 0}
-              className="w-full btn-primary py-3 font-semibold disabled:opacity-50"
-            >
-              {showCheckoutForm ? "← Sembunyikan Form" : "Lanjut ke Checkout"}
-            </button>
+            <p className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+              Lengkapi data checkout di bagian bawah daftar produk.
+            </p>
 
             <Link
               to="/shop"
@@ -358,80 +436,6 @@ function CartPage() {
               ← Lanjut Belanja
             </Link>
           </div>
-
-          {/* Checkout Form */}
-          {showCheckoutForm && (
-            <div className="mt-4 rounded-2xl border border-brand-200 bg-white/90 p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-4">
-              <h4 className="font-bold text-brand-900 dark:text-white">Data Pemesan</h4>
-
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Nama lengkap"
-                  className="input-modern"
-                  value={checkoutForm.name}
-                  onChange={(e) => handleCheckoutField("name", e.target.value)}
-                />
-                <input
-                  type="tel"
-                  placeholder="No. WhatsApp"
-                  className="input-modern"
-                  value={checkoutForm.phone}
-                  onChange={(e) => handleCheckoutField("phone", e.target.value)}
-                />
-                <textarea
-                  placeholder="Alamat lengkap pengiriman"
-                  className="input-modern min-h-[80px] resize-y"
-                  value={checkoutForm.address}
-                  onChange={(e) => handleCheckoutField("address", e.target.value)}
-                />
-                <select
-                  className="input-modern"
-                  value={checkoutForm.shippingMethod}
-                  onChange={(e) => handleCheckoutField("shippingMethod", e.target.value)}
-                >
-                  <option>Kurir Jabodetabek</option>
-                  <option>Ambil di Gereja</option>
-                </select>
-                <select
-                  className="input-modern"
-                  value={checkoutForm.paymentMethod}
-                  onChange={(e) => handleCheckoutField("paymentMethod", e.target.value)}
-                >
-                  <option>Transfer Bank</option>
-                  <option>QRIS</option>
-                  <option>Bayar Tunai di Gereja</option>
-                </select>
-                <input
-                  type="text"
-                  placeholder="Catatan (opsional)"
-                  className="input-modern text-sm"
-                  value={checkoutForm.notes}
-                  onChange={(e) => handleCheckoutField("notes", e.target.value)}
-                />
-              </div>
-
-              {checkoutError && (
-                <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900/80 dark:bg-rose-900/30 dark:text-rose-300">
-                  {checkoutError}
-                </p>
-              )}
-
-              {checkoutInfo && (
-                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
-                  {checkoutInfo}
-                </p>
-              )}
-
-              <button
-                onClick={proceedCheckout}
-                disabled={isSubmittingOrder || selectedItemsList.length === 0}
-                className="w-full bg-primary px-4 py-2.5 rounded-lg text-white font-semibold transition hover:bg-primary/90 disabled:opacity-50"
-              >
-                {isSubmittingOrder ? "Processing..." : "Pesan via WhatsApp"}
-              </button>
-            </div>
-          )}
         </aside>
       </div>
     </div>
