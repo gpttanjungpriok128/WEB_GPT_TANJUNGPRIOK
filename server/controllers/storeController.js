@@ -37,6 +37,11 @@ function getUploadedFiles(req) {
 }
 
 function toPublicImagePath(file) {
+  // Cloudinary returns full URL in path, local storage returns just filename
+  if (file.path && (file.path.startsWith('http://') || file.path.startsWith('https://'))) {
+    return file.path; // Cloudinary URL
+  }
+  // Local disk storage fallback
   return `/uploads/${file.filename}`;
 }
 
@@ -57,6 +62,12 @@ function normalizeProductImages(product) {
 async function removeImageFile(publicPath) {
   if (!publicPath) return;
 
+  // Skip removal for Cloudinary URLs (they're handled by Cloudinary)
+  if (String(publicPath).startsWith('http://') || String(publicPath).startsWith('https://')) {
+    return;
+  }
+
+  // Only remove local disk storage files
   const fileName = path.basename(String(publicPath));
   if (!fileName) return;
 
