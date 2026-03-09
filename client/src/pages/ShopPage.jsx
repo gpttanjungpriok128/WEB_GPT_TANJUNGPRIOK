@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
+import PageHero from "../components/PageHero";
 import worshipSmokeImage from "../img/store/MADE TO WORSHIP.png";
 import lightJohnImage from "../img/store/YOU ARE THE LIGHT.png";
 import hopePsalmImage from "../img/store/FOR ALL MY HOPE IS IN HIM.png";
@@ -75,7 +76,13 @@ const formatRupiah = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
-function buildFallbackWhatsappMessage({ cartItems, subtotal, shipping, grandTotal, checkoutForm }) {
+function buildFallbackWhatsappMessage({
+  cartItems,
+  subtotal,
+  shipping,
+  grandTotal,
+  checkoutForm,
+}) {
   const itemLines = cartItems
     .map(
       (item, index) =>
@@ -104,7 +111,11 @@ function buildFallbackWhatsappMessage({ cartItems, subtotal, shipping, grandTota
 
 function resolveImageUrl(imageUrl) {
   if (!imageUrl) return "";
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://") || imageUrl.startsWith("data:")) {
+  if (
+    imageUrl.startsWith("http://") ||
+    imageUrl.startsWith("https://") ||
+    imageUrl.startsWith("data:")
+  ) {
     return imageUrl;
   }
   if (imageUrl.startsWith("/")) {
@@ -196,18 +207,21 @@ function ShopPage() {
 
   const subtotal = useMemo(
     () =>
-      cartItems.reduce(
-        (total, item) => total + item.price * item.quantity,
-        0,
-      ),
+      cartItems.reduce((total, item) => total + item.price * item.quantity, 0),
     [cartItems],
   );
 
-  const shipping = cartItems.length > 0
-    ? (checkoutForm.shippingMethod.toLowerCase().includes("ambil") ? 0 : SHIPPING_COST)
-    : 0;
+  const shipping =
+    cartItems.length > 0
+      ? checkoutForm.shippingMethod.toLowerCase().includes("ambil")
+        ? 0
+        : SHIPPING_COST
+      : 0;
   const grandTotal = subtotal + shipping;
-  const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const totalItems = cartItems.reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
 
   const updateSelection = (productId, key, value) => {
     setSelections((previous) => ({
@@ -242,7 +256,10 @@ function ShopPage() {
       if (existingItemIndex >= 0) {
         return previous.map((item, index) => {
           if (index !== existingItemIndex) return item;
-          const nextQty = Math.min(item.quantity + quantity, Number(product.stock) || 99);
+          const nextQty = Math.min(
+            item.quantity + quantity,
+            Number(product.stock) || 99,
+          );
           return { ...item, quantity: nextQty };
         });
       }
@@ -309,7 +326,11 @@ function ShopPage() {
       setCheckoutError("Keranjang masih kosong. Tambahkan produk dulu ya.");
       return;
     }
-    if (!checkoutForm.name.trim() || !checkoutForm.phone.trim() || !checkoutForm.address.trim()) {
+    if (
+      !checkoutForm.name.trim() ||
+      !checkoutForm.phone.trim() ||
+      !checkoutForm.address.trim()
+    ) {
       setCheckoutError("Lengkapi nama, nomor WhatsApp, dan alamat pengiriman.");
       return;
     }
@@ -377,9 +398,9 @@ function ShopPage() {
 
       const firstValidationError = error.response?.data?.errors?.[0]?.msg;
       setCheckoutError(
-        firstValidationError
-        || error.response?.data?.message
-        || "Checkout gagal. Silakan coba lagi.",
+        firstValidationError ||
+          error.response?.data?.message ||
+          "Checkout gagal. Silakan coba lagi.",
       );
     } finally {
       setIsSubmittingOrder(false);
@@ -388,64 +409,18 @@ function ShopPage() {
 
   return (
     <div className="page-stack space-y-8">
-      {/* ── Hero Section ──────────────────────── */}
-        <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl" />
-        <div className="pointer-events-none absolute -left-16 -bottom-20 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
-
-        <div className="relative grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
-              GTshirt Official Store
-            </p>
-            <h1 className="mt-3 text-3xl font-black leading-tight md:text-5xl">
-              Toko Online Kaos Rohani
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/80 md:text-base">
-              Koleksi kaos minimalist streetwear untuk jemaat. Produk, harga, dan promo
-              dikelola langsung dari dashboard admin GTshirt.
-            </p>
-
-            <div className="mt-7 flex flex-wrap gap-3">
-              <span className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white/90">
-                Cotton Combed 24s
-              </span>
-              <span className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white/90">
-                Unisex Fit
-              </span>
-              <span className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white/90">
-                Brand GTshirt
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <img
-              src={gtshirtLogo}
-              alt="GTshirt"
-              className="w-full rounded-2xl border border-white/20 bg-white/10 p-2"
-            />
-            <div className="grid gap-3 sm:grid-cols-3">
-              {products.slice(0, 3).map((product) => (
-                <div
-                  key={product.id}
-                  className="overflow-hidden rounded-2xl border border-white/15 bg-white/10 backdrop-blur-sm"
-                >
-                  <img
-                    src={resolveImageUrl(product.imageUrl)}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        image={gtshirtLogo}
+        title="GTshirt Official Store"
+        titleAccent="Toko Kaos Rohani"
+        subtitle="Koleksi kaos minimalist streetwear untuk jemaat. Produk, harga, dan promo dikelola langsung dari dashboard admin GTshirt."
+      />
 
       {isUsingFallbackProducts && (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-900/20 dark:text-amber-300">
-          Data produk API belum tersedia, sehingga sementara menampilkan katalog lokal.
-          Produk dari dashboard admin akan tampil otomatis setelah data toko tersedia.
+          Data produk API belum tersedia, sehingga sementara menampilkan katalog
+          lokal. Produk dari dashboard admin akan tampil otomatis setelah data
+          toko tersedia.
         </section>
       )}
 
@@ -456,7 +431,8 @@ function ShopPage() {
               Katalog Produk
             </h2>
             <p className="mt-1 text-sm text-brand-600 dark:text-brand-400">
-              Klik produk untuk melihat detail. Pilih ukuran dan masukkan ke keranjang.
+              Klik produk untuk melihat detail. Pilih ukuran dan masukkan ke
+              keranjang.
             </p>
           </div>
           <button
@@ -464,9 +440,23 @@ function ShopPage() {
             className="relative rounded-full bg-primary/20 p-3 text-primary transition hover:bg-primary/30 dark:bg-primary/30 dark:hover:bg-primary/40"
             title="Buka keranjang belanja"
           >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h17.25c.621 0 1.125.504 1.125 1.125v12c0 .621-.504 1.125-1.125 1.125H3.375A1.125 1.125 0 0 1 2.25 19.125V7.125Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm8 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm4 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h17.25c.621 0 1.125.504 1.125 1.125v12c0 .621-.504 1.125-1.125 1.125H3.375A1.125 1.125 0 0 1 2.25 19.125V7.125Z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm8 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm4 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+              />
             </svg>
             {totalItems > 0 && (
               <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-xs font-bold text-white">
@@ -487,7 +477,9 @@ function ShopPage() {
                 size: product.sizes?.[0] || "M",
                 quantity: 1,
               };
-              const effectivePrice = Number(product.finalPrice ?? product.basePrice ?? 0);
+              const effectivePrice = Number(
+                product.finalPrice ?? product.basePrice ?? 0,
+              );
 
               return (
                 <article
@@ -502,7 +494,9 @@ function ShopPage() {
                       className="h-full w-full object-cover transition group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20 flex items-center justify-center">
-                      <span className="text-white/0 transition group-hover:text-white/100 text-lg font-bold">👁️ Lihat Detail</span>
+                      <span className="text-white/0 transition group-hover:text-white/100 text-lg font-bold">
+                        👁️ Lihat Detail
+                      </span>
                     </div>
                   </div>
                   <div className="space-y-3 p-5">
@@ -517,7 +511,8 @@ function ShopPage() {
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        {product.promoIsActive && Number(product.discountAmount) > 0 ? (
+                        {product.promoIsActive &&
+                        Number(product.discountAmount) > 0 ? (
                           <>
                             <p className="text-xs text-brand-500 line-through dark:text-brand-400">
                               {formatRupiah(Number(product.basePrice) || 0)}
@@ -544,7 +539,16 @@ function ShopPage() {
                     )}
 
                     <p className="text-xs text-brand-500 dark:text-brand-400">
-                      Stok: <span className={Number(product.stock) <= 0 ? "text-rose-500 font-bold" : "font-semibold"}>{product.stock ?? 0}</span>
+                      Stok:{" "}
+                      <span
+                        className={
+                          Number(product.stock) <= 0
+                            ? "text-rose-500 font-bold"
+                            : "font-semibold"
+                        }
+                      >
+                        {product.stock ?? 0}
+                      </span>
                     </p>
                   </div>
                 </article>
@@ -559,7 +563,9 @@ function ShopPage() {
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto">
           <div className="w-full md:max-w-2xl rounded-t-3xl md:rounded-3xl bg-white dark:bg-brand-950 shadow-xl">
             <div className="sticky top-0 flex items-center justify-between border-b border-brand-200 bg-white dark:border-brand-700 dark:bg-brand-900/50 p-5 md:p-6">
-              <h2 className="text-xl font-bold text-brand-900 dark:text-white line-clamp-1">Detail Produk</h2>
+              <h2 className="text-xl font-bold text-brand-900 dark:text-white line-clamp-1">
+                Detail Produk
+              </h2>
               <button
                 onClick={() => setSelectedProduct(null)}
                 className="text-brand-500 transition hover:text-brand-900 dark:text-brand-400 dark:hover:text-white"
@@ -588,22 +594,36 @@ function ShopPage() {
                 </div>
 
                 <p className="text-sm leading-relaxed text-brand-600 dark:text-brand-300">
-                  {selectedProduct.description || "Kaos rohani minimalist streetwear."}
+                  {selectedProduct.description ||
+                    "Kaos rohani minimalist streetwear."}
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  {selectedProduct.promoIsActive && Number(selectedProduct.discountAmount) > 0 ? (
+                  {selectedProduct.promoIsActive &&
+                  Number(selectedProduct.discountAmount) > 0 ? (
                     <>
                       <p className="text-sm text-brand-500 line-through dark:text-brand-400">
                         {formatRupiah(Number(selectedProduct.basePrice) || 0)}
                       </p>
                       <span className="text-2xl font-black text-primary">
-                        {formatRupiah(Number(selectedProduct.finalPrice ?? selectedProduct.basePrice ?? 0))}
+                        {formatRupiah(
+                          Number(
+                            selectedProduct.finalPrice ??
+                              selectedProduct.basePrice ??
+                              0,
+                          ),
+                        )}
                       </span>
                     </>
                   ) : (
                     <span className="text-2xl font-black text-primary">
-                      {formatRupiah(Number(selectedProduct.finalPrice ?? selectedProduct.basePrice ?? 0))}
+                      {formatRupiah(
+                        Number(
+                          selectedProduct.finalPrice ??
+                            selectedProduct.basePrice ??
+                            0,
+                        ),
+                      )}
                     </span>
                   )}
                   <span className="rounded-lg border border-brand-200 px-3 py-1 text-xs font-semibold text-brand-600 dark:border-brand-700 dark:text-brand-300">
@@ -618,10 +638,15 @@ function ShopPage() {
                 )}
 
                 <div className="space-y-2 rounded-xl border border-brand-200 bg-brand-50/80 p-3 dark:border-brand-700 dark:bg-brand-900/30">
-                  <p className="text-xs font-semibold text-brand-600 dark:text-brand-300">Informasi Produk:</p>
+                  <p className="text-xs font-semibold text-brand-600 dark:text-brand-300">
+                    Informasi Produk:
+                  </p>
                   <ul className="space-y-1 text-xs text-brand-600 dark:text-brand-300">
                     <li>🎨 Warna: {selectedProduct.color || "-"}</li>
-                    <li>📏 Ukuran: {selectedProduct.sizes?.join(", ") || "S, M, L, XL, XXL"}</li>
+                    <li>
+                      📏 Ukuran:{" "}
+                      {selectedProduct.sizes?.join(", ") || "S, M, L, XL, XXL"}
+                    </li>
                     <li>📦 Stok: {selectedProduct.stock ?? 0} pcs</li>
                     <li>✝️ Ayat: {selectedProduct.verse || "-"}</li>
                   </ul>
@@ -632,9 +657,17 @@ function ShopPage() {
                 <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
                   <select
                     className="input-modern !py-3"
-                    value={selections[selectedProduct.id]?.size || selectedProduct.sizes?.[0] || "M"}
+                    value={
+                      selections[selectedProduct.id]?.size ||
+                      selectedProduct.sizes?.[0] ||
+                      "M"
+                    }
                     onChange={(event) =>
-                      updateSelection(selectedProduct.id, "size", event.target.value)
+                      updateSelection(
+                        selectedProduct.id,
+                        "size",
+                        event.target.value,
+                      )
                     }
                   >
                     {(selectedProduct.sizes || ["M"]).map((size) => (
@@ -650,7 +683,11 @@ function ShopPage() {
                     className="input-modern !py-3"
                     value={selections[selectedProduct.id]?.quantity || 1}
                     onChange={(event) =>
-                      updateSelection(selectedProduct.id, "quantity", event.target.value)
+                      updateSelection(
+                        selectedProduct.id,
+                        "quantity",
+                        event.target.value,
+                      )
                     }
                   />
                 </div>
@@ -664,7 +701,9 @@ function ShopPage() {
                   disabled={(Number(selectedProduct.stock) || 0) <= 0}
                   className="btn-primary w-full !py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {(Number(selectedProduct.stock) || 0) <= 0 ? "❌ Habis" : "✅ Tambah ke Keranjang"}
+                  {(Number(selectedProduct.stock) || 0) <= 0
+                    ? "❌ Habis"
+                    : "✅ Tambah ke Keranjang"}
                 </button>
               </div>
             </div>
@@ -714,22 +753,36 @@ function ShopPage() {
                 cartItems.length === 0 ? (
                   <div className="flex h-full items-center justify-center">
                     <div className="text-center">
-                      <p className="text-brand-600 dark:text-brand-400">Keranjang kosong</p>
+                      <p className="text-brand-600 dark:text-brand-400">
+                        Keranjang kosong
+                      </p>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     <div className="rounded-2xl border border-brand-200 bg-brand-50/80 p-4 dark:border-brand-700 dark:bg-brand-900/30">
-                      <p className="text-xs font-semibold text-brand-600 dark:text-brand-300">INVOICE PESANAN</p>
+                      <p className="text-xs font-semibold text-brand-600 dark:text-brand-300">
+                        INVOICE PESANAN
+                      </p>
                       <p className="mt-2 text-xs text-brand-500 dark:text-brand-400">
-                        {new Date().toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                        {new Date().toLocaleDateString("id-ID", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
                       </p>
                     </div>
 
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-brand-900 dark:text-white">📦 Detail Pesanan:</h3>
+                      <h3 className="font-semibold text-brand-900 dark:text-white">
+                        📦 Detail Pesanan:
+                      </h3>
                       {cartItems.map((item) => (
-                        <div key={item.variantKey} className="rounded-lg border border-brand-200 bg-white/50 p-3 dark:border-brand-700 dark:bg-brand-900/30">
+                        <div
+                          key={item.variantKey}
+                          className="rounded-lg border border-brand-200 bg-white/50 p-3 dark:border-brand-700 dark:bg-brand-900/30"
+                        >
                           <div className="flex gap-3">
                             <img
                               src={item.image}
@@ -737,13 +790,23 @@ function ShopPage() {
                               className="h-16 w-16 rounded-lg object-cover"
                             />
                             <div className="flex-1">
-                              <p className="font-semibold text-brand-900 dark:text-white">{item.name}</p>
-                              <p className="text-xs text-brand-500 dark:text-brand-400">Size {item.size}</p>
-                              <p className="mt-1 text-sm font-semibold text-primary">{formatRupiah(item.price)}</p>
+                              <p className="font-semibold text-brand-900 dark:text-white">
+                                {item.name}
+                              </p>
+                              <p className="text-xs text-brand-500 dark:text-brand-400">
+                                Size {item.size}
+                              </p>
+                              <p className="mt-1 text-sm font-semibold text-primary">
+                                {formatRupiah(item.price)}
+                              </p>
                             </div>
                             <div className="text-right">
-                              <p className="text-xs text-brand-600 dark:text-brand-300">Qty: {item.quantity}</p>
-                              <p className="mt-1 font-bold text-brand-900 dark:text-white">{formatRupiah(item.price * item.quantity)}</p>
+                              <p className="text-xs text-brand-600 dark:text-brand-300">
+                                Qty: {item.quantity}
+                              </p>
+                              <p className="mt-1 font-bold text-brand-900 dark:text-white">
+                                {formatRupiah(item.price * item.quantity)}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -752,94 +815,115 @@ function ShopPage() {
 
                     <div className="rounded-xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-950/40 space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-brand-600 dark:text-brand-300">Subtotal</span>
-                        <span className="font-semibold text-brand-900 dark:text-white">{formatRupiah(subtotal)}</span>
+                        <span className="text-brand-600 dark:text-brand-300">
+                          Subtotal
+                        </span>
+                        <span className="font-semibold text-brand-900 dark:text-white">
+                          {formatRupiah(subtotal)}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-brand-600 dark:text-brand-300">Estimasi Ongkir ({checkoutForm.shippingMethod})</span>
-                        <span className="font-semibold text-brand-900 dark:text-white">{formatRupiah(shipping)}</span>
+                        <span className="text-brand-600 dark:text-brand-300">
+                          Estimasi Ongkir ({checkoutForm.shippingMethod})
+                        </span>
+                        <span className="font-semibold text-brand-900 dark:text-white">
+                          {formatRupiah(shipping)}
+                        </span>
                       </div>
                       <div className="border-t border-brand-200 pt-2 dark:border-brand-700">
                         <div className="flex items-center justify-between text-base font-bold">
-                          <span className="text-brand-900 dark:text-white">TOTAL</span>
-                          <span className="text-primary text-xl">{formatRupiah(grandTotal)}</span>
+                          <span className="text-brand-900 dark:text-white">
+                            TOTAL
+                          </span>
+                          <span className="text-primary text-xl">
+                            {formatRupiah(grandTotal)}
+                          </span>
                         </div>
                       </div>
                     </div>
 
                     <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 dark:bg-blue-900/20 dark:border-blue-900/40">
                       <p className="text-xs text-blue-700 dark:text-blue-300">
-                        <span className="font-semibold">💳 Metode Pembayaran:</span> {checkoutForm.paymentMethod}
+                        <span className="font-semibold">
+                          💳 Metode Pembayaran:
+                        </span>{" "}
+                        {checkoutForm.paymentMethod}
                       </p>
                       <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
-                        <span className="font-semibold">🚚 Pengiriman:</span> {checkoutForm.shippingMethod}
+                        <span className="font-semibold">🚚 Pengiriman:</span>{" "}
+                        {checkoutForm.shippingMethod}
                       </p>
                     </div>
                   </div>
                 )
-              ) : (
-                // Cart Items View
-                cartItems.length === 0 ? (
-                  <div className="flex h-full items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-brand-600 dark:text-brand-400">Keranjang belanja kosong</p>
-                      <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">Klik produk untuk mulai berbelanja</p>
-                    </div>
+              ) : // Cart Items View
+              cartItems.length === 0 ? (
+                <div className="flex h-full items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-brand-600 dark:text-brand-400">
+                      Keranjang belanja kosong
+                    </p>
+                    <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                      Klik produk untuk mulai berbelanja
+                    </p>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {lastAddedProduct && (
-                      <p className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
-                        ✓ {lastAddedProduct} berhasil dimasukkan
-                      </p>
-                    )}
-                    {cartItems.map((item) => (
-                      <div
-                        key={item.variantKey}
-                        className="rounded-2xl border border-brand-200 bg-brand-50/60 p-3 dark:border-brand-700 dark:bg-brand-900/50"
-                      >
-                        <div className="flex gap-3">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="h-16 w-16 rounded-xl object-cover"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="line-clamp-2 text-sm font-semibold text-brand-900 dark:text-white">
-                              {item.name}
-                            </p>
-                            <p className="mt-0.5 text-xs text-brand-500 dark:text-brand-400">
-                              Size {item.size} • {item.color}
-                            </p>
-                            <p className="mt-1 text-xs font-semibold text-primary">
-                              {formatRupiah(item.price)}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 flex items-center justify-between gap-2">
-                          <input
-                            type="number"
-                            min="1"
-                            max={item.stock || 99}
-                            className="input-modern !w-[90px] !py-1.5"
-                            value={item.quantity}
-                            onChange={(event) =>
-                              updateCartQuantity(item.variantKey, event.target.value)
-                            }
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeFromCart(item.variantKey)}
-                            className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
-                          >
-                            Hapus
-                          </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {lastAddedProduct && (
+                    <p className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      ✓ {lastAddedProduct} berhasil dimasukkan
+                    </p>
+                  )}
+                  {cartItems.map((item) => (
+                    <div
+                      key={item.variantKey}
+                      className="rounded-2xl border border-brand-200 bg-brand-50/60 p-3 dark:border-brand-700 dark:bg-brand-900/50"
+                    >
+                      <div className="flex gap-3">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="h-16 w-16 rounded-xl object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-sm font-semibold text-brand-900 dark:text-white">
+                            {item.name}
+                          </p>
+                          <p className="mt-0.5 text-xs text-brand-500 dark:text-brand-400">
+                            Size {item.size} • {item.color}
+                          </p>
+                          <p className="mt-1 text-xs font-semibold text-primary">
+                            {formatRupiah(item.price)}
+                          </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )
+
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          max={item.stock || 99}
+                          className="input-modern !w-[90px] !py-1.5"
+                          value={item.quantity}
+                          onChange={(event) =>
+                            updateCartQuantity(
+                              item.variantKey,
+                              event.target.value,
+                            )
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(item.variantKey)}
+                          className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
@@ -896,20 +980,26 @@ function ShopPage() {
                 Lengkapi Data Checkout
               </h3>
               {cartItems.length === 0 ? (
-                <p className="text-xs text-brand-500 dark:text-brand-400">Tambahkan produk terlebih dahulu</p>
+                <p className="text-xs text-brand-500 dark:text-brand-400">
+                  Tambahkan produk terlebih dahulu
+                </p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <input
                     className="input-modern"
                     placeholder="Nama lengkap"
                     value={checkoutForm.name}
-                    onChange={(event) => handleCheckoutField("name", event.target.value)}
+                    onChange={(event) =>
+                      handleCheckoutField("name", event.target.value)
+                    }
                   />
                   <input
                     className="input-modern"
                     placeholder="No. WhatsApp"
                     value={checkoutForm.phone}
-                    onChange={(event) => handleCheckoutField("phone", event.target.value)}
+                    onChange={(event) =>
+                      handleCheckoutField("phone", event.target.value)
+                    }
                   />
                   <select
                     className="input-modern"
@@ -938,7 +1028,9 @@ function ShopPage() {
                 className="input-modern min-h-[60px] resize-y"
                 placeholder="Alamat lengkap pengiriman (opsional: catatan tambahan)"
                 value={checkoutForm.address}
-                onChange={(event) => handleCheckoutField("address", event.target.value)}
+                onChange={(event) =>
+                  handleCheckoutField("address", event.target.value)
+                }
               />
 
               {checkoutError && (
@@ -994,7 +1086,10 @@ function ShopPage() {
                 "Brand apparel rohani dari komunitas gereja dengan karakter minimalist streetwear.",
             },
           ].map((item) => (
-            <article key={item.title} className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/50">
+            <article
+              key={item.title}
+              className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/50"
+            >
               <h3 className="text-sm font-bold uppercase tracking-[0.13em] text-brand-700 dark:text-brand-200">
                 {item.title}
               </h3>
@@ -1005,10 +1100,16 @@ function ShopPage() {
           ))}
         </div>
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Link to="/contact" className="btn-outline !rounded-xl !px-5 !py-2.5 text-sm">
+          <Link
+            to="/contact"
+            className="btn-outline !rounded-xl !px-5 !py-2.5 text-sm"
+          >
             Tanya Tim Toko
           </Link>
-          <Link to="/schedules" className="rounded-xl border border-brand-200 px-5 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40">
+          <Link
+            to="/schedules"
+            className="rounded-xl border border-brand-200 px-5 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
+          >
             Cek Jadwal Ibadah
           </Link>
         </div>
