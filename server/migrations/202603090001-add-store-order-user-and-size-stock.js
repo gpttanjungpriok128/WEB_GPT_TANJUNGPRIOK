@@ -29,51 +29,71 @@ function distributeStockBySize(totalStock, sizes) {
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('StoreProducts', 'stockBySize', {
-      type: Sequelize.JSONB,
-      allowNull: false,
-      defaultValue: {}
-    });
+    // Check if stockBySize column already exists
+    const table = await queryInterface.describeTable('StoreProducts');
+    if (!table.stockBySize) {
+      await queryInterface.addColumn('StoreProducts', 'stockBySize', {
+        type: Sequelize.JSONB,
+        allowNull: false,
+        defaultValue: {}
+      });
 
-    const [products] = await queryInterface.sequelize.query(
-      'SELECT id, sizes, stock FROM "StoreProducts";'
-    );
-
-    for (const product of products) {
-      const stockBySize = distributeStockBySize(product.stock, product.sizes);
-      await queryInterface.sequelize.query(
-        'UPDATE "StoreProducts" SET "stockBySize" = :stockBySize WHERE id = :id;',
-        {
-          replacements: {
-            id: product.id,
-            stockBySize: JSON.stringify(stockBySize)
-          }
-        }
+      const [products] = await queryInterface.sequelize.query(
+        'SELECT id, sizes, stock FROM "StoreProducts";'
       );
+
+      for (const product of products) {
+        const stockBySize = distributeStockBySize(product.stock, product.sizes);
+        await queryInterface.sequelize.query(
+          'UPDATE "StoreProducts" SET "stockBySize" = :stockBySize WHERE id = :id;',
+          {
+            replacements: {
+              id: product.id,
+              stockBySize: JSON.stringify(stockBySize)
+            }
+          }
+        );
+      }
     }
 
-    await queryInterface.addColumn('StoreOrders', 'userId', {
-      type: Sequelize.INTEGER,
-      allowNull: true,
-      references: { model: 'Users', key: 'id' },
-      onUpdate: 'CASCADE',
-      onDelete: 'SET NULL'
-    });
+    // Check if userId column already exists in StoreOrders
+    const ordersTable = await queryInterface.describeTable('StoreOrders');
+    if (!ordersTable.userId) {
+      await queryInterface.addColumn('StoreOrders', 'userId', {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: { model: 'Users', key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
+      });
+    }
 
-    await queryInterface.addColumn('StoreOrders', 'stockDeductedAt', {
-      type: Sequelize.DATE,
-      allowNull: true
-    });
+    // Check if stockDeductedAt column already exists in StoreOrders
+    if (!ordersTable.stockDeductedAt) {
+      await queryInterface.addColumn('StoreOrders', 'stockDeductedAt', {
+        type: Sequelize.DATE,
+        allowNull: true
+      });
 
-    // Existing historical orders were deducted at creation time.
-    await queryInterface.sequelize.query(
-      'UPDATE "StoreOrders" SET "stockDeductedAt" = "createdAt" WHERE "stockDeductedAt" IS NULL;'
-    );
+      // Existing historical orders were deducted at creation time.
+      await queryInterface.sequelize.query(
+        'UPDATE "StoreOrders" SET "stockDeductedAt" = "createdAt" WHERE "stockDeductedAt" IS NULL;'
+      );
+    }
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn('StoreOrders', 'stockDeductedAt');
-    await queryInterface.removeColumn('StoreOrders', 'userId');
-    await queryInterface.removeColumn('StoreProducts', 'stockBySize');
+    const table = await queryInterface.describeTable('StoreProducts');
+    if (table.stockBySize) {
+      await queryInterface.removeColumn('StoreProducts', 'stockBySize');
+    }
+
+    const ordersTable = await queryInterface.describeTable('StoreOrders');
+    if (ordersTable.stockDeductedAt) {
+      await queryInterface.removeColumn('StoreOrders', 'stockDeductedAt');
+    }
+    if (ordersTable.userId) {
+      await queryInterface.removeColumn('StoreOrders', 'userId');
+    }
   }
 };
