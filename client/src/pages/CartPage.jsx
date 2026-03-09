@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../services/api";
 import PageHero from "../components/PageHero";
 import cartHeroImage from "../img/store/made-to-worship.png";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
-const SHIPPING_COST = 15000;
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
+const DEFAULT_SHIPPING_COST = 15000;
+const SERVER_URL = (import.meta.env.VITE_SERVER_URL || "http://localhost:5001").replace(/\/$/, "");
 
 const formatRupiah = (amount) =>
   new Intl.NumberFormat("id-ID", {
@@ -16,18 +17,44 @@ const formatRupiah = (amount) =>
 
 function resolveImageUrl(imageUrl) {
   if (!imageUrl) return "";
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://") || imageUrl.startsWith("data:")) {
+  if (
+    imageUrl.startsWith("http://") ||
+    imageUrl.startsWith("https://") ||
+    imageUrl.startsWith("data:") ||
+    imageUrl.startsWith("blob:")
+  ) {
+    return imageUrl;
+  }
+  if (imageUrl.startsWith("/assets/") || imageUrl.startsWith("/src/")) {
     return imageUrl;
   }
   if (imageUrl.startsWith("/")) {
-    return `${SERVER_URL}${imageUrl}`;
+    return SERVER_URL ? `${SERVER_URL}${imageUrl}` : imageUrl;
   }
+  return imageUrl;
+}
+
+function normalizeStoredImageUrl(imageUrl) {
+  if (typeof imageUrl !== "string") return "";
+
+  const assetsPathIndex = imageUrl.indexOf("/assets/");
+  if (assetsPathIndex >= 0) {
+    return imageUrl.slice(assetsPathIndex);
+  }
+
+  const srcPathIndex = imageUrl.indexOf("/src/");
+  if (srcPathIndex >= 0) {
+    return imageUrl.slice(srcPathIndex);
+  }
+
   return imageUrl;
 }
 
 function CartPage() {
   const [cartItems, setCartItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState(new Set());
+  const [failedImageKeys, setFailedImageKeys] = useState(new Set());
+  const [shippingCost, setShippingCost] = useState(DEFAULT_SHIPPING_COST);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutInfo, setCheckoutInfo] = useState("");
@@ -44,11 +71,34 @@ function CartPage() {
   useEffect(() => {
     try {
       const saved = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || "[]");
-      setCartItems(saved);
-      setSelectedItems(new Set(saved.map((_, i) => i)));
+      const normalizedSaved = Array.isArray(saved)
+        ? saved.map((item) => ({
+            ...item,
+            image: normalizeStoredImageUrl(item?.image),
+          }))
+        : [];
+      setCartItems(normalizedSaved);
+      setSelectedItems(new Set(normalizedSaved.map((_, i) => i)));
     } catch {
       setCartItems([]);
     }
+  }, []);
+
+  // Load shipping cost from store settings (public meta)
+  useEffect(() => {
+    const fetchShippingCost = async () => {
+      try {
+        const { data } = await api.get("/store/products");
+        const cost = Number(data?.meta?.shippingCost);
+        if (Number.isFinite(cost) && cost >= 0) {
+          setShippingCost(cost);
+        }
+      } catch {
+        // keep default shipping cost
+      }
+    };
+
+    fetchShippingCost();
   }, []);
 
   // Calculate totals for selected items
@@ -60,7 +110,8 @@ function CartPage() {
     return selectedItemsList.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [selectedItemsList]);
 
-  const shipping = selectedItemsList.length > 0 ? SHIPPING_COST : 0;
+  const isPickupAtChurch = checkoutForm.shippingMethod.toLowerCase().includes("ambil");
+  const shipping = selectedItemsList.length > 0 ? (isPickupAtChurch ? 0 : shippingCost) : 0;
   const grandTotal = subtotal + shipping;
 
   // Toggle item selection
@@ -94,8 +145,16 @@ function CartPage() {
 
   // Remove item
   const removeItem = (index) => {
+    const removedItem = cartItems[index];
     const updated = cartItems.filter((_, i) => i !== index);
     setCartItems(updated);
+    if (removedItem?.variantKey) {
+      setFailedImageKeys((previous) => {
+        const next = new Set(previous);
+        next.delete(removedItem.variantKey);
+        return next;
+      });
+    }
     const newSelected = new Set(selectedItems);
     newSelected.delete(index);
     // Re-map selected indices after removal
@@ -174,8 +233,28 @@ function CartPage() {
         <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" image={cartHeroImage} />
         <div className="page-stack space-y-6">
           <div className="rounded-2xl border border-brand-200 bg-brand-50 p-12 text-center dark:border-brand-700 dark:bg-brand-900/30">
-            <p className="text-lg font-semibold text-brand-600 dark:text-brand-300">
-              🛒 Keranjang belanja kosong
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm dark:bg-brand-900 dark:text-brand-300">
+              <svg
+                className="h-7 w-7"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+                />
+              </svg>
+            </div>
+            <p className="mt-4 text-lg font-semibold text-brand-600 dark:text-brand-300">
+              Keranjang belanja kosong
             </p>
             <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
               Mulai belanja dan tambahkan produk ke keranjang
@@ -228,86 +307,102 @@ function CartPage() {
 
           {/* Cart Items */}
           <div className="space-y-3">
-            {cartItems.map((item, index) => (
-              <div
-                key={item.variantKey}
-                className="rounded-2xl border border-brand-200 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-900/50"
-              >
-                <div className="flex gap-4">
-                  {/* Checkbox */}
-                  <label className="flex items-start pt-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.has(index)}
-                      onChange={() => toggleItemSelect(index)}
-                      className="h-5 w-5 rounded border-brand-300 text-primary mt-1"
-                    />
-                  </label>
+            {cartItems.map((item, index) => {
+              const imageSrc = resolveImageUrl(item.image);
+              const isImageBroken = failedImageKeys.has(item.variantKey);
 
-                  {/* Image */}
-                  <div className="flex-shrink-0">
-                    <img
-                      src={resolveImageUrl(item.image)}
-                      alt={item.name}
-                      className="h-24 w-24 rounded-xl object-cover"
-                    />
+              return (
+                <div
+                  key={item.variantKey}
+                  className="rounded-2xl border border-brand-200 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-900/50"
+                >
+                  <div className="flex gap-4">
+                    {/* Checkbox */}
+                    <label className="flex items-start pt-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(index)}
+                        onChange={() => toggleItemSelect(index)}
+                        className="h-5 w-5 rounded border-brand-300 text-primary mt-1"
+                      />
+                    </label>
+
+                    {/* Image */}
+                    <div className="flex-shrink-0">
+                      <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border border-brand-200 bg-brand-50 dark:border-brand-700 dark:bg-brand-800/40">
+                        {imageSrc && !isImageBroken ? (
+                          <img
+                            src={imageSrc}
+                            alt={item.name}
+                            onError={() =>
+                              setFailedImageKeys((previous) => new Set(previous).add(item.variantKey))
+                            }
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="px-2 text-center text-[11px] font-semibold uppercase tracking-wide text-brand-400 dark:text-brand-500">
+                            No Image
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="line-clamp-2 font-semibold text-brand-900 dark:text-white">
+                        {item.name}
+                      </h3>
+                      <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                        Size <span className="font-semibold">{item.size}</span> · {item.color}
+                      </p>
+                      <p className="mt-2 text-sm font-bold text-primary">
+                        {formatRupiah(item.price)}
+                      </p>
+                    </div>
+
+                    {/* Price & Remove */}
+                    <div className="flex flex-col items-end gap-3">
+                      <p className="text-sm font-bold text-brand-900 dark:text-white">
+                        {formatRupiah(item.price * item.quantity)}
+                      </p>
+                      <button
+                        onClick={() => removeItem(index)}
+                        className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
+                      >
+                        Hapus
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Details */}
-                  <div className="min-w-0 flex-1">
-                    <h3 className="line-clamp-2 font-semibold text-brand-900 dark:text-white">
-                      {item.name}
-                    </h3>
-                    <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                      Size <span className="font-semibold">{item.size}</span> · {item.color}
-                    </p>
-                    <p className="mt-2 text-sm font-bold text-primary">
-                      {formatRupiah(item.price)}
-                    </p>
-                  </div>
-
-                  {/* Price & Remove */}
-                  <div className="flex flex-col items-end gap-3">
-                    <p className="text-sm font-bold text-brand-900 dark:text-white">
-                      {formatRupiah(item.price * item.quantity)}
-                    </p>
-                    <button
-                      onClick={() => removeItem(index)}
-                      className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
-                    >
-                      Hapus
-                    </button>
+                  {/* Quantity Selector */}
+                  <div className="mt-4 flex items-center justify-between border-t border-brand-200 pt-4 dark:border-brand-700">
+                    <span className="text-xs text-brand-600 dark:text-brand-400">Jumlah</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateQuantity(index, item.quantity - 1)}
+                        className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max={item.stock || 99}
+                        className="input-modern !w-16 !py-1.5 text-center text-sm"
+                        value={item.quantity}
+                        onChange={(e) => updateQuantity(index, e.target.value)}
+                      />
+                      <button
+                        onClick={() => updateQuantity(index, item.quantity + 1)}
+                        className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                {/* Quantity Selector */}
-                <div className="mt-4 flex items-center justify-between border-t border-brand-200 pt-4 dark:border-brand-700">
-                  <span className="text-xs text-brand-600 dark:text-brand-400">Jumlah</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => updateQuantity(index, item.quantity - 1)}
-                      className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
-                    >
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      max={item.stock || 99}
-                      className="input-modern !w-16 !py-1.5 text-center text-sm"
-                      value={item.quantity}
-                      onChange={(e) => updateQuantity(index, e.target.value)}
-                    />
-                    <button
-                      onClick={() => updateQuantity(index, item.quantity + 1)}
-                      className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* GTshirt Info */}
@@ -316,7 +411,7 @@ function CartPage() {
               ℹ️ Toko GTshirt Official
             </p>
             <p className="mt-2 text-xs leading-relaxed text-blue-600 dark:text-blue-400">
-              Cotton Combed 24s • Unisex fit • High-quality printing • Ready stock • Siap dikirim dalam 1-2 hari kerja
+              Cotton Combed 24s • Unisex fit • High-quality printing • Sistem pre-order • Estimasi 5 hari kerja
             </p>
           </div>
 
@@ -425,16 +520,18 @@ function CartPage() {
               <span className="text-2xl text-primary">{formatRupiah(grandTotal)}</span>
             </div>
 
-            <p className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
-              Lengkapi data checkout di bagian bawah daftar produk.
-            </p>
+            <div className="space-y-2">
+              <p className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                Lengkapi data checkout di bagian bawah daftar produk.
+              </p>
 
-            <Link
-              to="/shop"
-              className="w-full rounded-xl border border-brand-300 bg-white/50 px-4 py-2.5 text-center text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/30 dark:text-brand-300 dark:hover:bg-brand-800/40"
-            >
-              ← Lanjut Belanja
-            </Link>
+              <Link
+                to="/shop"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-brand-300 bg-white/50 px-4 py-2.5 text-center text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/30 dark:text-brand-300 dark:hover:bg-brand-800/40"
+              >
+                ← Lanjut Belanja
+              </Link>
+            </div>
           </div>
         </aside>
       </div>

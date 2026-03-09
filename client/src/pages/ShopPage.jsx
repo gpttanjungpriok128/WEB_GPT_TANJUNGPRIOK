@@ -10,7 +10,7 @@ import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 const SHOP_WHATSAPP_NUMBER = "6282118223784"; // Format: +62 821-1822-3784
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const SHIPPING_COST = 15000;
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
+const SERVER_URL = (import.meta.env.VITE_SERVER_URL || "http://localhost:5001").replace(/\/$/, "");
 
 const FALLBACK_PRODUCTS = [
   {
@@ -83,12 +83,16 @@ function resolveImageUrl(imageUrl) {
   if (
     imageUrl.startsWith("http://") ||
     imageUrl.startsWith("https://") ||
-    imageUrl.startsWith("data:")
+    imageUrl.startsWith("data:") ||
+    imageUrl.startsWith("blob:")
   ) {
     return imageUrl;
   }
+  if (imageUrl.startsWith("/assets/") || imageUrl.startsWith("/src/")) {
+    return imageUrl;
+  }
   if (imageUrl.startsWith("/")) {
-    return `${SERVER_URL}${imageUrl}`;
+    return SERVER_URL ? `${SERVER_URL}${imageUrl}` : imageUrl;
   }
   return imageUrl;
 }
@@ -263,7 +267,7 @@ function ShopPage() {
       />
 
       <section className="grid gap-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
               Katalog Produk
@@ -275,29 +279,35 @@ function ShopPage() {
           </div>
           <Link
             to="/cart"
-            className={`relative rounded-full p-3 transition ${totalItems > 0 ? "bg-primary text-white hover:bg-primary/90 shadow-md" : "bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/30 dark:hover:bg-primary/40"}`}
+            className={`group relative inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition ${
+              totalItems > 0
+                ? "border-primary bg-primary text-white shadow-md hover:bg-primary/90"
+                : "border-brand-300 bg-white text-brand-700 hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/60"
+            }`}
             title="Buka keranjang belanja"
+            aria-label="Buka keranjang belanja"
           >
             <svg
-              className="h-6 w-6"
+              className="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              strokeWidth={1.5}
+              strokeWidth={1.8}
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h17.25c.621 0 1.125.504 1.125 1.125v12c0 .621-.504 1.125-1.125 1.125H3.375A1.125 1.125 0 0 1 2.25 19.125V7.125Z"
+                d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
               />
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M6 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm8 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm4 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+                d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
               />
             </svg>
+            <span>Keranjang</span>
             {totalItems > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-xs font-bold text-white shadow-sm ring-2 ring-white dark:ring-brand-900">
+              <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-rose-500 px-1 text-xs font-bold text-white shadow-sm ring-2 ring-white dark:ring-brand-900">
                 {totalItems}
               </span>
             )}

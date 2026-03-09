@@ -8,7 +8,7 @@ import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
 const SHOP_WHATSAPP_NUMBER = "6282118223784"; // Format: +62 821-1822-3784
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const SHIPPING_COST = 15000;
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
+const SERVER_URL = (import.meta.env.VITE_SERVER_URL || "http://localhost:5001").replace(/\/$/, "");
 
 const FALLBACK_PRODUCTS = [
   {
@@ -82,12 +82,16 @@ function resolveImageUrl(imageUrl) {
   if (
     imageUrl.startsWith("http://") ||
     imageUrl.startsWith("https://") ||
-    imageUrl.startsWith("data:")
+    imageUrl.startsWith("data:") ||
+    imageUrl.startsWith("blob:")
   ) {
     return imageUrl;
   }
+  if (imageUrl.startsWith("/assets/") || imageUrl.startsWith("/src/")) {
+    return imageUrl;
+  }
   if (imageUrl.startsWith("/")) {
-    return `${SERVER_URL}${imageUrl}`;
+    return SERVER_URL ? `${SERVER_URL}${imageUrl}` : imageUrl;
   }
   return imageUrl;
 }
@@ -504,9 +508,27 @@ function ProductDetailPage() {
             <button
               onClick={addToCart}
               disabled={Number(product.stock) <= 0}
-              className="btn-outline flex-1 !py-3 font-semibold disabled:opacity-50"
+              className="btn-outline flex flex-1 items-center justify-center gap-2 !py-3 font-semibold disabled:opacity-50"
             >
-              🛒 Tambah ke Keranjang
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+                />
+              </svg>
+              <span>Tambah ke Keranjang</span>
             </button>
             <Link
               to="/shop"
