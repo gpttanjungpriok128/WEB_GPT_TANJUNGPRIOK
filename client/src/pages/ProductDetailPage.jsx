@@ -5,7 +5,7 @@ import worshipSmokeImage from "../img/store/MADE TO WORSHIP.png";
 import lightJohnImage from "../img/store/YOU ARE THE LIGHT.png";
 import hopePsalmImage from "../img/store/FOR ALL MY HOPE IS IN HIM.png";
 
-const SHOP_WHATSAPP_NUMBER = "6282118223784";
+const SHOP_WHATSAPP_NUMBER = "6282118223784"; // Format: +62 821-1822-3784
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const SHIPPING_COST = 15000;
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
@@ -88,6 +88,24 @@ function resolveImageUrl(imageUrl) {
   return imageUrl;
 }
 
+function getImageWithFallback(product, fallbackProducts) {
+  if (!product) return worshipSmokeImage;
+  
+  const imageUrls = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+    ? product.imageUrls
+    : product.imageUrl
+    ? [product.imageUrl]
+    : [];
+
+  // Try to find a fallback product by slug to use its images
+  const fallbackProduct = fallbackProducts.find(p => p.slug === product.slug);
+  if (fallbackProduct && Array.isArray(fallbackProduct.imageUrls) && fallbackProduct.imageUrls.length > 0) {
+    return [...imageUrls, ...fallbackProduct.imageUrls];
+  }
+
+  return imageUrls.length > 0 ? imageUrls : [worshipSmokeImage];
+}
+
 function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -96,6 +114,8 @@ function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [images, setImages] = useState([]);
+  const [failedImages, setFailedImages] = useState(new Set());
   const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
@@ -106,15 +126,25 @@ function ProductDetailPage() {
         if (data?.data) {
           setProduct(data.data);
           setSelectedSize(data.data.sizes?.[0] || "M");
+          const imgs = getImageWithFallback(data.data, FALLBACK_PRODUCTS);
+          setImages(imgs);
         } else {
           const found = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
           setProduct(found);
           setSelectedSize(found?.sizes?.[0] || "M");
+          if (found) {
+            const imgs = getImageWithFallback(found, FALLBACK_PRODUCTS);
+            setImages(imgs);
+          }
         }
       } catch {
         const found = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
         setProduct(found);
         setSelectedSize(found?.sizes?.[0] || "M");
+        if (found) {
+          const imgs = getImageWithFallback(found, FALLBACK_PRODUCTS);
+          setImages(imgs);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -190,9 +220,17 @@ function ProductDetailPage() {
   }
 
   const effectivePrice = Number(product.finalPrice ?? product.basePrice ?? 0);
-  const images = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
-    ? product.imageUrls
-    : [product.imageUrl];
+
+  const handleImageError = (index) => {
+    setFailedImages(prev => new Set([...prev, index]));
+    // Use fallback image
+    if (!images[index]?.startsWith("http") && !images[index]?.startsWith("data:")) {
+      const fallbackIdx = images.findIndex((img, i) => i !== index && !failedImages.has(i) && (img.startsWith("http") || img.startsWith("data:")));
+      if (fallbackIdx !== -1) {
+        setSelectedImageIndex(fallbackIdx);
+      }
+    }
+  };
 
   return (
     <div className="page-stack space-y-8">
@@ -214,6 +252,7 @@ function ProductDetailPage() {
             <img
               src={resolveImageUrl(images[selectedImageIndex])}
               alt={product.name}
+              onError={() => handleImageError(selectedImageIndex)}
               className="h-full w-full object-cover"
             />
           </div>
@@ -234,6 +273,7 @@ function ProductDetailPage() {
                   <img
                     src={resolveImageUrl(image)}
                     alt={`Foto ${index + 1}`}
+                    onError={() => handleImageError(index)}
                     className="h-20 w-full object-cover"
                   />
                 </button>

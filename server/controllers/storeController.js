@@ -11,7 +11,7 @@ const {
 
 const DEFAULT_SHIPPING_COST = 15000;
 const STORE_WHATSAPP_NUMBER = String(
-  process.env.STORE_WHATSAPP_NUMBER || '6282118223784'
+  process.env.STORE_WHATSAPP_NUMBER || '6282118223784' // Format: +62 821-1822-3784
 ).replace(/\D/g, '');
 const ORDER_STATUSES = ['new', 'confirmed', 'packed', 'completed', 'cancelled'];
 const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -379,6 +379,30 @@ async function getPublicProducts(req, res, next) {
       data: products.map(serializeProduct),
       meta: {
         total: products.length,
+        shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getPublicProductBySlug(req, res, next) {
+  try {
+    const { slug } = req.params;
+    const product = await StoreProduct.findOne({
+      where: { slug: String(slug).toLowerCase().trim(), isActive: true }
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: 'Produk tidak ditemukan' });
+    }
+
+    const settings = await getOrCreateStoreSettings();
+
+    return res.status(200).json({
+      data: serializeProduct(product),
+      meta: {
         shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
       }
     });
@@ -864,6 +888,7 @@ async function getAdminAnalytics(req, res, next) {
 
 module.exports = {
   getPublicProducts,
+  getPublicProductBySlug,
   createOrder,
   getAdminProducts,
   createAdminProduct,

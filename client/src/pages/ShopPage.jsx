@@ -7,7 +7,7 @@ import lightJohnImage from "../img/store/YOU ARE THE LIGHT.png";
 import hopePsalmImage from "../img/store/FOR ALL MY HOPE IS IN HIM.png";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 
-const SHOP_WHATSAPP_NUMBER = "6282118223784";
+const SHOP_WHATSAPP_NUMBER = "6282118223784"; // Format: +62 821-1822-3784
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const SHIPPING_COST = 15000;
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";

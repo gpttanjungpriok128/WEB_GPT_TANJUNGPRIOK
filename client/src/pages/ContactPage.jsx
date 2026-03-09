@@ -4,7 +4,7 @@ import heroImage from "../img/hero-contact.jpeg";
 
 function ContactPage() {
   const contactEmail = "gpt.tanjungpriok128@gmail.com";
-  const whatsappNumber = "6282118223784";
+  const whatsappNumber = "6282118223784"; // Format: +62 821-1822-3784
   const whatsappMessage = encodeURIComponent(
     "Shalom GPT Tanjung Priok, saya ingin bertanya mengenai pelayanan gereja.",
   );

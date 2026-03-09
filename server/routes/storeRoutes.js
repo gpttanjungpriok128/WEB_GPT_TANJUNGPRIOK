@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   getPublicProducts,
+  getPublicProductBySlug,
   createOrder,
   getAdminProducts,
   createAdminProduct,
@@ -26,6 +27,7 @@ const {
 const router = express.Router();
 
 router.get('/products', getPublicProducts);
+router.get('/products/:slug', getPublicProductBySlug);
 router.post('/orders', createOrderValidation, validate, createOrder);
 
 router.get('/admin/products', authenticate, authorizeRoles('admin'), getAdminProducts);
