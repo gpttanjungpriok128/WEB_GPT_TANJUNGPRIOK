@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
@@ -76,38 +76,7 @@ const formatRupiah = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
-function buildFallbackWhatsappMessage({
-  cartItems,
-  subtotal,
-  shipping,
-  grandTotal,
-  checkoutForm,
-}) {
-  const itemLines = cartItems
-    .map(
-      (item, index) =>
-        `${index + 1}. ${item.name} | Size ${item.size} | ${item.color} | Qty ${item.quantity} | ${formatRupiah(item.price * item.quantity)}`,
-    )
-    .join("\n");
 
-  return [
-    "Shalom GTshirt, saya ingin pesan kaos rohani:",
-    "",
-    itemLines,
-    "",
-    `Subtotal: ${formatRupiah(subtotal)}`,
-    `Ongkir Estimasi: ${formatRupiah(shipping)}`,
-    `Total: ${formatRupiah(grandTotal)}`,
-    "",
-    "Data Pemesan:",
-    `Nama: ${checkoutForm.name}`,
-    `No. WhatsApp: ${checkoutForm.phone}`,
-    `Alamat: ${checkoutForm.address}`,
-    `Pengiriman: ${checkoutForm.shippingMethod}`,
-    `Pembayaran: ${checkoutForm.paymentMethod}`,
-    `Catatan: ${checkoutForm.notes || "-"}`,
-  ].join("\n");
-}
 
 function resolveImageUrl(imageUrl) {
   if (!imageUrl) return "";
@@ -130,19 +99,7 @@ function ShopPage() {
   const [selections, setSelections] = useState({});
   const [cartItems, setCartItems] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [isUsingFallbackProducts, setIsUsingFallbackProducts] = useState(false);
-  const [lastAddedProduct, setLastAddedProduct] = useState("");
-  const [checkoutError, setCheckoutError] = useState("");
-  const [checkoutInfo, setCheckoutInfo] = useState("");
-  const [checkoutForm, setCheckoutForm] = useState({
-    name: "",
-    phone: "",
-    address: "",
-    shippingMethod: "Kurir Jabodetabek",
-    paymentMethod: "Transfer Bank",
-    notes: "",
-  });
 
   useEffect(() => {
     try {
@@ -205,13 +162,7 @@ function ShopPage() {
     [cartItems],
   );
 
-  const shipping =
-    cartItems.length > 0
-      ? checkoutForm.shippingMethod.toLowerCase().includes("ambil")
-        ? 0
-        : SHIPPING_COST
-      : 0;
-  const grandTotal = subtotal + shipping;
+
   const totalItems = cartItems.reduce(
     (total, item) => total + item.quantity,
     0,
@@ -229,7 +180,6 @@ function ShopPage() {
 
   const addToCart = (product) => {
     if (Number(product.stock) <= 0) {
-      setCheckoutError("Produk ini sedang habis.");
       return;
     }
 
@@ -273,10 +223,6 @@ function ShopPage() {
         },
       ];
     });
-
-    setLastAddedProduct(product.name);
-    setCheckoutError("");
-    setCheckoutInfo("");
   };
 
   const updateCartQuantity = (variantKey, nextQuantity) => {
@@ -303,115 +249,9 @@ function ShopPage() {
     );
   };
 
-  const clearCart = () => {
-    setCartItems([]);
-    setLastAddedProduct("");
-  };
 
-  const handleCheckoutField = (field, value) => {
-    setCheckoutForm((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
-  };
 
-  const proceedCheckout = async () => {
-    if (cartItems.length === 0) {
-      setCheckoutError("Keranjang masih kosong. Tambahkan produk dulu ya.");
-      return;
-    }
-    if (
-      !checkoutForm.name.trim() ||
-      !checkoutForm.phone.trim() ||
-      !checkoutForm.address.trim()
-    ) {
-      setCheckoutError("Lengkapi nama, nomor WhatsApp, dan alamat pengiriman.");
-      return;
-    }
-
-    setIsSubmittingOrder(true);
-    setCheckoutError("");
-    setCheckoutInfo("");
-
-    const payload = {
-      name: checkoutForm.name.trim(),
-      phone: checkoutForm.phone.trim(),
-      address: checkoutForm.address.trim(),
-      shippingMethod: checkoutForm.shippingMethod,
-      paymentMethod: checkoutForm.paymentMethod,
-      notes: checkoutForm.notes.trim(),
-      items: cartItems.map((item) => ({
-        productId: item.productId,
-        size: item.size,
-        quantity: item.quantity,
-      })),
-    };
-
-    try {
-      const { data } = await api.post("/store/orders", payload);
-      const whatsappLink = data?.data?.whatsappLink;
-      const orderCode = data?.data?.orderCode;
-
-      if (whatsappLink) {
-        window.open(whatsappLink, "_blank", "noopener,noreferrer");
-      } else {
-        const fallbackMessage = buildFallbackWhatsappMessage({
-          cartItems,
-          subtotal,
-          shipping,
-          grandTotal,
-          checkoutForm,
-        });
-        const fallbackLink = `https://wa.me/${SHOP_WHATSAPP_NUMBER}?text=${encodeURIComponent(fallbackMessage)}`;
-        window.open(fallbackLink, "_blank", "noopener,noreferrer");
-      }
-
-      setCheckoutInfo(
-        orderCode
-          ? `Pesanan berhasil dibuat dengan kode ${orderCode}. Silakan lanjutkan konfirmasi via WhatsApp.`
-          : "Pesanan berhasil dibuat. Silakan lanjutkan konfirmasi via WhatsApp.",
-      );
-      setCartItems([]);
-      setLastAddedProduct("");
-    } catch (error) {
-      if (isUsingFallbackProducts) {
-        const fallbackMessage = buildFallbackWhatsappMessage({
-          cartItems,
-          subtotal,
-          shipping,
-          grandTotal,
-          checkoutForm,
-        });
-        const fallbackLink = `https://wa.me/${SHOP_WHATSAPP_NUMBER}?text=${encodeURIComponent(fallbackMessage)}`;
-        window.open(fallbackLink, "_blank", "noopener,noreferrer");
-        setCheckoutInfo("Pesanan dikirim via WhatsApp (mode katalog lokal).");
-        setCartItems([]);
-        setLastAddedProduct("");
-        return;
-      }
-
-      const firstValidationError = error.response?.data?.errors?.[0]?.msg;
-      setCheckoutError(
-        firstValidationError ||
-          error.response?.data?.message ||
-          "Checkout gagal. Silakan coba lagi.",
-      );
-    } finally {
-      setIsSubmittingOrder(false);
-    }
-  };
-
-  // Create a ref for the checkout section
-  const checkoutRef = useRef(null);
-
-  const scrollToCheckout = () => {
-    if (checkoutRef.current) {
-      checkoutRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
-  };
+  // Cart page is now a separate route at /cart
 
   return (
     <div className="page-stack space-y-8">
@@ -433,11 +273,10 @@ function ShopPage() {
               keranjang.
             </p>
           </div>
-          <button
-            onClick={scrollToCheckout}
+          <Link
+            to="/cart"
             className={`relative rounded-full p-3 transition ${totalItems > 0 ? "bg-primary text-white hover:bg-primary/90 shadow-md" : "bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/30 dark:hover:bg-primary/40"}`}
             title="Buka keranjang belanja"
-            disabled={totalItems === 0}
           >
             <svg
               className="h-6 w-6"
@@ -462,7 +301,7 @@ function ShopPage() {
                 {totalItems}
               </span>
             )}
-          </button>
+          </Link>
         </div>
 
         {isLoadingProducts ? (
@@ -588,104 +427,7 @@ function ShopPage() {
         )}
       </section>
 
-      {/* ── Product Detail Page via Navigation ──────────────────── */}
-      {/* Detail produk sekarang ditampilkan di halaman terpisah: /shop/:slug */}
-
-      {/* ── Cart Drawer Modal ──────────────────── */}
-      {/* Cart Drawer modal has been removed. Cart functionality is now handled */}
-      {/* through the Checkout section below for a cleaner checkout flow. */}
-
-      {/* ── Checkout Section ──────────────────── */}
-      {cartItems.length > 0 && (
-        <section
-          ref={checkoutRef}
-          className="glass-card shadow-xl border-primary/20 p-6 md:p-8 relative mt-12 bg-gradient-to-br from-white to-brand-50 dark:from-brand-900/50 dark:to-brand-800/20"
-        >
-          <div className="grid gap-6 md:grid-cols-[1fr_auto]">
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-300">
-                Lengkapi Data Checkout
-              </h3>
-              {cartItems.length === 0 ? (
-                <p className="text-xs text-brand-500 dark:text-brand-400">
-                  Tambahkan produk terlebih dahulu
-                </p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <input
-                    className="input-modern"
-                    placeholder="Nama lengkap"
-                    value={checkoutForm.name}
-                    onChange={(event) =>
-                      handleCheckoutField("name", event.target.value)
-                    }
-                  />
-                  <input
-                    className="input-modern"
-                    placeholder="No. WhatsApp"
-                    value={checkoutForm.phone}
-                    onChange={(event) =>
-                      handleCheckoutField("phone", event.target.value)
-                    }
-                  />
-                  <select
-                    className="input-modern"
-                    value={checkoutForm.shippingMethod}
-                    onChange={(event) =>
-                      handleCheckoutField("shippingMethod", event.target.value)
-                    }
-                  >
-                    <option>Kurir Jabodetabek</option>
-                    <option>Ambil di Gereja</option>
-                  </select>
-                  <select
-                    className="input-modern"
-                    value={checkoutForm.paymentMethod}
-                    onChange={(event) =>
-                      handleCheckoutField("paymentMethod", event.target.value)
-                    }
-                  >
-                    <option>Transfer Bank</option>
-                    <option>QRIS</option>
-                    <option>Bayar Tunai di Gereja</option>
-                  </select>
-                </div>
-              )}
-              <textarea
-                className="input-modern min-h-[60px] resize-y"
-                placeholder="Alamat lengkap pengiriman (opsional: catatan tambahan)"
-                value={checkoutForm.address}
-                onChange={(event) =>
-                  handleCheckoutField("address", event.target.value)
-                }
-              />
-
-              {checkoutError && (
-                <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900/80 dark:bg-rose-900/30 dark:text-rose-300">
-                  {checkoutError}
-                </p>
-              )}
-
-              {checkoutInfo && (
-                <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
-                  {checkoutInfo}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={proceedCheckout}
-                disabled={isSubmittingOrder}
-                className="btn-primary !rounded-xl !px-6 !py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
-              >
-                {isSubmittingOrder ? "Processing..." : "Checkout"}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Product detail page and cart page are now separate routes */}
 
       <section className="glass-card p-6 md:p-8">
         <div className="grid gap-5 md:grid-cols-3">
