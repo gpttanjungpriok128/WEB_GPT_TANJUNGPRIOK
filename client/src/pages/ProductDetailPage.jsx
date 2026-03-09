@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
-import worshipSmokeImage from "../img/store/MADE TO WORSHIP.png";
-import lightJohnImage from "../img/store/YOU ARE THE LIGHT.png";
-import hopePsalmImage from "../img/store/FOR ALL MY HOPE IS IN HIM.png";
+import worshipSmokeImage from "../img/store/made-to-worship.png";
+import lightJohnImage from "../img/store/you-are-the-light.png";
+import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
 
 const SHOP_WHATSAPP_NUMBER = "6282118223784"; // Format: +62 821-1822-3784
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
@@ -79,7 +79,11 @@ const formatRupiah = (amount) =>
 
 function resolveImageUrl(imageUrl) {
   if (!imageUrl) return "";
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://") || imageUrl.startsWith("data:")) {
+  if (
+    imageUrl.startsWith("http://") ||
+    imageUrl.startsWith("https://") ||
+    imageUrl.startsWith("data:")
+  ) {
     return imageUrl;
   }
   if (imageUrl.startsWith("/")) {
@@ -90,16 +94,21 @@ function resolveImageUrl(imageUrl) {
 
 function getImageWithFallback(product, fallbackProducts) {
   if (!product) return worshipSmokeImage;
-  
-  const imageUrls = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
-    ? product.imageUrls
-    : product.imageUrl
-    ? [product.imageUrl]
-    : [];
+
+  const imageUrls =
+    Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+      ? product.imageUrls
+      : product.imageUrl
+        ? [product.imageUrl]
+        : [];
 
   // Try to find a fallback product by slug to use its images
-  const fallbackProduct = fallbackProducts.find(p => p.slug === product.slug);
-  if (fallbackProduct && Array.isArray(fallbackProduct.imageUrls) && fallbackProduct.imageUrls.length > 0) {
+  const fallbackProduct = fallbackProducts.find((p) => p.slug === product.slug);
+  if (
+    fallbackProduct &&
+    Array.isArray(fallbackProduct.imageUrls) &&
+    fallbackProduct.imageUrls.length > 0
+  ) {
     return [...imageUrls, ...fallbackProduct.imageUrls];
   }
 
@@ -165,14 +174,18 @@ function ProductDetailPage() {
     }
 
     try {
-      const savedCart = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || "[]");
+      const savedCart = JSON.parse(
+        window.localStorage.getItem(CART_STORAGE_KEY) || "[]",
+      );
       const variantKey = `${product.id}-${selectedSize}`;
-      const existingItemIndex = savedCart.findIndex((item) => item.variantKey === variantKey);
+      const existingItemIndex = savedCart.findIndex(
+        (item) => item.variantKey === variantKey,
+      );
 
       if (existingItemIndex >= 0) {
         const nextQty = Math.min(
           savedCart[existingItemIndex].quantity + quantity,
-          Number(product.stock) || 99
+          Number(product.stock) || 99,
         );
         savedCart[existingItemIndex].quantity = nextQty;
       } else {
@@ -210,7 +223,9 @@ function ProductDetailPage() {
     return (
       <div className="page-stack space-y-6">
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center dark:border-rose-900/70 dark:bg-rose-900/20">
-          <p className="text-rose-700 dark:text-rose-300">Produk tidak ditemukan</p>
+          <p className="text-rose-700 dark:text-rose-300">
+            Produk tidak ditemukan
+          </p>
           <Link to="/shop" className="btn-primary mt-4 inline-block">
             ← Kembali ke Toko
           </Link>
@@ -222,10 +237,18 @@ function ProductDetailPage() {
   const effectivePrice = Number(product.finalPrice ?? product.basePrice ?? 0);
 
   const handleImageError = (index) => {
-    setFailedImages(prev => new Set([...prev, index]));
+    setFailedImages((prev) => new Set([...prev, index]));
     // Use fallback image
-    if (!images[index]?.startsWith("http") && !images[index]?.startsWith("data:")) {
-      const fallbackIdx = images.findIndex((img, i) => i !== index && !failedImages.has(i) && (img.startsWith("http") || img.startsWith("data:")));
+    if (
+      !images[index]?.startsWith("http") &&
+      !images[index]?.startsWith("data:")
+    ) {
+      const fallbackIdx = images.findIndex(
+        (img, i) =>
+          i !== index &&
+          !failedImages.has(i) &&
+          (img.startsWith("http") || img.startsWith("data:")),
+      );
       if (fallbackIdx !== -1) {
         setSelectedImageIndex(fallbackIdx);
       }
@@ -236,11 +259,16 @@ function ProductDetailPage() {
     <div className="page-stack space-y-8">
       {/* ── Breadcrumb ──────────────────────── */}
       <nav className="flex items-center gap-2 text-sm text-brand-600 dark:text-brand-400">
-        <Link to="/shop" className="transition hover:text-brand-900 dark:hover:text-white">
+        <Link
+          to="/shop"
+          className="transition hover:text-brand-900 dark:hover:text-white"
+        >
           Toko
         </Link>
         <span>/</span>
-        <span className="text-brand-900 dark:text-white font-semibold">{product.name}</span>
+        <span className="text-brand-900 dark:text-white font-semibold">
+          {product.name}
+        </span>
       </nav>
 
       {/* ── Product Detail Section ──────────────────────── */}
@@ -307,10 +335,14 @@ function ProductDetailPage() {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-lg">⭐</span>
+                  <span key={i} className="text-lg">
+                    ⭐
+                  </span>
                 ))}
               </div>
-              <span className="text-sm text-brand-600 dark:text-brand-300">(Produk Pilihan)</span>
+              <span className="text-sm text-brand-600 dark:text-brand-300">
+                (Produk Pilihan)
+              </span>
             </div>
           </div>
 
@@ -326,7 +358,13 @@ function ProductDetailPage() {
                     {formatRupiah(effectivePrice)}
                   </span>
                   <span className="inline-block rounded-full bg-rose-500 px-3 py-1 text-sm font-bold text-white">
-                    -{Math.round((Number(product.discountAmount) / Number(product.basePrice)) * 100)}%
+                    -
+                    {Math.round(
+                      (Number(product.discountAmount) /
+                        Number(product.basePrice)) *
+                        100,
+                    )}
+                    %
                   </span>
                 </div>
               </div>
@@ -356,7 +394,9 @@ function ProductDetailPage() {
           {/* Stock Info */}
           <div className="rounded-lg border border-brand-200 bg-white/70 p-3 dark:border-brand-700 dark:bg-brand-900/50">
             <p className="text-sm">
-              <span className="font-semibold text-brand-700 dark:text-brand-300">Stok: </span>
+              <span className="font-semibold text-brand-700 dark:text-brand-300">
+                Stok:{" "}
+              </span>
               <span
                 className={
                   Number(product.stock) <= 0
@@ -364,7 +404,9 @@ function ProductDetailPage() {
                     : "font-semibold text-emerald-600 dark:text-emerald-400"
                 }
               >
-                {Number(product.stock) <= 0 ? "Habis" : `${product.stock} pcs tersedia`}
+                {Number(product.stock) <= 0
+                  ? "Habis"
+                  : `${product.stock} pcs tersedia`}
               </span>
             </p>
           </div>
@@ -376,7 +418,10 @@ function ProductDetailPage() {
           {product.color && (
             <div className="space-y-2">
               <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">
-                🎨 Warna: <span className="text-brand-900 dark:text-white">{product.color}</span>
+                🎨 Warna:{" "}
+                <span className="text-brand-900 dark:text-white">
+                  {product.color}
+                </span>
               </p>
             </div>
           )}
@@ -420,11 +465,17 @@ function ProductDetailPage() {
                 min="1"
                 max={Number(product.stock) || 99}
                 value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) =>
+                  setQuantity(Math.max(1, Number(e.target.value) || 1))
+                }
                 className="input-modern w-20 text-center"
               />
               <button
-                onClick={() => setQuantity(Math.min(Number(product.stock) || 99, quantity + 1))}
+                onClick={() =>
+                  setQuantity(
+                    Math.min(Number(product.stock) || 99, quantity + 1),
+                  )
+                }
                 className="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-200 bg-white font-bold transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:hover:bg-brand-900"
               >
                 +

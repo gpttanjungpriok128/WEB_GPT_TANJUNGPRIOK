@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
-import worshipSmokeImage from "../img/store/MADE TO WORSHIP.png";
-import lightJohnImage from "../img/store/YOU ARE THE LIGHT.png";
-import hopePsalmImage from "../img/store/FOR ALL MY HOPE IS IN HIM.png";
+import worshipSmokeImage from "../img/store/made-to-worship.png";
+import lightJohnImage from "../img/store/you-are-the-light.png";
+import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 
 const SHOP_WHATSAPP_NUMBER = "6282118223784"; // Format: +62 821-1822-3784
@@ -552,7 +552,6 @@ function ShopPage() {
         )}
       </section>
 
-      
       {/* ── Product Detail Page via Navigation ──────────────────── */}
       {/* Detail produk sekarang ditampilkan di halaman terpisah: /shop/:slug */}
 
