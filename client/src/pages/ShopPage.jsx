@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
@@ -402,11 +402,14 @@ function ShopPage() {
   };
 
   // Create a ref for the checkout section
-  const checkoutRef = require("react").useRef(null);
+  const checkoutRef = useRef(null);
 
   const scrollToCheckout = () => {
     if (checkoutRef.current) {
-      checkoutRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      checkoutRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   };
 
@@ -432,7 +435,7 @@ function ShopPage() {
           </div>
           <button
             onClick={scrollToCheckout}
-            className={`relative rounded-full p-3 transition ${totalItems > 0 ? 'bg-primary text-white hover:bg-primary/90 shadow-md' : 'bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/30 dark:hover:bg-primary/40'}`}
+            className={`relative rounded-full p-3 transition ${totalItems > 0 ? "bg-primary text-white hover:bg-primary/90 shadow-md" : "bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/30 dark:hover:bg-primary/40"}`}
             title="Buka keranjang belanja"
             disabled={totalItems === 0}
           >
@@ -469,13 +472,33 @@ function ShopPage() {
         ) : products.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="mb-4 rounded-full bg-brand-50 p-6 dark:bg-brand-900/30">
-              <svg className="h-12 w-12 text-brand-400 dark:text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a2.25 2.25 0 0 0 2.25-2.25v-.75a2.25 2.25 0 0 0-2.25-2.25H15m0-3h-3m-3 0H6a2.25 2.25 0 0 0-2.25 2.25v.75A2.25 2.25 0 0 0 6 12h3m0 0v7.5a.75.75 0 0 1-.75.75h-3A2.25 2.25 0 0 1 0 18v-7.5" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 21v-4.5" />
+              <svg
+                className="h-12 w-12 text-brand-400 dark:text-brand-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a2.25 2.25 0 0 0 2.25-2.25v-.75a2.25 2.25 0 0 0-2.25-2.25H15m0-3h-3m-3 0H6a2.25 2.25 0 0 0-2.25 2.25v.75A2.25 2.25 0 0 0 6 12h3m0 0v7.5a.75.75 0 0 1-.75.75h-3A2.25 2.25 0 0 1 0 18v-7.5"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M19.5 21v-4.5"
+                />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-brand-900 dark:text-white">Belum ada produk terbaru</h3>
-            <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">Nantikan koleksi apparel rohani terbaru dari kami. Pastikan kamu selalu cek halaman ini secara berkala!</p>
+            <h3 className="text-xl font-bold text-brand-900 dark:text-white">
+              Belum ada produk terbaru
+            </h3>
+            <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">
+              Nantikan koleksi apparel rohani terbaru dari kami. Pastikan kamu
+              selalu cek halaman ini secara berkala!
+            </p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -574,7 +597,10 @@ function ShopPage() {
 
       {/* ── Checkout Section ──────────────────── */}
       {cartItems.length > 0 && (
-        <section ref={checkoutRef} className="glass-card shadow-xl border-primary/20 p-6 md:p-8 relative mt-12 bg-gradient-to-br from-white to-brand-50 dark:from-brand-900/50 dark:to-brand-800/20">
+        <section
+          ref={checkoutRef}
+          className="glass-card shadow-xl border-primary/20 p-6 md:p-8 relative mt-12 bg-gradient-to-br from-white to-brand-50 dark:from-brand-900/50 dark:to-brand-800/20"
+        >
           <div className="grid gap-6 md:grid-cols-[1fr_auto]">
             <div className="space-y-3">
               <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-300">
