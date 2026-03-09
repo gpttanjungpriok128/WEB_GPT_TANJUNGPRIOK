@@ -10,4 +10,5 @@ COPY . .
 ENV NODE_ENV=production
 EXPOSE 5000
 
-CMD ["node", "server.js"]
+# Run migrations before starting the server
+CMD ["sh", "-c", "npm run migrate && node server.js"]
