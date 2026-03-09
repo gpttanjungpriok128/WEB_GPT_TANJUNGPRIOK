@@ -91,6 +91,12 @@ function MyOrdersPage() {
               >
                 Belanja Lagi
               </Link>
+              <Link
+                to="/track-order"
+                className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+              >
+                Lacak Pesanan
+              </Link>
             </div>
           </div>
         </section>
@@ -113,9 +119,14 @@ function MyOrdersPage() {
             <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
               Pesanan yang sudah checkout akan muncul di halaman ini.
             </p>
-            <Link to="/shop" className="btn-primary mt-6 inline-block">
-              Mulai Belanja
-            </Link>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link to="/shop" className="btn-primary inline-block">
+                Mulai Belanja
+              </Link>
+              <Link to="/track-order" className="btn-outline inline-block">
+                Lacak Pesanan
+              </Link>
+            </div>
           </section>
         ) : (
           <section className="space-y-3">

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
 import worshipSmokeImage from "../img/store/made-to-worship.png";
 import lightJohnImage from "../img/store/you-are-the-light.png";
@@ -84,6 +85,7 @@ function getDefaultSize(product) {
 }
 
 function ShopPage() {
+  const { user } = useAuth();
   const [products, setProducts] = useState(FALLBACK_PRODUCTS);
   const [selections, setSelections] = useState({});
   const [cartItems, setCartItems] = useState([]);
@@ -266,6 +268,36 @@ function ShopPage() {
       />
 
       <section className="grid gap-6">
+        <div className="grid gap-4 rounded-3xl border border-brand-200 bg-white/80 p-5 shadow-sm md:grid-cols-[1.2fr_0.8fr] dark:border-brand-700 dark:bg-brand-900/40">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+              Order Center
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-brand-900 dark:text-white">
+              Pantau pesanan langsung dari area toko
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-brand-600 dark:text-brand-300">
+              Setelah checkout, pembeli bisa kembali ke halaman toko untuk membuka riwayat order atau melacak status pesanan dengan kode order dan WhatsApp.
+            </p>
+          </div>
+          <div className="flex flex-col justify-center gap-3">
+            {user && (
+              <Link
+                to="/my-orders"
+                className="btn-primary inline-flex items-center justify-center !rounded-2xl !py-3"
+              >
+                Buka Pesanan Saya
+              </Link>
+            )}
+            <Link
+              to="/track-order"
+              className="btn-outline inline-flex items-center justify-center !rounded-2xl !py-3"
+            >
+              Lacak Pesanan
+            </Link>
+          </div>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
