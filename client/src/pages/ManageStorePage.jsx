@@ -105,7 +105,6 @@ function createInitialProductForm() {
     name: "",
     slug: "",
     description: "",
-    verse: "",
     color: "",
     basePrice: 0,
     sizesText: DEFAULT_SIZES.join(", "),
@@ -323,7 +322,6 @@ function ManageStorePage() {
       name: product.name || "",
       slug: product.slug || "",
       description: product.description || "",
-      verse: product.verse || "",
       color: product.color || "",
       basePrice: product.basePrice || 0,
       sizesText: sizes.join(", "),
@@ -395,7 +393,6 @@ function ManageStorePage() {
     formData.append("name", productForm.name);
     formData.append("slug", productForm.slug);
     formData.append("description", productForm.description);
-    formData.append("verse", productForm.verse);
     formData.append("color", productForm.color);
     formData.append("basePrice", String(Number(productForm.basePrice) || 0));
     formData.append("stock", String(totalStock));
@@ -642,17 +639,6 @@ function ManageStorePage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Ayat
-              </label>
-              <input
-                className="input-modern"
-                value={productForm.verse}
-                onChange={(event) => handleProductFormChange("verse", event.target.value)}
-                placeholder="Mazmur 42:11"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                 Warna
               </label>
               <input
@@ -888,7 +874,7 @@ function ManageStorePage() {
                 className="input-modern"
                 value={productSearch}
                 onChange={(event) => setProductSearch(event.target.value)}
-                placeholder="Nama / slug / ayat"
+                placeholder="Nama / slug"
               />
             </div>
             <div className="min-w-[180px] space-y-1.5">
