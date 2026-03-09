@@ -9,6 +9,7 @@ const userRoutes = require('./userRoutes');
 const liveStreamRoutes = require('./liveStreamRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const congregationMemberRoutes = require('./congregationMemberRoutes');
+const storeRoutes = require('./storeRoutes');
 
 const router = express.Router();
 
@@ -21,5 +22,6 @@ router.use('/users', userRoutes);
 router.use('/live-stream', liveStreamRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/congregation-members', congregationMemberRoutes);
+router.use('/store', storeRoutes);
 
 module.exports = router;

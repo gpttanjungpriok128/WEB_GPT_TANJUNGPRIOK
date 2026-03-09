@@ -6,7 +6,7 @@ import BrandLogo from "../components/BrandLogo";
 
 function MainLayout({ children }) {
   const contactEmail = "gpt.tanjungpriok128@gmail.com";
-  const whatsappNumber = "6281289833972";
+  const whatsappNumber = "6282118223784";
   const whatsappMessage = encodeURIComponent(
     "Shalom GPT Tanjung Priok, saya ingin bertanya mengenai pelayanan gereja.",
   );
@@ -41,6 +41,7 @@ function MainLayout({ children }) {
     { to: "/schedules", label: "Jadwal" },
     { to: "/articles", label: "Renungan" },
     { to: "/gallery", label: "Galeri" },
+    { to: "/shop", label: "Toko" },
     ...(user ? [{ to: "/live", label: "Live" }, { to: "/prayer", label: "Doa" }] : []),
     ...(user && ["admin", "jemaat"].includes(user.role)
       ? [{ to: "/dashboard/congregation", label: "Data Jemaat" }]
@@ -51,6 +52,7 @@ function MainLayout({ children }) {
   const adminSidebarLinks = [
     { to: "/dashboard", label: "Dashboard", end: true },
     { to: "/dashboard/congregation", label: "Data Jemaat" },
+    { to: "/dashboard/store", label: "GTshirt Store" },
     { to: "/dashboard/articles/manage", label: "Kelola Renungan" },
     { to: "/dashboard/articles/new", label: "Buat Renungan" },
     { to: "/gallery", label: "Galeri" },
@@ -586,6 +588,7 @@ function MainLayout({ children }) {
                     { to: "/about", label: "Tentang Gereja" },
                     { to: "/articles", label: "Renungan Harian" },
                     { to: "/gallery", label: "Galeri Kegiatan" },
+                    { to: "/shop", label: "Toko Kaos Rohani" },
                     { to: "/prayer", label: "Permohonan Doa" },
                     { to: "/contact", label: "Kontak & Lokasi" },
                   ].map((link) => (
@@ -618,7 +621,7 @@ function MainLayout({ children }) {
                     rel="noopener noreferrer"
                     className="block transition hover:text-primary dark:hover:text-primary-light"
                   >
-                    +62 812-8983-3972
+                    +62 821-1822-3784
                   </a>
                   <p className="leading-relaxed text-brand-600 dark:text-brand-400">
                     Jl. Bugis No.128, Kebon Bawang, Tanjung Priok, Jakarta

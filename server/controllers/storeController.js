@@ -1,0 +1,877 @@
+const fs = require('fs');
+const path = require('path');
+const { Op, fn, col } = require('sequelize');
+const {
+  sequelize,
+  StoreProduct,
+  StoreOrder,
+  StoreOrderItem,
+  StoreSetting
+} = require('../models');
+
+const DEFAULT_SHIPPING_COST = 15000;
+const STORE_WHATSAPP_NUMBER = String(
+  process.env.STORE_WHATSAPP_NUMBER || '6282118223784'
+).replace(/\D/g, '');
+const ORDER_STATUSES = ['new', 'confirmed', 'packed', 'completed', 'cancelled'];
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+
+function getUploadedFiles(req) {
+  if (Array.isArray(req.files)) {
+    return req.files;
+  }
+
+  if (req.files && typeof req.files === 'object') {
+    const files = [];
+    Object.values(req.files).forEach((value) => {
+      if (Array.isArray(value)) files.push(...value);
+    });
+    return files;
+  }
+
+  if (req.file) {
+    return [req.file];
+  }
+
+  return [];
+}
+
+function toPublicImagePath(file) {
+  return `/uploads/${file.filename}`;
+}
+
+function normalizeProductImages(product) {
+  if (!product) return [];
+
+  if (Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
+    return product.imageUrls.filter(Boolean);
+  }
+
+  if (product.imageUrl) {
+    return [product.imageUrl];
+  }
+
+  return [];
+}
+
+async function removeImageFile(publicPath) {
+  if (!publicPath) return;
+
+  const fileName = path.basename(String(publicPath));
+  if (!fileName) return;
+
+  const filePath = path.join(uploadsDir, fileName);
+  try {
+    await fs.promises.unlink(filePath);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
+async function removeImageFiles(paths = []) {
+  for (const publicPath of paths) {
+    // ignore remove errors so product operation still succeeds
+    try {
+      await removeImageFile(publicPath);
+    } catch {
+      // noop
+    }
+  }
+}
+
+function slugify(value = '') {
+  return String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function normalizePhone(value = '') {
+  return String(value).replace(/[^\d+]/g, '').trim();
+}
+
+function normalizeSizes(value) {
+  const fallback = ['S', 'M', 'L', 'XL', 'XXL'];
+  const source = Array.isArray(value)
+    ? value
+    : String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const unique = [...new Set(source.map((item) => item.toUpperCase()))];
+  return unique.length ? unique : fallback;
+}
+
+function toInteger(value, defaultValue = 0) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : defaultValue;
+}
+
+function toBoolean(value, defaultValue = true) {
+  if (typeof value === 'boolean') return value;
+  if (value === undefined || value === null || value === '') return defaultValue;
+  return ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase());
+}
+
+function parseDateValue(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function isPromoActive(product, now = new Date()) {
+  if (!product || product.promoType === 'none' || Number(product.promoValue) <= 0) {
+    return false;
+  }
+
+  if (product.promoStartAt && new Date(product.promoStartAt) > now) {
+    return false;
+  }
+
+  if (product.promoEndAt && new Date(product.promoEndAt) < now) {
+    return false;
+  }
+
+  return true;
+}
+
+function calculateProductPricing(product) {
+  const basePrice = Math.max(0, Number(product.basePrice) || 0);
+  const promoIsActive = isPromoActive(product);
+
+  if (!promoIsActive) {
+    return {
+      basePrice,
+      finalPrice: basePrice,
+      discountAmount: 0,
+      promoIsActive: false,
+      promoLabel: ''
+    };
+  }
+
+  let discountAmount = 0;
+  if (product.promoType === 'percentage') {
+    discountAmount = Math.round((basePrice * Math.max(0, Number(product.promoValue) || 0)) / 100);
+  } else if (product.promoType === 'fixed') {
+    discountAmount = Math.max(0, Number(product.promoValue) || 0);
+  }
+
+  discountAmount = Math.min(basePrice, discountAmount);
+  const finalPrice = Math.max(0, basePrice - discountAmount);
+  const promoLabel = product.promoType === 'percentage'
+    ? `${product.promoValue}% OFF`
+    : `Diskon ${formatRupiah(discountAmount)}`;
+
+  return {
+    basePrice,
+    finalPrice,
+    discountAmount,
+    promoIsActive: true,
+    promoLabel
+  };
+}
+
+function formatRupiah(value) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0
+  }).format(Number(value) || 0);
+}
+
+function serializeProduct(product) {
+  const pricing = calculateProductPricing(product);
+  const imageUrls = normalizeProductImages(product);
+
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    description: product.description || '',
+    verse: product.verse || '',
+    color: product.color || '',
+    imageUrl: imageUrls[0] || '',
+    imageUrls,
+    basePrice: pricing.basePrice,
+    finalPrice: pricing.finalPrice,
+    discountAmount: pricing.discountAmount,
+    promoType: product.promoType,
+    promoValue: Number(product.promoValue) || 0,
+    promoStartAt: product.promoStartAt,
+    promoEndAt: product.promoEndAt,
+    promoIsActive: pricing.promoIsActive,
+    promoLabel: pricing.promoLabel,
+    sizes: normalizeSizes(product.sizes),
+    stock: Number(product.stock) || 0,
+    isActive: Boolean(product.isActive),
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt
+  };
+}
+
+function buildProductPayload(body = {}, userId, options = {}) {
+  const { partial = false } = options;
+  const payload = {};
+
+  if (!partial || body.name !== undefined) {
+    payload.name = String(body.name || '').trim();
+  }
+
+  if (!partial || body.slug !== undefined || body.name !== undefined) {
+    const slugSource = body.slug !== undefined ? body.slug : body.name;
+    const generatedSlug = slugify(slugSource);
+    if (generatedSlug) {
+      payload.slug = generatedSlug;
+    }
+  }
+
+  if (!partial || body.description !== undefined) {
+    payload.description = body.description ? String(body.description).trim() : null;
+  }
+
+  if (!partial || body.verse !== undefined) {
+    payload.verse = body.verse ? String(body.verse).trim() : null;
+  }
+
+  if (!partial || body.color !== undefined) {
+    payload.color = body.color ? String(body.color).trim() : null;
+  }
+
+  if (!partial || body.basePrice !== undefined) {
+    payload.basePrice = Math.max(0, toInteger(body.basePrice, 0));
+  }
+
+  if (!partial || body.promoType !== undefined) {
+    payload.promoType = ['none', 'percentage', 'fixed'].includes(body.promoType)
+      ? body.promoType
+      : 'none';
+  }
+
+  if (!partial || body.promoValue !== undefined) {
+    payload.promoValue = Math.max(0, toInteger(body.promoValue, 0));
+  }
+
+  if (!partial || body.promoStartAt !== undefined) {
+    payload.promoStartAt = parseDateValue(body.promoStartAt);
+  }
+
+  if (!partial || body.promoEndAt !== undefined) {
+    payload.promoEndAt = parseDateValue(body.promoEndAt);
+  }
+
+  if (!partial || body.sizes !== undefined) {
+    payload.sizes = normalizeSizes(body.sizes);
+  }
+
+  if (!partial || body.stock !== undefined) {
+    payload.stock = Math.max(0, toInteger(body.stock, 0));
+  }
+
+  if (!partial || body.isActive !== undefined) {
+    payload.isActive = toBoolean(body.isActive, true);
+  }
+
+  if (payload.promoType === 'none') {
+    payload.promoValue = 0;
+    payload.promoStartAt = null;
+    payload.promoEndAt = null;
+  }
+
+  if (!partial) {
+    payload.createdBy = userId;
+  }
+  payload.updatedBy = userId;
+
+  return payload;
+}
+
+async function ensureUniqueSlug(slug, excludeId = null) {
+  if (!slug) return false;
+
+  const where = { slug };
+  if (excludeId) {
+    where.id = { [Op.ne]: excludeId };
+  }
+
+  const existing = await StoreProduct.findOne({ where, attributes: ['id'] });
+  return !existing;
+}
+
+async function getOrCreateStoreSettings(transaction = null) {
+  const [setting] = await StoreSetting.findOrCreate({
+    where: { id: 1 },
+    defaults: {
+      id: 1,
+      shippingCost: DEFAULT_SHIPPING_COST
+    },
+    transaction
+  });
+
+  return setting;
+}
+
+async function generateOrderCode(transaction) {
+  const now = new Date();
+  const dateCode = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const prefix = `GTS-${dateCode}-`;
+  const latest = await StoreOrder.findOne({
+    where: { orderCode: { [Op.like]: `${prefix}%` } },
+    order: [['createdAt', 'DESC']],
+    transaction
+  });
+
+  let sequence = 1;
+  if (latest?.orderCode) {
+    const lastPart = latest.orderCode.split('-').pop();
+    const parsed = Number.parseInt(lastPart, 10);
+    if (Number.isFinite(parsed)) {
+      sequence = parsed + 1;
+    }
+  }
+
+  return `${prefix}${String(sequence).padStart(4, '0')}`;
+}
+
+function buildWhatsappMessage(order, items) {
+  const itemLines = items
+    .map((item, index) => (
+      `${index + 1}. ${item.productName} | Size ${item.size} | Qty ${item.quantity} | ${formatRupiah(item.lineTotal)}`
+    ))
+    .join('\n');
+
+  return [
+    'Shalom GTshirt, saya ingin konfirmasi pesanan:',
+    `Kode Pesanan: ${order.orderCode}`,
+    '',
+    itemLines,
+    '',
+    `Subtotal: ${formatRupiah(order.subtotal)}`,
+    `Ongkir: ${formatRupiah(order.shippingCost)}`,
+    `Total: ${formatRupiah(order.totalAmount)}`,
+    '',
+    'Data Pemesan:',
+    `Nama: ${order.customerName}`,
+    `No. WhatsApp: ${order.customerPhone}`,
+    `Alamat: ${order.customerAddress}`,
+    `Pengiriman: ${order.shippingMethod}`,
+    `Pembayaran: ${order.paymentMethod}`,
+    `Catatan: ${order.notes || '-'}`
+  ].join('\n');
+}
+
+async function getPublicProducts(req, res, next) {
+  try {
+    const [products, settings] = await Promise.all([
+      StoreProduct.findAll({
+        where: { isActive: true },
+        order: [['createdAt', 'DESC']]
+      }),
+      getOrCreateStoreSettings()
+    ]);
+
+    return res.status(200).json({
+      data: products.map(serializeProduct),
+      meta: {
+        total: products.length,
+        shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function createOrder(req, res, next) {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const itemsInput = Array.isArray(req.body.items) ? req.body.items : [];
+    if (!itemsInput.length) {
+      await transaction.rollback();
+      return res.status(422).json({ message: 'Item pesanan wajib diisi' });
+    }
+
+    const normalizedItems = itemsInput.map((item) => ({
+      productId: toInteger(item.productId, 0),
+      size: String(item.size || '').trim().toUpperCase(),
+      quantity: Math.max(1, toInteger(item.quantity, 1))
+    }));
+
+    const productIds = [...new Set(normalizedItems.map((item) => item.productId).filter(Boolean))];
+    const [products, settings] = await Promise.all([
+      StoreProduct.findAll({
+        where: {
+          id: productIds,
+          isActive: true
+        },
+        transaction
+      }),
+      getOrCreateStoreSettings(transaction)
+    ]);
+
+    const productMap = new Map(products.map((item) => [item.id, item]));
+    if (productMap.size !== productIds.length) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Sebagian produk tidak tersedia atau sudah nonaktif' });
+    }
+
+    const qtyByProductId = normalizedItems.reduce((accumulator, item) => {
+      accumulator[item.productId] = (accumulator[item.productId] || 0) + item.quantity;
+      return accumulator;
+    }, {});
+
+    for (const [productId, totalRequestedQty] of Object.entries(qtyByProductId)) {
+      const product = productMap.get(Number(productId));
+      if (!product) continue;
+      if (Number(product.stock) <= 0) {
+        await transaction.rollback();
+        return res.status(400).json({ message: `Produk ${product.name} sedang habis` });
+      }
+      if (totalRequestedQty > Number(product.stock)) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: `Stok ${product.name} tidak mencukupi. Stok tersedia: ${product.stock}`
+        });
+      }
+    }
+
+    let subtotal = 0;
+    const orderItems = [];
+
+    for (const item of normalizedItems) {
+      const product = productMap.get(item.productId);
+      if (!product) continue;
+
+      const productSizes = normalizeSizes(product.sizes);
+      if (!productSizes.includes(item.size)) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: `Ukuran ${item.size} tidak tersedia untuk ${product.name}`
+        });
+      }
+
+      const pricing = calculateProductPricing(product);
+      const lineTotal = pricing.finalPrice * item.quantity;
+      subtotal += lineTotal;
+
+      orderItems.push({
+        productId: product.id,
+        productName: product.name,
+        productSlug: product.slug,
+        size: item.size,
+        color: product.color || '',
+        unitPrice: pricing.finalPrice,
+        quantity: item.quantity,
+        lineTotal,
+        promoLabel: pricing.promoIsActive ? pricing.promoLabel : null
+      });
+    }
+
+    const shippingMethod = String(req.body.shippingMethod || 'Kurir').trim();
+    const baseShippingCost = Number(settings.shippingCost) || DEFAULT_SHIPPING_COST;
+    const shippingCost = shippingMethod.toLowerCase().includes('ambil')
+      ? 0
+      : baseShippingCost;
+    const totalAmount = subtotal + shippingCost;
+
+    const orderCode = await generateOrderCode(transaction);
+    const order = await StoreOrder.create({
+      orderCode,
+      customerName: String(req.body.name || '').trim(),
+      customerPhone: normalizePhone(req.body.phone),
+      customerAddress: String(req.body.address || '').trim(),
+      shippingMethod,
+      paymentMethod: String(req.body.paymentMethod || 'Transfer Bank').trim(),
+      notes: req.body.notes ? String(req.body.notes).trim() : null,
+      subtotal,
+      shippingCost,
+      totalAmount,
+      status: 'new',
+      channel: 'whatsapp'
+    }, { transaction });
+
+    await StoreOrderItem.bulkCreate(
+      orderItems.map((item) => ({ ...item, orderId: order.id })),
+      { transaction }
+    );
+
+    for (const [productId, totalRequestedQty] of Object.entries(qtyByProductId)) {
+      await StoreProduct.decrement('stock', {
+        by: totalRequestedQty,
+        where: { id: Number(productId) },
+        transaction
+      });
+    }
+
+    const whatsappMessage = buildWhatsappMessage(order, orderItems);
+    await order.update({ whatsappMessage }, { transaction });
+
+    await transaction.commit();
+
+    const whatsappLink = `https://wa.me/${STORE_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
+    return res.status(201).json({
+      message: 'Pesanan berhasil dibuat',
+      data: {
+        orderId: order.id,
+        orderCode: order.orderCode,
+        subtotal: order.subtotal,
+        shippingCost: order.shippingCost,
+        totalAmount: order.totalAmount,
+        status: order.status,
+        whatsappLink
+      }
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return next(error);
+  }
+}
+
+async function getAdminProducts(req, res, next) {
+  try {
+    const where = {};
+    const search = String(req.query.search || '').trim();
+    const active = String(req.query.active || '').trim().toLowerCase();
+
+    if (active === 'true') where.isActive = true;
+    if (active === 'false') where.isActive = false;
+
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { slug: { [Op.iLike]: `%${search}%` } },
+        { verse: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const products = await StoreProduct.findAll({
+      where,
+      order: [['createdAt', 'DESC']]
+    });
+
+    return res.status(200).json({
+      data: products.map(serializeProduct),
+      meta: { total: products.length }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function createAdminProduct(req, res, next) {
+  const uploadedFiles = getUploadedFiles(req);
+  const uploadedPaths = uploadedFiles.map(toPublicImagePath);
+
+  try {
+    if (!uploadedFiles.length) {
+      return res.status(400).json({ message: 'Minimal 1 foto produk wajib diupload' });
+    }
+
+    const payload = buildProductPayload(req.body, req.user.id);
+    if (!payload.slug) {
+      await removeImageFiles(uploadedPaths);
+      return res.status(400).json({ message: 'Slug produk tidak valid' });
+    }
+
+    const slugUnique = await ensureUniqueSlug(payload.slug);
+    if (!slugUnique) {
+      await removeImageFiles(uploadedPaths);
+      return res.status(409).json({ message: 'Slug produk sudah dipakai. Gunakan nama/slug lain.' });
+    }
+
+    payload.imageUrls = uploadedPaths;
+    payload.imageUrl = uploadedPaths[0] || null;
+
+    const product = await StoreProduct.create(payload);
+    return res.status(201).json({
+      message: 'Produk berhasil ditambahkan',
+      data: serializeProduct(product)
+    });
+  } catch (error) {
+    await removeImageFiles(uploadedPaths);
+    return next(error);
+  }
+}
+
+async function updateAdminProduct(req, res, next) {
+  const uploadedFiles = getUploadedFiles(req);
+  const uploadedPaths = uploadedFiles.map(toPublicImagePath);
+
+  try {
+    const product = await StoreProduct.findByPk(req.params.id);
+    if (!product) {
+      await removeImageFiles(uploadedPaths);
+      return res.status(404).json({ message: 'Produk tidak ditemukan' });
+    }
+
+    const oldImages = normalizeProductImages(product);
+    const payload = buildProductPayload(req.body, req.user.id, { partial: true });
+
+    if (payload.slug) {
+      const slugUnique = await ensureUniqueSlug(payload.slug, product.id);
+      if (!slugUnique) {
+        await removeImageFiles(uploadedPaths);
+        return res.status(409).json({ message: 'Slug produk sudah dipakai. Gunakan slug lain.' });
+      }
+    }
+
+    if (uploadedPaths.length > 0) {
+      payload.imageUrls = uploadedPaths;
+      payload.imageUrl = uploadedPaths[0] || null;
+    }
+
+    await product.update(payload);
+
+    if (uploadedPaths.length > 0) {
+      await removeImageFiles(oldImages);
+    }
+
+    return res.status(200).json({
+      message: 'Produk berhasil diperbarui',
+      data: serializeProduct(product)
+    });
+  } catch (error) {
+    await removeImageFiles(uploadedPaths);
+    return next(error);
+  }
+}
+
+async function deleteAdminProduct(req, res, next) {
+  try {
+    const product = await StoreProduct.findByPk(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Produk tidak ditemukan' });
+    }
+
+    const oldImages = normalizeProductImages(product);
+    await product.destroy();
+    await removeImageFiles(oldImages);
+
+    return res.status(200).json({ message: 'Produk berhasil dihapus permanen' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getAdminOrders(req, res, next) {
+  try {
+    const page = Math.max(1, toInteger(req.query.page, 1));
+    const limit = Math.min(50, Math.max(1, toInteger(req.query.limit, 12)));
+    const offset = (page - 1) * limit;
+    const search = String(req.query.search || '').trim();
+    const where = {};
+
+    if (req.query.status && ORDER_STATUSES.includes(req.query.status)) {
+      where.status = req.query.status;
+    }
+
+    if (search) {
+      where[Op.or] = [
+        { orderCode: { [Op.iLike]: `%${search}%` } },
+        { customerName: { [Op.iLike]: `%${search}%` } },
+        { customerPhone: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const { rows, count } = await StoreOrder.findAndCountAll({
+      where,
+      include: [{ model: StoreOrderItem, as: 'items' }],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
+
+    return res.status(200).json({
+      data: rows,
+      meta: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.max(1, Math.ceil(count / limit))
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function updateAdminOrderStatus(req, res, next) {
+  try {
+    const order = await StoreOrder.findByPk(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order tidak ditemukan' });
+    }
+
+    const status = String(req.body.status || '').trim();
+    if (!ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({ message: 'Status order tidak valid' });
+    }
+
+    await order.update({ status });
+    return res.status(200).json({
+      message: 'Status order berhasil diperbarui',
+      data: order
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getAdminSettings(req, res, next) {
+  try {
+    const settings = await getOrCreateStoreSettings();
+    return res.status(200).json({
+      data: {
+        shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function updateAdminSettings(req, res, next) {
+  try {
+    const settings = await getOrCreateStoreSettings();
+    const shippingCost = Math.max(0, toInteger(req.body.shippingCost, DEFAULT_SHIPPING_COST));
+    await settings.update({ shippingCost });
+
+    return res.status(200).json({
+      message: 'Pengaturan ongkir berhasil diperbarui',
+      data: {
+        shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getAdminAnalytics(req, res, next) {
+  try {
+    const [
+      totalProducts,
+      activeProducts,
+      productsWithPromo,
+      totalOrders,
+      newOrders,
+      completedOrders,
+      cancelledOrders,
+      revenueRows,
+      recentOrders,
+      soldItems,
+      settings
+    ] = await Promise.all([
+      StoreProduct.count(),
+      StoreProduct.count({ where: { isActive: true } }),
+      StoreProduct.findAll({
+        where: {
+          isActive: true,
+          promoType: { [Op.ne]: 'none' },
+          promoValue: { [Op.gt]: 0 }
+        }
+      }),
+      StoreOrder.count(),
+      StoreOrder.count({ where: { status: 'new' } }),
+      StoreOrder.count({ where: { status: 'completed' } }),
+      StoreOrder.count({ where: { status: 'cancelled' } }),
+      StoreOrder.findAll({
+        attributes: ['status', [fn('SUM', col('totalAmount')), 'total']],
+        group: ['status'],
+        raw: true
+      }),
+      StoreOrder.findAll({
+        limit: 8,
+        include: [{ model: StoreOrderItem, as: 'items' }],
+        order: [['createdAt', 'DESC']]
+      }),
+      StoreOrderItem.findAll({
+        attributes: ['productName', 'quantity', 'lineTotal'],
+        include: [
+          {
+            model: StoreOrder,
+            as: 'order',
+            attributes: ['status'],
+            where: { status: { [Op.ne]: 'cancelled' } }
+          }
+        ]
+      }),
+      getOrCreateStoreSettings()
+    ]);
+
+    const activePromoCount = productsWithPromo.filter((product) => isPromoActive(product)).length;
+    const revenueByStatus = revenueRows.reduce((accumulator, item) => {
+      accumulator[item.status] = Number(item.total) || 0;
+      return accumulator;
+    }, {});
+
+    const grossRevenue = Object.entries(revenueByStatus).reduce((total, [status, amount]) => (
+      status === 'cancelled' ? total : total + amount
+    ), 0);
+
+    const nonCancelledOrders = Math.max(0, totalOrders - cancelledOrders);
+    const averageOrderValue = nonCancelledOrders > 0
+      ? Math.round(grossRevenue / nonCancelledOrders)
+      : 0;
+
+    const topProductMap = soldItems.reduce((accumulator, item) => {
+      const key = item.productName || 'Produk';
+      if (!accumulator[key]) {
+        accumulator[key] = {
+          productName: key,
+          soldQty: 0,
+          revenue: 0
+        };
+      }
+      accumulator[key].soldQty += Number(item.quantity) || 0;
+      accumulator[key].revenue += Number(item.lineTotal) || 0;
+      return accumulator;
+    }, {});
+
+    const topProducts = Object.values(topProductMap)
+      .sort((a, b) => b.soldQty - a.soldQty)
+      .slice(0, 5);
+
+    return res.status(200).json({
+      metrics: {
+        totalProducts,
+        activeProducts,
+        activePromoCount,
+        totalOrders,
+        newOrders,
+        completedOrders,
+        cancelledOrders,
+        grossRevenue,
+        averageOrderValue
+      },
+      settings: {
+        shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
+      },
+      revenueByStatus,
+      topProducts,
+      recentOrders
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+module.exports = {
+  getPublicProducts,
+  createOrder,
+  getAdminProducts,
+  createAdminProduct,
+  updateAdminProduct,
+  deleteAdminProduct,
+  getAdminOrders,
+  updateAdminOrderStatus,
+  getAdminSettings,
+  updateAdminSettings,
+  getAdminAnalytics
+};

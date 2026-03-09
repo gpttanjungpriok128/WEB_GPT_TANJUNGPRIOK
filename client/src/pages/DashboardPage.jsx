@@ -29,6 +29,21 @@ function DashboardPage() {
     return labels[role] || role;
   };
 
+  const formatRupiah = (value) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(Number(value) || 0);
+
+  const formatStatValue = (key, value) => {
+    const normalized = String(key || "").toLowerCase();
+    if (normalized.includes("revenue")) {
+      return formatRupiah(value);
+    }
+    return value;
+  };
+
   return (
     <div className="page-stack space-y-10">
       {/* Welcome Banner */}
@@ -62,7 +77,7 @@ function DashboardPage() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">
                     {key.replace(/_/g, " ")}
                   </p>
-                  <p className="mt-2 text-3xl font-bold gradient-text">{value}</p>
+                  <p className="mt-2 text-3xl font-bold gradient-text">{formatStatValue(key, value)}</p>
                 </div>
               ))}
             </section>
@@ -82,6 +97,7 @@ function DashboardPage() {
               { to: "/live", icon: "📺", title: "Halaman Live", desc: "Atur link live streaming langsung dari halaman Live." },
               ...(user?.role === "admin"
                 ? [
+                  { to: "/dashboard/store", icon: "🛍️", title: "GTshirt Store", desc: "Kelola produk, harga, promo, order, dan analitik toko online." },
                   { to: "/prayer", icon: "🙏", title: "Prayer Request", desc: "Lihat dan tandai permohonan doa jemaat di halaman Doa." },
                   { to: "/dashboard/congregation", icon: "📇", title: "Data Jemaat", desc: "Tambah, edit, dan kelola pendataan jemaat." }
                 ]
@@ -123,6 +139,7 @@ function DashboardPage() {
                 "Mengelola data pengguna dan permissions",
                 "Mengelola pendataan jemaat",
                 "Melihat statistik dan laporan lengkap",
+                "Mengelola toko GTshirt (produk, harga, promo, order, analitik)",
                 "Mengelola link live streaming di halaman Live",
                 "Menangani prayer request jemaat di halaman Doa",
               ].map((text, i) => (

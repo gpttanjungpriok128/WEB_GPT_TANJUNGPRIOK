@@ -4,7 +4,7 @@ import heroImage from "../img/hero-contact.jpeg";
 
 function ContactPage() {
   const contactEmail = "gpt.tanjungpriok128@gmail.com";
-  const whatsappNumber = "6281289833972";
+  const whatsappNumber = "6282118223784";
   const whatsappMessage = encodeURIComponent(
     "Shalom GPT Tanjung Priok, saya ingin bertanya mengenai pelayanan gereja.",
   );
@@ -45,7 +45,7 @@ function ContactPage() {
       title: "Telepon",
       content: (
         <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary-light transition-colors text-sm">
-          +62 812-8983-3972 (WhatsApp)
+          +62 821-1822-3784 (WhatsApp)
         </a>
       ),
     },

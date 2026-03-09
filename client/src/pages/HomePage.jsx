@@ -82,23 +82,27 @@ function HomePage() {
               <Link to="/schedules" className="btn-hero">
                 📅 Jadwal Ibadah
               </Link>
+              <Link
+                to="/shop"
+                className="inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold text-white border border-white/25 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300"
+              >
+                🛍️ Toko Kaos Rohani
+              </Link>
               {user && (
                 <Link
                   to="/prayer"
                   className="inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold text-white border border-white/25 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300"
                 >
-                🙏 Kirim Permohonan Doa
-              </Link>
-            )}
-          </div>
+                  🙏 Kirim Permohonan Doa
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Featured Content Grid */}
-      <section
-        className={`grid gap-6 ${user ? "md:grid-cols-3" : "md:grid-cols-2"}`}
-      >
+      <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {[
           {
             icon: "📰",
@@ -113,6 +117,13 @@ function HomePage() {
             desc: "Lihat foto kegiatan dan acara gereja terkini",
             link: "/gallery",
             cta: "Lihat Galeri →",
+          },
+          {
+            icon: "🛍️",
+            title: "Toko Kaos Rohani",
+            desc: "Belanja kaos rohani minimalist streetwear untuk dukung pelayanan",
+            link: "/shop",
+            cta: "Belanja Sekarang →",
           },
           ...(user
             ? [
