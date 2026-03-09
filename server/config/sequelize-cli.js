@@ -22,7 +22,15 @@ function buildDbConfig() {
     config.dialectOptions = {
       ssl: {
         require: true,
-        rejectUnauthorized
+        rejectUnauthorized: false // Force false for Render/production DBs
+      }
+    };
+  } else {
+    // Fallback for Render external connections which often require SSL implicitly
+    config.dialectOptions = {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
       }
     };
   }
