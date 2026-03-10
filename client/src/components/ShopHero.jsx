@@ -5,12 +5,12 @@ function ShopHero() {
   return (
     <section className="relative overflow-hidden rounded-[28px] border border-emerald-900/30 bg-[#0b1712] shadow-[0_28px_70px_rgba(3,12,8,0.55)]">
       <div className="absolute inset-0">
-        <div className="absolute right-0 top-0 h-full w-[58%]">
-            <img
-              src={gtshirtLogo}
-              alt="GTshirt Logo"
-              className="h-full w-full object-contain opacity-90"
-            />
+        <div className="absolute right-0 top-0 h-full w-[60%]">
+          <img
+            src={gtshirtLogo}
+            alt="GTshirt Logo"
+            className="h-full w-full object-cover opacity-90"
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0b1712] via-[#0b1712]/85 to-transparent" />
           <div className="absolute inset-0 bg-black/10" />
         </div>
@@ -46,14 +46,6 @@ function ShopHero() {
         </div>
 
         <div className="relative min-h-[260px] lg:min-h-[360px]">
-          <div className="absolute right-6 top-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-200/30 bg-black/60 backdrop-blur">
-            <img
-              src={gtshirtLogo}
-              alt="GTshirt"
-              className="h-12 w-12 rounded-xl object-cover"
-            />
-          </div>
-
           <div className="absolute left-6 top-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
             <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
               Signature Drop
