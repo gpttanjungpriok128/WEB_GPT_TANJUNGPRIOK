@@ -320,10 +320,11 @@ function ShopPage() {
 
   return (
     <div className="page-stack space-y-8">
-      <section className="relative overflow-hidden rounded-[32px] border border-emerald-900/40 bg-gradient-to-br from-[#07120f] via-[#0a1a14] to-black px-6 py-10 text-white shadow-[0_30px_80px_rgba(0,0,0,0.45)] md:px-10 md:py-12">
-        <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 left-6 h-56 w-56 rounded-full bg-teal-400/20 blur-3xl" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="relative overflow-hidden rounded-[36px] border border-emerald-900/30 bg-gradient-to-br from-[#0b1712] via-[#0f1f18] to-[#060b08] px-6 py-10 text-white shadow-[0_28px_70px_rgba(3,12,8,0.55)] md:px-10 md:py-12">
+        <div className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full bg-emerald-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 right-10 h-64 w-64 rounded-full bg-teal-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_45%)]" />
+        <div className="relative grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="space-y-5">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-200/80">
               GTshirt Storefront
@@ -349,46 +350,50 @@ function ShopPage() {
               </button>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex items-center justify-center rounded-3xl border border-emerald-200/30 bg-white/5 p-6 backdrop-blur">
+
+          <div className="relative">
+            <div className="relative overflow-hidden rounded-[28px] border border-emerald-200/20 bg-gradient-to-br from-white/10 to-transparent shadow-[0_18px_50px_rgba(0,0,0,0.45)]">
+              <img
+                src={worshipSmokeImage}
+                alt="GTshirt"
+                className="h-full w-full object-cover mix-blend-screen opacity-90"
+              />
+              <div className="absolute inset-0 bg-gradient-to-l from-transparent via-black/15 to-black/55" />
+            </div>
+
+            <div className="absolute left-6 top-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
+                Signature Drop
+              </p>
+              <p className="mt-1 text-sm font-semibold text-white">
+                Modern Worship Tee, Weekly Production.
+              </p>
+            </div>
+
+            <div className="absolute bottom-6 left-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
+                Order Flow
+              </p>
+              <p className="mt-1 text-sm font-semibold text-white">
+                Fast checkout & tracking.
+              </p>
+            </div>
+
+            <div className="absolute bottom-6 right-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
+                Brand Voice
+              </p>
+              <p className="mt-1 text-sm font-semibold text-white">
+                Clean. Bold. Faithful.
+              </p>
+            </div>
+
+            <div className="absolute right-6 top-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-200/30 bg-black/60 backdrop-blur">
               <img
                 src={gtshirtLogo}
                 alt="GTshirt"
-                className="h-20 w-20 rounded-2xl object-cover"
+                className="h-8 w-8 rounded-lg object-cover"
               />
-            </div>
-            <div className="rounded-3xl border border-emerald-200/30 bg-white/5 p-6 backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200/80">
-                Signature Drop
-              </p>
-              <p className="mt-3 text-lg font-bold text-white">
-                Minimalist worship tees dengan cutting modern.
-              </p>
-              <p className="mt-2 text-xs text-emerald-100/70">
-                Produksi batch mingguan, ready stock terbatas.
-              </p>
-            </div>
-            <div className="rounded-3xl border border-emerald-200/30 bg-white/5 p-6 backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200/80">
-                Order Flow
-              </p>
-              <p className="mt-3 text-lg font-bold text-white">
-                Checkout cepat, invoice otomatis, tracking order.
-              </p>
-              <p className="mt-2 text-xs text-emerald-100/70">
-                Status pesanan dapat dilacak langsung dari toko.
-              </p>
-            </div>
-            <div className="rounded-3xl border border-emerald-200/30 bg-white/5 p-6 backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200/80">
-                Brand Voice
-              </p>
-              <p className="mt-3 text-lg font-bold text-white">
-                Clean. Bold. Faithful.
-              </p>
-              <p className="mt-2 text-xs text-emerald-100/70">
-                Dirancang untuk pelayanan, youth, dan daily wear.
-              </p>
             </div>
           </div>
         </div>
