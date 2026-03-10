@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import * as XLSX from "xlsx";
 import api from "../services/api";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 
@@ -8,6 +9,16 @@ const ORDER_STATUS_OPTIONS = [
   { value: "packed", label: "Dikemas" },
   { value: "shipping", label: "Dalam Pengiriman" },
   { value: "completed", label: "Selesai" },
+  { value: "cancelled", label: "Dibatalkan" },
+];
+
+const REPORT_STATUS_OPTIONS = [
+  { value: "all", label: "Semua Status" },
+  { value: "completed", label: "Selesai" },
+  { value: "shipping", label: "Dalam Pengiriman" },
+  { value: "packed", label: "Dikemas" },
+  { value: "confirmed", label: "Dikonfirmasi" },
+  { value: "new", label: "Baru" },
   { value: "cancelled", label: "Dibatalkan" },
 ];
 
@@ -160,6 +171,8 @@ function ManageStorePage() {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [reportRows, setReportRows] = useState([]);
+  const [reportMeta, setReportMeta] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [productSearch, setProductSearch] = useState("");
   const [productActiveFilter, setProductActiveFilter] = useState("");
@@ -167,9 +180,15 @@ function ManageStorePage() {
   const [orderStatusFilter, setOrderStatusFilter] = useState("");
   const [reviewSearch, setReviewSearch] = useState("");
   const [reviewStatusFilter, setReviewStatusFilter] = useState("");
+  const [reportFilters, setReportFilters] = useState({
+    startDate: "",
+    endDate: "",
+    status: "completed",
+  });
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [loadingReport, setLoadingReport] = useState(false);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
@@ -252,6 +271,29 @@ function ManageStorePage() {
     }
   };
 
+  const fetchRevenueReport = async (overrides = {}) => {
+    setLoadingReport(true);
+    try {
+      const params = {
+        startDate: overrides.startDate ?? reportFilters.startDate,
+        endDate: overrides.endDate ?? reportFilters.endDate,
+        status: overrides.status ?? reportFilters.status,
+      };
+      const { data } = await api.get("/store/admin/reports/revenue", { params });
+      setReportRows(Array.isArray(data?.data) ? data.data : []);
+      setReportMeta(data?.meta || null);
+    } catch (error) {
+      setReportRows([]);
+      setReportMeta(null);
+      setFeedback({
+        type: "error",
+        text: error.response?.data?.message || "Gagal memuat laporan pemasukan.",
+      });
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
   const fetchAnalytics = async () => {
     setLoadingAnalytics(true);
     try {
@@ -286,6 +328,12 @@ function ManageStorePage() {
     fetchAnalytics();
     fetchShippingSettings();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "laporan") {
+      fetchRevenueReport();
+    }
+  }, [activeTab]);
 
   const metricCards = useMemo(() => {
     const metrics = analytics?.metrics;
@@ -577,6 +625,37 @@ function ManageStorePage() {
     }
   };
 
+  const handleExportReport = () => {
+    if (!reportRows.length) {
+      setFeedback({ type: "error", text: "Tidak ada data untuk diexport." });
+      return;
+    }
+
+    const rows = reportRows.map((row, index) => ({
+      No: index + 1,
+      "Kode Order": row.orderCode,
+      Tanggal: formatDateTime(row.createdAt),
+      Nama: row.customerName,
+      "No. WA": row.customerPhone,
+      Status: mapOrderStatusLabel(row.status),
+      Pengiriman: row.shippingMethod,
+      Pembayaran: row.paymentMethod,
+      Subtotal: row.subtotal,
+      Ongkir: row.shippingCost,
+      Total: row.totalAmount,
+      "Jumlah Item": row.itemCount,
+      Produk: row.itemsSummary,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Pemasukan");
+
+    const startLabel = reportFilters.startDate || "semua";
+    const endLabel = reportFilters.endDate || "semua";
+    XLSX.writeFile(workbook, `laporan-pemasukan-${startLabel}-${endLabel}.xlsx`);
+  };
+
   const handleSaveShipping = async () => {
     setSavingShipping(true);
     setFeedback({ type: "", text: "" });
@@ -692,6 +771,19 @@ function ManageStorePage() {
         >
           ⭐ Ulasan Produk
           {activeTab === "ulasan" && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("laporan")}
+          className={`px-4 py-3 font-semibold transition relative ${
+            activeTab === "laporan"
+              ? "text-primary"
+              : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
+          }`}
+        >
+          📈 Laporan
+          {activeTab === "laporan" && (
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
           )}
         </button>
@@ -1420,6 +1512,161 @@ function ManageStorePage() {
             </div>
             <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300">
               Gunakan toggle untuk menayangkan atau menyembunyikan ulasan sebelum tampil di katalog publik.
+            </div>
+          </article>
+        </section>
+      )}
+
+      {/* ── TAB: LAPORAN PEMASUKAN ──────────────────── */}
+      {activeTab === "laporan" && (
+        <section className="grid gap-6">
+          <article className="glass-card p-6">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-[180px] space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                  Mulai
+                </label>
+                <input
+                  type="date"
+                  className="input-modern"
+                  value={reportFilters.startDate}
+                  onChange={(event) =>
+                    setReportFilters((prev) => ({ ...prev, startDate: event.target.value }))
+                  }
+                />
+              </div>
+              <div className="min-w-[180px] space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                  Sampai
+                </label>
+                <input
+                  type="date"
+                  className="input-modern"
+                  value={reportFilters.endDate}
+                  onChange={(event) =>
+                    setReportFilters((prev) => ({ ...prev, endDate: event.target.value }))
+                  }
+                />
+              </div>
+              <div className="min-w-[180px] space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                  Status
+                </label>
+                <select
+                  className="input-modern"
+                  value={reportFilters.status}
+                  onChange={(event) =>
+                    setReportFilters((prev) => ({ ...prev, status: event.target.value }))
+                  }
+                >
+                  {REPORT_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={() => fetchRevenueReport()}
+                className="btn-primary !px-6 !py-2.5"
+              >
+                Terapkan
+              </button>
+              <button
+                type="button"
+                onClick={handleExportReport}
+                disabled={!reportRows.length}
+                className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300"
+              >
+                Export Excel
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              {[
+                {
+                  label: "Total Pemasukan",
+                  value: formatRupiah(reportMeta?.totalRevenue ?? 0),
+                },
+                {
+                  label: "Total Order",
+                  value: reportMeta?.totalOrders ?? 0,
+                },
+                {
+                  label: "Total Item Terjual",
+                  value: reportMeta?.totalItems ?? 0,
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-brand-200 bg-white/70 p-4 text-sm dark:border-brand-700 dark:bg-brand-900/45"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                    {item.label}
+                  </p>
+                  <p className="mt-2 text-lg font-bold text-brand-900 dark:text-white">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 overflow-x-auto rounded-2xl border border-brand-200 dark:border-brand-700">
+              {loadingReport ? (
+                <div className="flex justify-center py-8">
+                  <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
+                </div>
+              ) : reportRows.length === 0 ? (
+                <div className="p-6 text-center text-sm text-brand-600 dark:text-brand-400">
+                  Belum ada data pemasukan.
+                </div>
+              ) : (
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-brand-50 text-xs uppercase tracking-[0.2em] text-brand-500 dark:bg-brand-900/50 dark:text-brand-400">
+                    <tr>
+                      <th className="px-4 py-3">Kode</th>
+                      <th className="px-4 py-3">Tanggal</th>
+                      <th className="px-4 py-3">Pelanggan</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Total</th>
+                      <th className="px-4 py-3">Item</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportRows.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-t border-brand-100 text-brand-700 dark:border-brand-800 dark:text-brand-300"
+                      >
+                        <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
+                          {row.orderCode}
+                        </td>
+                        <td className="px-4 py-3">{formatDateTime(row.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-brand-900 dark:text-white">
+                            {row.customerName}
+                          </div>
+                          <div className="text-xs text-brand-500 dark:text-brand-400">
+                            {row.customerPhone}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(row.status)}`}>
+                            {mapOrderStatusLabel(row.status)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
+                          {formatRupiah(row.totalAmount)}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-brand-500 dark:text-brand-400">
+                          {row.itemsSummary}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </article>
         </section>

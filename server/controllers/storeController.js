@@ -1068,6 +1068,93 @@ async function getAdminOrders(req, res, next) {
   }
 }
 
+async function getAdminRevenueReport(req, res, next) {
+  try {
+    const status = String(req.query.status || 'completed').trim().toLowerCase();
+    const startDate = parseDateValue(req.query.startDate);
+    const endDateRaw = parseDateValue(req.query.endDate);
+    const endDate = endDateRaw
+      ? new Date(endDateRaw.getFullYear(), endDateRaw.getMonth(), endDateRaw.getDate(), 23, 59, 59, 999)
+      : null;
+
+    const where = {};
+    if (status && status !== 'all') {
+      if (!ORDER_STATUSES.includes(status)) {
+        return res.status(400).json({ message: 'Status laporan tidak valid' });
+      }
+      where.status = status;
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt[Op.gte] = startDate;
+      if (endDate) where.createdAt[Op.lte] = endDate;
+    }
+
+    const orders = await StoreOrder.findAll({
+      where,
+      include: [{ model: StoreOrderItem, as: 'items' }],
+      order: [['createdAt', 'ASC']]
+    });
+
+    const rows = orders.map((order) => {
+      const items = Array.isArray(order.items) ? order.items : [];
+      const itemCount = items.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
+      const itemsSummary = items.map((item) => (
+        `${item.productName} (${item.size} x${item.quantity})`
+      )).join(", ");
+
+      return {
+        id: order.id,
+        orderCode: order.orderCode,
+        createdAt: order.createdAt,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        status: order.status,
+        shippingMethod: order.shippingMethod,
+        paymentMethod: order.paymentMethod,
+        subtotal: Number(order.subtotal) || 0,
+        shippingCost: Number(order.shippingCost) || 0,
+        totalAmount: Number(order.totalAmount) || 0,
+        itemCount,
+        itemsSummary
+      };
+    });
+
+    const totals = rows.reduce(
+      (accumulator, row) => {
+        accumulator.totalRevenue += row.totalAmount;
+        accumulator.totalOrders += 1;
+        accumulator.totalItems += row.itemCount;
+        accumulator.totalShipping += row.shippingCost;
+        accumulator.totalSubtotal += row.subtotal;
+        return accumulator;
+      },
+      {
+        totalRevenue: 0,
+        totalOrders: 0,
+        totalItems: 0,
+        totalShipping: 0,
+        totalSubtotal: 0
+      }
+    );
+
+    const averageOrderValue = totals.totalOrders > 0
+      ? Math.round(totals.totalRevenue / totals.totalOrders)
+      : 0;
+
+    return res.status(200).json({
+      data: rows,
+      meta: {
+        ...totals,
+        averageOrderValue
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function getMyOrders(req, res, next) {
   try {
     const page = Math.max(1, toInteger(req.query.page, 1));
@@ -1555,6 +1642,7 @@ module.exports = {
   updateAdminProduct,
   deleteAdminProduct,
   getAdminOrders,
+  getAdminRevenueReport,
   resetAdminOrders,
   updateAdminOrderStatus,
   getAdminReviews,
