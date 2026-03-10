@@ -3,18 +3,11 @@ import { Link, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
 import StoreOrderProgress from "../components/StoreOrderProgress";
+import StoreOrderInvoice from "../components/StoreOrderInvoice";
 import { ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
 import heroImage from "../img/store/for-all-my-hope-is-in-him.png";
 
 const TRACKING_STORAGE_KEY = "gpt_tanjungpriok_last_order_tracking_v1";
-
-function formatRupiah(amount) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(Number(amount) || 0);
-}
 
 function formatDateTime(value) {
   if (!value) return "-";
@@ -203,48 +196,7 @@ function TrackOrderPage() {
                 </div>
               </article>
 
-              <article className="glass-card p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                  Ringkasan Belanja
-                </p>
-                <div className="mt-4 space-y-3">
-                  {Array.isArray(order.items) && order.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/30"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-brand-900 dark:text-white">
-                            {item.productName}
-                          </p>
-                          <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                            Size {item.size} • Qty {item.quantity} {item.color ? `• ${item.color}` : ""}
-                          </p>
-                        </div>
-                        <p className="font-semibold text-primary">
-                          {formatRupiah(item.lineTotal)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-5 space-y-2 border-t border-brand-200 pt-4 text-sm dark:border-brand-700">
-                  <div className="flex items-center justify-between text-brand-600 dark:text-brand-300">
-                    <span>Subtotal</span>
-                    <span>{formatRupiah(order.subtotal)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-brand-600 dark:text-brand-300">
-                    <span>Ongkir</span>
-                    <span>{formatRupiah(order.shippingCost)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-base font-bold text-brand-900 dark:text-white">
-                    <span>Total</span>
-                    <span className="text-primary">{formatRupiah(order.totalAmount)}</span>
-                  </div>
-                </div>
-              </article>
+              <StoreOrderInvoice order={order} />
             </>
           )}
         </section>

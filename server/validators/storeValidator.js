@@ -119,10 +119,21 @@ const updateStoreSettingsValidation = [
     .withMessage('Ongkir harus angka >= 0')
 ];
 
+const createReviewValidation = [
+  body('orderCode').trim().notEmpty().withMessage('Kode pesanan wajib diisi'),
+  body('phone').trim().notEmpty().withMessage('Nomor WhatsApp wajib diisi'),
+  body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating harus 1 - 5'),
+  body('reviewText')
+    .optional({ nullable: true, checkFalsy: true })
+    .isLength({ max: 500 })
+    .withMessage('Ulasan maksimal 500 karakter')
+];
+
 module.exports = {
   createOrderValidation,
   createProductValidation,
   updateProductValidation,
   updateStoreSettingsValidation,
-  updateOrderStatusValidation
+  updateOrderStatusValidation,
+  createReviewValidation
 };

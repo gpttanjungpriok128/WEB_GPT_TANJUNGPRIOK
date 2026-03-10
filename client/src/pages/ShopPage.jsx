@@ -30,6 +30,8 @@ const FALLBACK_PRODUCTS = [
     imageUrl: worshipSmokeImage,
     stock: 20,
     isActive: true,
+    ratingAverage: 0,
+    ratingCount: 0,
   },
   {
     id: 1002,
@@ -48,6 +50,8 @@ const FALLBACK_PRODUCTS = [
     imageUrl: lightJohnImage,
     stock: 20,
     isActive: true,
+    ratingAverage: 0,
+    ratingCount: 0,
   },
   {
     id: 1003,
@@ -66,6 +70,8 @@ const FALLBACK_PRODUCTS = [
     imageUrl: hopePsalmImage,
     stock: 20,
     isActive: true,
+    ratingAverage: 0,
+    ratingCount: 0,
   },
 ];
 
@@ -75,6 +81,19 @@ const formatRupiah = (amount) =>
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(amount);
+
+const renderStars = (value, className = "text-xs") => {
+  const safeValue = Math.max(0, Math.min(5, Number(value) || 0));
+  const filledCount = Math.round(safeValue);
+  return [...Array(5)].map((_, index) => (
+    <span
+      key={index}
+      className={`${className} ${index < filledCount ? "text-amber-400" : "text-brand-200 dark:text-brand-700"}`}
+    >
+      ★
+    </span>
+  ));
+};
 
 function getDefaultSize(product) {
   const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
@@ -91,7 +110,9 @@ function ShopPage() {
   const [cartItems, setCartItems] = useState([]);
   const [isCartHydrated, setIsCartHydrated] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-  const [isUsingFallbackProducts, setIsUsingFallbackProducts] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [availabilityFilter, setAvailabilityFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("featured");
 
   useEffect(() => {
     try {
@@ -135,11 +156,8 @@ function ShopPage() {
           : [];
 
         setProducts(apiProducts);
-        // Removed fallback logic completely
-        setIsUsingFallbackProducts(false);
       } catch {
-        setProducts([]); // Set empty array instead of fallbacks
-        setIsUsingFallbackProducts(false);
+        setProducts([]);
       } finally {
         setIsLoadingProducts(false);
       }
@@ -147,6 +165,60 @@ function ShopPage() {
 
     fetchProducts();
   }, []);
+
+  const filteredProducts = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    let nextProducts = [...products];
+
+    if (normalizedSearch) {
+      nextProducts = nextProducts.filter((product) => {
+        const searchTarget = [
+          product.name,
+          product.color,
+          product.description,
+          product.verse,
+        ].join(" ").toLowerCase();
+        return searchTarget.includes(normalizedSearch);
+      });
+    }
+
+    if (availabilityFilter === "ready") {
+      nextProducts = nextProducts.filter((product) => getTotalStock(product) > 0);
+    }
+
+    if (availabilityFilter === "promo") {
+      nextProducts = nextProducts.filter((product) => Boolean(product.promoIsActive));
+    }
+
+    nextProducts.sort((left, right) => {
+      if (sortBy === "price-low") {
+        return Number(left.finalPrice ?? left.basePrice ?? 0) - Number(right.finalPrice ?? right.basePrice ?? 0);
+      }
+      if (sortBy === "price-high") {
+        return Number(right.finalPrice ?? right.basePrice ?? 0) - Number(left.finalPrice ?? left.basePrice ?? 0);
+      }
+      if (sortBy === "name") {
+        return String(left.name || "").localeCompare(String(right.name || ""), "id");
+      }
+      if (sortBy === "stock") {
+        return getTotalStock(right) - getTotalStock(left);
+      }
+      return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+    });
+
+    return nextProducts;
+  }, [availabilityFilter, products, searchQuery, sortBy]);
+
+  const productInsights = useMemo(() => {
+    const ready = products.filter((product) => getTotalStock(product) > 0).length;
+    const promo = products.filter((product) => Boolean(product.promoIsActive)).length;
+
+    return {
+      total: products.length,
+      ready,
+      promo,
+    };
+  }, [products]);
 
   const subtotal = useMemo(
     () =>
@@ -345,11 +417,74 @@ function ShopPage() {
           </Link>
         </div>
 
+        <div className="grid gap-4 rounded-3xl border border-brand-200 bg-white/85 p-4 shadow-sm lg:grid-cols-[1.2fr_0.8fr_0.7fr_0.7fr] dark:border-brand-700 dark:bg-brand-900/40">
+          <label className="space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+              Cari Produk
+            </span>
+            <input
+              className="input-modern"
+              placeholder="Cari nama, warna, atau tema desain"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+              Filter
+            </span>
+            <select
+              className="input-modern"
+              value={availabilityFilter}
+              onChange={(event) => setAvailabilityFilter(event.target.value)}
+            >
+              <option value="all">Semua Produk</option>
+              <option value="ready">Stok Tersedia</option>
+              <option value="promo">Sedang Promo</option>
+            </select>
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+              Urutkan
+            </span>
+            <select
+              className="input-modern"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value)}
+            >
+              <option value="featured">Terbaru</option>
+              <option value="price-low">Harga Termurah</option>
+              <option value="price-high">Harga Tertinggi</option>
+              <option value="stock">Stok Terbanyak</option>
+              <option value="name">Nama A-Z</option>
+            </select>
+          </label>
+          <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
+            {[
+              { label: "Total", value: productInsights.total },
+              { label: "Ready", value: productInsights.ready },
+              { label: "Promo", value: productInsights.promo },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl border border-brand-200 bg-brand-50/80 px-3 py-2 text-center dark:border-brand-700 dark:bg-brand-900/30"
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-lg font-black text-brand-900 dark:text-white">
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {isLoadingProducts ? (
           <div className="flex justify-center py-20">
             <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
           </div>
-        ) : products.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="mb-4 rounded-full bg-brand-50 p-6 dark:bg-brand-900/30">
               <svg
@@ -373,20 +508,21 @@ function ShopPage() {
               </svg>
             </div>
             <h3 className="text-xl font-bold text-brand-900 dark:text-white">
-              Belum ada produk terbaru
+              Produk belum ditemukan
             </h3>
             <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">
-              Nantikan koleksi apparel rohani terbaru dari kami. Pastikan kamu
-              selalu cek halaman ini secara berkala!
+              Coba ubah kata kunci pencarian atau filter katalog untuk melihat produk lain yang tersedia.
             </p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((product) => {
+            {filteredProducts.map((product) => {
               const effectivePrice = Number(
                 product.finalPrice ?? product.basePrice ?? 0,
               );
               const totalStock = getTotalStock(product);
+              const ratingAverage = Number(product.ratingAverage || 0);
+              const ratingCount = Number(product.ratingCount || 0);
 
               return (
                 <Link
@@ -414,6 +550,16 @@ function ShopPage() {
                       <h3 className="mt-1 text-lg font-bold text-brand-900 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                         {product.name}
                       </h3>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
+                      <div className="flex items-center gap-0.5">
+                        {renderStars(ratingAverage)}
+                      </div>
+                      <span>
+                        {ratingCount > 0
+                          ? `${ratingAverage.toFixed(1)} · ${ratingCount} ulasan`
+                          : "Belum ada ulasan"}
+                      </span>
                     </div>
 
                     <div className="mt-auto space-y-3">

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
 import StoreOrderProgress from "../components/StoreOrderProgress";
+import StoreOrderInvoice from "../components/StoreOrderInvoice";
 import heroImage from "../img/store/you-are-the-light.png";
 import { ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
 
@@ -31,6 +32,7 @@ function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState(null);
 
   const fetchMyOrders = async () => {
     setLoading(true);
@@ -177,6 +179,28 @@ function MyOrdersPage() {
                 <div className="mt-4">
                   <StoreOrderProgress status={order.status} />
                 </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    to={`/track-order?orderCode=${encodeURIComponent(order.orderCode)}`}
+                    className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                  >
+                    Lacak Detail
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedInvoiceId((previous) => previous === order.id ? null : order.id)}
+                    className="rounded-xl bg-brand-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800 dark:bg-white dark:text-brand-900 dark:hover:bg-brand-100"
+                  >
+                    {expandedInvoiceId === order.id ? "Tutup Invoice" : "Lihat Invoice"}
+                  </button>
+                </div>
+
+                {expandedInvoiceId === order.id && (
+                  <div className="mt-4">
+                    <StoreOrderInvoice order={order} />
+                  </div>
+                )}
               </article>
             ))}
           </section>

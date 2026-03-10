@@ -6,6 +6,7 @@ const {
   StoreProduct,
   StoreOrder,
   StoreOrderItem,
+  StoreProductReview,
   StoreSetting,
   User
 } = require('../models');
@@ -317,6 +318,52 @@ function serializeProduct(product) {
   };
 }
 
+function normalizeReviewerName(name) {
+  const cleaned = String(name || '').trim();
+  if (!cleaned) return 'Pembeli';
+  const parts = cleaned.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[1].slice(0, 1)}.`;
+}
+
+function serializeReview(review) {
+  return {
+    id: review.id,
+    rating: Number(review.rating) || 0,
+    reviewText: review.reviewText || '',
+    reviewerName: normalizeReviewerName(review.reviewerName),
+    createdAt: review.createdAt
+  };
+}
+
+async function getReviewSummaryMap(productIds = []) {
+  if (!productIds.length) return new Map();
+
+  const rows = await StoreProductReview.findAll({
+    attributes: [
+      'productId',
+      [fn('AVG', col('rating')), 'avgRating'],
+      [fn('COUNT', col('id')), 'reviewCount']
+    ],
+    where: {
+      productId: productIds,
+      isApproved: true
+    },
+    group: ['productId'],
+    raw: true
+  });
+
+  return new Map(
+    rows.map((row) => [
+      Number(row.productId),
+      {
+        average: Number(row.avgRating) || 0,
+        count: Number(row.reviewCount) || 0
+      }
+    ])
+  );
+}
+
 function serializeCustomerOrder(order) {
   return {
     id: order.id,
@@ -538,10 +585,20 @@ async function getPublicProducts(req, res, next) {
       getOrCreateStoreSettings()
     ]);
 
+    const reviewSummaryMap = await getReviewSummaryMap(products.map((product) => product.id));
+    const serializedProducts = products.map((product) => {
+      const summary = reviewSummaryMap.get(product.id) || { average: 0, count: 0 };
+      return {
+        ...serializeProduct(product),
+        ratingAverage: summary.average,
+        ratingCount: summary.count
+      };
+    });
+
     return res.status(200).json({
-      data: products.map(serializeProduct),
+      data: serializedProducts,
       meta: {
-        total: products.length,
+        total: serializedProducts.length,
         shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
       }
     });
@@ -561,13 +618,135 @@ async function getPublicProductBySlug(req, res, next) {
       return res.status(404).json({ message: 'Produk tidak ditemukan' });
     }
 
-    const settings = await getOrCreateStoreSettings();
+    const [settings, reviewSummaryMap] = await Promise.all([
+      getOrCreateStoreSettings(),
+      getReviewSummaryMap([product.id])
+    ]);
+    const summary = reviewSummaryMap.get(product.id) || { average: 0, count: 0 };
 
     return res.status(200).json({
-      data: serializeProduct(product),
+      data: {
+        ...serializeProduct(product),
+        ratingAverage: summary.average,
+        ratingCount: summary.count
+      },
       meta: {
         shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
       }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getProductReviews(req, res, next) {
+  try {
+    const { slug } = req.params;
+    const product = await StoreProduct.findOne({
+      where: { slug: String(slug).toLowerCase().trim(), isActive: true }
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: 'Produk tidak ditemukan' });
+    }
+
+    const reviews = await StoreProductReview.findAll({
+      where: {
+        productId: product.id,
+        isApproved: true
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const totalReviews = reviews.length;
+    const totalScore = reviews.reduce((total, review) => {
+      const rating = Math.min(5, Math.max(1, Number(review.rating) || 0));
+      ratingCounts[rating] = (ratingCounts[rating] || 0) + 1;
+      return total + rating;
+    }, 0);
+    const averageRating = totalReviews > 0 ? Number((totalScore / totalReviews).toFixed(2)) : 0;
+
+    return res.status(200).json({
+      data: reviews.map(serializeReview),
+      meta: {
+        averageRating,
+        totalReviews,
+        ratingCounts
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function createProductReview(req, res, next) {
+  try {
+    const { slug } = req.params;
+    const product = await StoreProduct.findOne({
+      where: { slug: String(slug).toLowerCase().trim(), isActive: true }
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: 'Produk tidak ditemukan' });
+    }
+
+    const orderCode = String(req.body.orderCode || '').trim();
+    const customerPhone = normalizePhone(req.body.phone);
+    const rating = Math.min(5, Math.max(1, toInteger(req.body.rating, 0)));
+    const reviewText = req.body.reviewText ? String(req.body.reviewText).trim() : null;
+
+    const order = await StoreOrder.findOne({
+      where: {
+        orderCode: { [Op.iLike]: orderCode },
+        customerPhone
+      },
+      include: [{ model: StoreOrderItem, as: 'items' }]
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: 'Order tidak ditemukan. Pastikan kode pesanan dan nomor WhatsApp sesuai.'
+      });
+    }
+
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ message: 'Order dibatalkan dan tidak bisa diberi ulasan.' });
+    }
+
+    const items = Array.isArray(order.items) ? order.items : [];
+    const hasProduct = items.some((item) => Number(item.productId) === Number(product.id));
+    if (!hasProduct) {
+      return res.status(400).json({
+        message: 'Produk ini tidak ada di pesanan yang dimasukkan.'
+      });
+    }
+
+    const existingReview = await StoreProductReview.findOne({
+      where: {
+        productId: product.id,
+        orderId: order.id
+      }
+    });
+
+    if (existingReview) {
+      return res.status(409).json({ message: 'Ulasan untuk produk ini sudah dikirim.' });
+    }
+
+    const review = await StoreProductReview.create({
+      productId: product.id,
+      orderId: order.id,
+      userId: req.user?.id || order.userId || null,
+      reviewerName: order.customerName,
+      reviewerPhone: order.customerPhone,
+      rating,
+      reviewText: reviewText || null,
+      isApproved: true
+    });
+
+    return res.status(201).json({
+      message: 'Ulasan berhasil dikirim',
+      data: serializeReview(review)
     });
   } catch (error) {
     return next(error);
@@ -1210,6 +1389,8 @@ async function getAdminAnalytics(req, res, next) {
 module.exports = {
   getPublicProducts,
   getPublicProductBySlug,
+  getProductReviews,
+  createProductReview,
   createOrder,
   getMyOrders,
   trackPublicOrder,

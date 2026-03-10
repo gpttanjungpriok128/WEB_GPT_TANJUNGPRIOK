@@ -2,6 +2,8 @@ const express = require('express');
 const {
   getPublicProducts,
   getPublicProductBySlug,
+  getProductReviews,
+  createProductReview,
   createOrder,
   getMyOrders,
   trackPublicOrder,
@@ -20,6 +22,7 @@ const { uploadImage } = require('../middleware/uploadMiddleware');
 const { validate } = require('../middleware/validationMiddleware');
 const {
   createOrderValidation,
+  createReviewValidation,
   createProductValidation,
   updateProductValidation,
   updateStoreSettingsValidation,
@@ -30,6 +33,14 @@ const router = express.Router();
 
 router.get('/products', getPublicProducts);
 router.get('/products/:slug', getPublicProductBySlug);
+router.get('/products/:slug/reviews', getProductReviews);
+router.post(
+  '/products/:slug/reviews',
+  optionalAuthenticate,
+  createReviewValidation,
+  validate,
+  createProductReview
+);
 router.post('/orders', optionalAuthenticate, createOrderValidation, validate, createOrder);
 router.get('/orders/track', trackPublicOrder);
 router.get('/my-orders', authenticate, getMyOrders);

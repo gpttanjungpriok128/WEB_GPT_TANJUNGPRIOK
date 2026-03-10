@@ -9,6 +9,7 @@ const CongregationMember = require('./congregationMember');
 const StoreProduct = require('./storeProduct');
 const StoreOrder = require('./storeOrder');
 const StoreOrderItem = require('./storeOrderItem');
+const StoreProductReview = require('./storeProductReview');
 const StoreSetting = require('./storeSetting');
 
 User.hasMany(Article, { foreignKey: 'authorId', as: 'articles' });
@@ -27,6 +28,12 @@ StoreOrder.hasMany(StoreOrderItem, { foreignKey: 'orderId', as: 'items' });
 StoreOrderItem.belongsTo(StoreOrder, { foreignKey: 'orderId', as: 'order' });
 StoreProduct.hasMany(StoreOrderItem, { foreignKey: 'productId', as: 'orderItems' });
 StoreOrderItem.belongsTo(StoreProduct, { foreignKey: 'productId', as: 'product' });
+StoreProduct.hasMany(StoreProductReview, { foreignKey: 'productId', as: 'reviews' });
+StoreProductReview.belongsTo(StoreProduct, { foreignKey: 'productId', as: 'product' });
+StoreOrder.hasMany(StoreProductReview, { foreignKey: 'orderId', as: 'reviews' });
+StoreProductReview.belongsTo(StoreOrder, { foreignKey: 'orderId', as: 'order' });
+User.hasMany(StoreProductReview, { foreignKey: 'userId', as: 'storeReviews' });
+StoreProductReview.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 module.exports = {
   sequelize,
@@ -40,5 +47,6 @@ module.exports = {
   StoreProduct,
   StoreOrder,
   StoreOrderItem,
+  StoreProductReview,
   StoreSetting
 };
