@@ -571,7 +571,7 @@ function ShopPage() {
                   to={`/shop/${product.slug}`}
                   className="group flex flex-col overflow-hidden rounded-3xl border border-brand-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 dark:border-brand-700 dark:bg-brand-900/40"
                 >
-                  <div className="relative aspect-square overflow-hidden bg-white p-4 dark:bg-neutral-900/70">
+                  <div className="relative aspect-square overflow-hidden bg-white p-4 dark:bg-brand-900/40">
                     <img
                       src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}

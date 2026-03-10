@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://web-gpt-tanjungpriok.vercel.app/sitemap.xml
