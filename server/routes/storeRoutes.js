@@ -12,7 +12,11 @@ const {
   updateAdminProduct,
   deleteAdminProduct,
   getAdminOrders,
+  resetAdminOrders,
   updateAdminOrderStatus,
+  getAdminReviews,
+  updateAdminReviewStatus,
+  deleteAdminReview,
   getAdminSettings,
   updateAdminSettings,
   getAdminAnalytics
@@ -26,7 +30,8 @@ const {
   createProductValidation,
   updateProductValidation,
   updateStoreSettingsValidation,
-  updateOrderStatusValidation
+  updateOrderStatusValidation,
+  updateReviewStatusValidation
 } = require('../validators/storeValidator');
 
 const router = express.Router();
@@ -50,7 +55,11 @@ router.post('/admin/products', authenticate, authorizeRoles('admin'), uploadImag
 router.put('/admin/products/:id', authenticate, authorizeRoles('admin'), uploadImage.array('images', 8), updateProductValidation, validate, updateAdminProduct);
 router.delete('/admin/products/:id', authenticate, authorizeRoles('admin'), deleteAdminProduct);
 router.get('/admin/orders', authenticate, authorizeRoles('admin'), getAdminOrders);
+router.post('/admin/orders/reset', authenticate, authorizeRoles('admin'), resetAdminOrders);
 router.patch('/admin/orders/:id/status', authenticate, authorizeRoles('admin'), updateOrderStatusValidation, validate, updateAdminOrderStatus);
+router.get('/admin/reviews', authenticate, authorizeRoles('admin'), getAdminReviews);
+router.patch('/admin/reviews/:id', authenticate, authorizeRoles('admin'), updateReviewStatusValidation, validate, updateAdminReviewStatus);
+router.delete('/admin/reviews/:id', authenticate, authorizeRoles('admin'), deleteAdminReview);
 router.get('/admin/settings', authenticate, authorizeRoles('admin'), getAdminSettings);
 router.patch('/admin/settings', authenticate, authorizeRoles('admin'), updateStoreSettingsValidation, validate, updateAdminSettings);
 router.get('/admin/analytics', authenticate, authorizeRoles('admin'), getAdminAnalytics);

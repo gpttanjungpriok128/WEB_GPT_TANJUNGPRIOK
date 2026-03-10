@@ -113,6 +113,16 @@ const updateOrderStatusValidation = [
     .withMessage('Status order tidak valid')
 ];
 
+const updateReviewStatusValidation = [
+  body('isApproved')
+    .optional()
+    .custom((value) => {
+      if (typeof value === 'boolean') return true;
+      if (['true', 'false', '1', '0'].includes(String(value).toLowerCase())) return true;
+      throw new Error('Status ulasan tidak valid');
+    })
+];
+
 const updateStoreSettingsValidation = [
   body('shippingCost')
     .isInt({ min: 0 })
@@ -135,5 +145,6 @@ module.exports = {
   updateProductValidation,
   updateStoreSettingsValidation,
   updateOrderStatusValidation,
+  updateReviewStatusValidation,
   createReviewValidation
 };

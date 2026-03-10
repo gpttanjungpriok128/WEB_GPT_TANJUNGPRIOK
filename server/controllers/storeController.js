@@ -1142,6 +1142,104 @@ async function trackPublicOrder(req, res, next) {
   }
 }
 
+async function getAdminReviews(req, res, next) {
+  try {
+    const page = Math.max(1, toInteger(req.query.page, 1));
+    const limit = Math.min(50, Math.max(1, toInteger(req.query.limit, 12)));
+    const offset = (page - 1) * limit;
+    const search = String(req.query.search || '').trim();
+    const status = String(req.query.status || '').trim().toLowerCase();
+
+    const where = {};
+    if (status === 'approved') where.isApproved = true;
+    if (status === 'pending') where.isApproved = false;
+
+    if (search) {
+      where[Op.or] = [
+        { reviewerName: { [Op.iLike]: `%${search}%` } },
+        { reviewerPhone: { [Op.iLike]: `%${search}%` } },
+        { reviewText: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const { rows, count } = await StoreProductReview.findAndCountAll({
+      where,
+      include: [
+        { model: StoreProduct, as: 'product', attributes: ['id', 'name', 'slug'] },
+        { model: StoreOrder, as: 'order', attributes: ['id', 'orderCode'] }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
+
+    return res.status(200).json({
+      data: rows,
+      meta: {
+        page,
+        limit,
+        total: count,
+        totalPages: Math.max(1, Math.ceil(count / limit))
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function updateAdminReviewStatus(req, res, next) {
+  try {
+    const review = await StoreProductReview.findByPk(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: 'Ulasan tidak ditemukan' });
+    }
+
+    const isApproved = toBoolean(req.body.isApproved, review.isApproved);
+    await review.update({ isApproved });
+
+    return res.status(200).json({
+      message: 'Status ulasan berhasil diperbarui',
+      data: review
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function deleteAdminReview(req, res, next) {
+  try {
+    const review = await StoreProductReview.findByPk(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: 'Ulasan tidak ditemukan' });
+    }
+
+    await review.destroy();
+    return res.status(200).json({ message: 'Ulasan berhasil dihapus' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function resetAdminOrders(req, res, next) {
+  const transaction = await sequelize.transaction();
+  try {
+    const deletedItems = await StoreOrderItem.destroy({ where: {}, transaction });
+    const deletedOrders = await StoreOrder.destroy({ where: {}, transaction });
+
+    await transaction.commit();
+    return res.status(200).json({
+      message: 'Semua pesanan berhasil dihapus',
+      meta: {
+        deletedOrders,
+        deletedItems
+      }
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return next(error);
+  }
+}
+
 async function updateAdminOrderStatus(req, res, next) {
   const transaction = await sequelize.transaction();
 
@@ -1290,7 +1388,10 @@ async function getAdminAnalytics(req, res, next) {
       revenueRows,
       recentOrders,
       soldItems,
-      settings
+      settings,
+      ratingSummary,
+      totalReviews,
+      pendingReviews
     ] = await Promise.all([
       StoreProduct.count(),
       StoreProduct.count({ where: { isActive: true } }),
@@ -1326,7 +1427,14 @@ async function getAdminAnalytics(req, res, next) {
           }
         ]
       }),
-      getOrCreateStoreSettings()
+      getOrCreateStoreSettings(),
+      StoreProductReview.findOne({
+        attributes: [[fn('AVG', col('rating')), 'averageRating']],
+        where: { isApproved: true },
+        raw: true
+      }),
+      StoreProductReview.count(),
+      StoreProductReview.count({ where: { isApproved: false } })
     ]);
 
     const activePromoCount = productsWithPromo.filter((product) => isPromoActive(product)).length;
@@ -1343,6 +1451,7 @@ async function getAdminAnalytics(req, res, next) {
     const averageOrderValue = nonCancelledOrders > 0
       ? Math.round(grossRevenue / nonCancelledOrders)
       : 0;
+    const averageRating = Number(ratingSummary?.averageRating) || 0;
 
     const topProductMap = soldItems.reduce((accumulator, item) => {
       const key = item.productName || 'Produk';
@@ -1372,7 +1481,10 @@ async function getAdminAnalytics(req, res, next) {
         completedOrders,
         cancelledOrders,
         grossRevenue,
-        averageOrderValue
+        averageOrderValue,
+        averageRating,
+        totalReviews,
+        pendingReviews
       },
       settings: {
         shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
@@ -1399,7 +1511,11 @@ module.exports = {
   updateAdminProduct,
   deleteAdminProduct,
   getAdminOrders,
+  resetAdminOrders,
   updateAdminOrderStatus,
+  getAdminReviews,
+  updateAdminReviewStatus,
+  deleteAdminReview,
   getAdminSettings,
   updateAdminSettings,
   getAdminAnalytics
