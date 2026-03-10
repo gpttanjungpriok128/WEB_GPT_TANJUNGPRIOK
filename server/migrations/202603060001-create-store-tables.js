@@ -51,7 +51,7 @@ module.exports = {
       shippingCost: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
       totalAmount: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
       status: {
-        type: Sequelize.ENUM('new', 'confirmed', 'packed', 'completed', 'cancelled'),
+        type: Sequelize.ENUM('new', 'confirmed', 'packed', 'shipping', 'completed', 'cancelled'),
         allowNull: false,
         defaultValue: 'new'
       },

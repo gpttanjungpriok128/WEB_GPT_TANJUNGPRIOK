@@ -54,7 +54,7 @@ const StoreOrder = sequelize.define('StoreOrder', {
     defaultValue: 0
   },
   status: {
-    type: DataTypes.ENUM('new', 'confirmed', 'packed', 'completed', 'cancelled'),
+    type: DataTypes.ENUM('new', 'confirmed', 'packed', 'shipping', 'completed', 'cancelled'),
     allowNull: false,
     defaultValue: 'new'
   },
