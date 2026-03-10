@@ -1,92 +1,85 @@
 import { Link } from "react-router-dom";
 import gtshirtImage from "../img/store/made-to-worship.png";
+import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 
 function ShopHero() {
   return (
-    <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-900 via-brand-800 to-brand-900 shadow-2xl py-12 md:py-16">
-      {/* Background Decoration */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -left-20 bottom-0 h-52 w-52 rounded-full bg-primary/5 blur-3xl" />
+    <section className="relative overflow-hidden rounded-[28px] border border-emerald-900/30 bg-[#0b1712] shadow-[0_28px_70px_rgba(3,12,8,0.55)]">
+      <div className="absolute inset-0">
+        <div className="absolute right-0 top-0 h-full w-[58%]">
+          <img
+            src={gtshirtImage}
+            alt="GTshirt Storefront"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1712] via-[#0b1712]/85 to-transparent" />
+          <div className="absolute inset-0 bg-black/10" />
+        </div>
+        <div className="absolute -left-20 -top-24 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
+        <div className="absolute bottom-0 right-10 h-64 w-64 rounded-full bg-teal-400/15 blur-3xl" />
       </div>
 
-      <div className="relative z-10 px-6 md:px-12 grid gap-8 md:gap-12 md:grid-cols-2 items-center">
-        {/* Left Content */}
-        <div className="space-y-6">
-          {/* Label */}
-          <div>
-            <span className="inline-block px-4 py-2 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-widest">
-              GT Shirt Storefront
-            </span>
-          </div>
-
-          {/* Main Heading */}
-          <div>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-[1.15]">
-              Streetwear rohani yang{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-300">
-                clean, bold, dan siap dipakai
-              </span>{" "}
-              setiap hari.
-            </h1>
-          </div>
-
-          {/* Subtitle */}
-          <p className="text-base md:text-lg text-white/80 leading-relaxed max-w-lg">
-            Koleksi kaos minimalis dari komunitas gereja. Checkout cepat, status order jelas, dan desain siap tampil.
+      <div className="relative z-10 grid gap-8 px-6 py-10 md:px-10 md:py-12 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="space-y-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-200/80">
+            GTSHIRT STOREFRONT
           </p>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <Link
-              to="/shop"
-              className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary hover:bg-primary-light text-white font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-primary/50"
-            >
-              📋 Lihat Katalog
-            </Link>
+          <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
+            Streetwear rohani yang clean, bold, dan siap dipakai setiap hari.
+          </h1>
+          <p className="max-w-xl text-sm leading-relaxed text-emerald-100/80 sm:text-base">
+            Koleksi kaos minimalist dari komunitas gereja. Checkout cepat, status order jelas, dan desain siap tampil.
+          </p>
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link
               to="/cart"
-              className="inline-flex items-center justify-center px-6 py-3 rounded-lg border-2 border-primary/50 text-white font-semibold hover:border-primary hover:bg-primary/10 transition-all duration-300"
+              className="rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-300"
             >
-              🛒 Lihat Keranjang
+              Lihat Keranjang
             </Link>
-          </div>
-
-          {/* Quick Info */}
-          <div className="grid grid-cols-2 gap-3 pt-6 border-t border-white/10">
-            <div className="space-y-1">
-              <p className="text-xs font-bold uppercase text-primary tracking-wider">Order Flow</p>
-              <p className="text-sm text-white/80">Fast Checkout & Tracking</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-bold uppercase text-emerald-300 tracking-wider">Brand Voice</p>
-              <p className="text-sm text-white/80">Clean. Bold. Faithful.</p>
-            </div>
+            <Link
+              to="/shop"
+              className="rounded-full border border-emerald-200/40 px-5 py-2.5 text-sm font-semibold text-emerald-100 transition hover:border-emerald-200 hover:text-white"
+            >
+              Lihat Katalog
+            </Link>
           </div>
         </div>
 
-        {/* Right Image & Details */}
-        <div className="relative h-96 md:h-full flex items-center justify-center">
-          {/* Decorative Label */}
-          <div className="absolute top-8 right-8 z-20 glass-card p-4 backdrop-blur-md rounded-xl max-w-xs">
-            <p className="text-xs font-bold uppercase text-primary tracking-widest">Signature Drop</p>
-            <h3 className="text-lg font-bold text-white mt-2 leading-tight">Modern Worship Tee, Weekly Production</h3>
-          </div>
-
-          {/* Product Image */}
-          <div className="relative z-10 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 to-brand-900/20 blur-2xl" />
+        <div className="relative min-h-[260px] lg:min-h-[360px]">
+          <div className="absolute right-6 top-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-200/30 bg-black/60 backdrop-blur">
             <img
-              src={gtshirtImage}
-              alt="GTshirt Storefront"
-              className="relative h-72 md:h-96 object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+              src={gtshirtLogo}
+              alt="GTshirt"
+              className="h-8 w-8 rounded-lg object-cover"
             />
           </div>
 
-          {/* Bottom Badge */}
-          <div className="absolute bottom-8 left-8 z-20 glass-card p-4 backdrop-blur-md rounded-xl">
-            <p className="text-xs font-bold uppercase text-emerald-300 tracking-widest">Order Center</p>
-            <p className="text-sm text-white/90 mt-1">Lacak pesanan dari area toko</p>
+          <div className="absolute left-6 top-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
+              Signature Drop
+            </p>
+            <p className="mt-1 text-sm font-semibold text-white">
+              Modern Worship Tee, Weekly Production.
+            </p>
+          </div>
+
+          <div className="absolute bottom-6 left-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
+              Order Flow
+            </p>
+            <p className="mt-1 text-sm font-semibold text-white">
+              Fast checkout & tracking.
+            </p>
+          </div>
+
+          <div className="absolute bottom-6 right-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
+              Brand Voice
+            </p>
+            <p className="mt-1 text-sm font-semibold text-white">
+              Clean. Bold. Faithful.
+            </p>
           </div>
         </div>
       </div>
