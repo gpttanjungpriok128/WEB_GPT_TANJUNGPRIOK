@@ -7,16 +7,16 @@ function ShopHero() {
       <div className="absolute inset-0">
         <div className="absolute right-0 top-0 h-full w-[62%]">
           <div
-            className="absolute inset-0 bg-no-repeat bg-[center_right] opacity-75"
+            className="absolute inset-0 bg-no-repeat opacity-90"
             style={{
               backgroundImage: `url(${gtshirtLogo})`,
-              backgroundSize: "85%",
-              filter: "saturate(0.85) brightness(0.75)"
+              backgroundSize: "cover",
+              backgroundPosition: "right center",
+              filter: "saturate(0.95) brightness(0.8)"
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1712] via-[#0b1712]/80 to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_55%)]" />
-          <div className="absolute inset-0 bg-black/15" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1712] via-[#0b1712]/78 to-transparent" />
+          <div className="absolute inset-0 bg-black/10" />
         </div>
         <div className="absolute -left-20 -top-24 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
         <div className="absolute bottom-0 right-10 h-64 w-64 rounded-full bg-teal-400/15 blur-3xl" />
