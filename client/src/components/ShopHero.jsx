@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import gtshirtImage from "../img/store/made-to-worship.png";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 
 function ShopHero() {
@@ -7,11 +6,11 @@ function ShopHero() {
     <section className="relative overflow-hidden rounded-[28px] border border-emerald-900/30 bg-[#0b1712] shadow-[0_28px_70px_rgba(3,12,8,0.55)]">
       <div className="absolute inset-0">
         <div className="absolute right-0 top-0 h-full w-[58%]">
-          <img
-            src={gtshirtImage}
-            alt="GTshirt Storefront"
-            className="h-full w-full object-cover"
-          />
+            <img
+              src={gtshirtLogo}
+              alt="GTshirt Logo"
+              className="h-full w-full object-contain opacity-90"
+            />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0b1712] via-[#0b1712]/85 to-transparent" />
           <div className="absolute inset-0 bg-black/10" />
         </div>
