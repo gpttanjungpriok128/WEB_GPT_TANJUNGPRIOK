@@ -47,11 +47,11 @@ function ShopHero() {
         </div>
 
         <div className="relative min-h-[260px] lg:min-h-[360px]">
-          <div className="absolute right-6 top-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-200/30 bg-black/60 backdrop-blur">
+          <div className="absolute right-6 top-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-200/30 bg-black/60 backdrop-blur">
             <img
               src={gtshirtLogo}
               alt="GTshirt"
-              className="h-8 w-8 rounded-lg object-cover"
+              className="h-12 w-12 rounded-xl object-cover"
             />
           </div>
 
