@@ -41,7 +41,7 @@ function MainLayout({ children }) {
     { to: "/schedules", label: "Jadwal" },
     { to: "/articles", label: "Renungan" },
     { to: "/gallery", label: "Galeri" },
-    { to: "/shop", label: "Toko" },
+    { to: "/shop", label: "GTshirt" },
     ...(user ? [{ to: "/live", label: "Live" }, { to: "/prayer", label: "Doa" }] : []),
     ...(user && ["admin", "jemaat"].includes(user.role)
       ? [{ to: "/dashboard/congregation", label: "Data Jemaat" }]
@@ -588,7 +588,7 @@ function MainLayout({ children }) {
                     { to: "/about", label: "Tentang Gereja" },
                     { to: "/articles", label: "Renungan Harian" },
                     { to: "/gallery", label: "Galeri Kegiatan" },
-                    { to: "/shop", label: "Toko Kaos Rohani" },
+                    { to: "/shop", label: "GTshirt" },
                     { to: "/prayer", label: "Permohonan Doa" },
                     { to: "/contact", label: "Kontak & Lokasi" },
                   ].map((link) => (
