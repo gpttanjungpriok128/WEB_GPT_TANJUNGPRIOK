@@ -2,6 +2,15 @@ import { Link } from "react-router-dom";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 
 function ShopHero() {
+  const handleScrollToCatalog = () => {
+    const target = document.getElementById("catalog-section");
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    window.scrollTo({ top: 760, behavior: "smooth" });
+  };
+
   return (
     <section className="relative overflow-hidden rounded-[24px] border border-emerald-900/30 bg-[#0b1712] shadow-[0_28px_70px_rgba(3,12,8,0.55)] sm:rounded-[28px]">
       <div className="absolute inset-0">
@@ -40,12 +49,13 @@ function ShopHero() {
             >
               Lihat Keranjang
             </Link>
-            <Link
-              to="/shop"
+            <button
+              type="button"
+              onClick={handleScrollToCatalog}
               className="rounded-full border border-emerald-200/40 px-5 py-2.5 text-sm font-semibold text-emerald-100 transition hover:border-emerald-200 hover:text-white"
             >
               Lihat Katalog
-            </Link>
+            </button>
           </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:hidden">

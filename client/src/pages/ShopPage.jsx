@@ -353,7 +353,7 @@ function ShopPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div id="catalog-section" className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
               Katalog Produk
