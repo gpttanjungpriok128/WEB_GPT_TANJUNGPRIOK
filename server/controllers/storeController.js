@@ -1262,13 +1262,11 @@ async function updateAdminOrderStatus(req, res, next) {
     const updatePayload = { status };
 
     if (status === 'confirmed' && !order.stockDeductedAt) {
-      const orderWithItems = await StoreOrder.findByPk(order.id, {
-        include: [{ model: StoreOrderItem, as: 'items' }],
+      const orderItems = await StoreOrderItem.findAll({
+        where: { orderId: order.id },
         transaction,
         lock: transaction.LOCK.UPDATE
       });
-
-      const orderItems = Array.isArray(orderWithItems?.items) ? orderWithItems.items : [];
       if (!orderItems.length) {
         await transaction.rollback();
         return res.status(400).json({ message: 'Order tidak memiliki item untuk dikonfirmasi' });
