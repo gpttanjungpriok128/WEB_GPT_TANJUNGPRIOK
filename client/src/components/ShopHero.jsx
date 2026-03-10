@@ -5,14 +5,18 @@ function ShopHero() {
   return (
     <section className="relative overflow-hidden rounded-[28px] border border-emerald-900/30 bg-[#0b1712] shadow-[0_28px_70px_rgba(3,12,8,0.55)]">
       <div className="absolute inset-0">
-        <div className="absolute right-0 top-0 h-full w-[60%]">
-          <img
-            src={gtshirtLogo}
-            alt="GTshirt Logo"
-            className="h-full w-full object-cover opacity-90"
+        <div className="absolute right-0 top-0 h-full w-[62%]">
+          <div
+            className="absolute inset-0 bg-no-repeat bg-[center_right] opacity-75"
+            style={{
+              backgroundImage: `url(${gtshirtLogo})`,
+              backgroundSize: "85%",
+              filter: "saturate(0.85) brightness(0.75)"
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1712] via-[#0b1712]/85 to-transparent" />
-          <div className="absolute inset-0 bg-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1712] via-[#0b1712]/80 to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_55%)]" />
+          <div className="absolute inset-0 bg-black/15" />
         </div>
         <div className="absolute -left-20 -top-24 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
         <div className="absolute bottom-0 right-10 h-64 w-64 rounded-full bg-teal-400/15 blur-3xl" />
