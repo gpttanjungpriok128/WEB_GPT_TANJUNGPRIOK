@@ -1300,26 +1300,72 @@ async function updateAdminOrderStatus(req, res, next) {
           return res.status(400).json({ message: 'Produk pada order sudah tidak ditemukan' });
         }
 
-        const { sizes, stockBySize } = getProductStockInfo(product);
+        const { sizes, stockBySize, totalStock } = getProductStockInfo(product);
+        const nextStockBySize = { ...stockBySize };
+        const unknownDeductions = [];
+        let knownDeductionTotal = 0;
 
-        for (const [size, deductionQty] of Object.entries(deductionBySize)) {
-          if (!sizes.includes(size)) {
-            await transaction.rollback();
-            return res.status(400).json({
-              message: `Ukuran ${size} untuk ${product.name} tidak tersedia`
-            });
+        for (const [rawSize, rawQty] of Object.entries(deductionBySize)) {
+          const size = String(rawSize || '').trim().toUpperCase();
+          const deductionQty = Math.max(0, toInteger(rawQty, 0));
+
+          if (!size || !sizes.includes(size)) {
+            if (deductionQty > 0) {
+              unknownDeductions.push({ size, qty: deductionQty });
+            }
+            continue;
           }
 
-          const currentSizeStock = Math.max(0, toInteger(stockBySize[size], 0));
+          const currentSizeStock = Math.max(0, toInteger(nextStockBySize[size], 0));
           if (deductionQty > currentSizeStock) {
             await transaction.rollback();
             return res.status(400).json({
               message: `Stok ${product.name} ukuran ${size} tidak mencukupi untuk konfirmasi`
             });
           }
+
+          nextStockBySize[size] = Math.max(0, currentSizeStock - deductionQty);
+          knownDeductionTotal += deductionQty;
         }
 
-        const nextStock = subtractStockBySize(stockBySize, deductionBySize, sizes);
+        if (unknownDeductions.length > 0) {
+          const unknownTotal = unknownDeductions.reduce((sum, item) => sum + item.qty, 0);
+          const remainingStock = Math.max(0, totalStock - knownDeductionTotal);
+          if (unknownTotal > remainingStock) {
+            await transaction.rollback();
+            return res.status(400).json({
+              message: `Stok ${product.name} tidak mencukupi untuk konfirmasi`
+            });
+          }
+
+          const sizeEntries = sizes
+            .map((size) => ({
+              size,
+              stock: Math.max(0, toInteger(nextStockBySize[size], 0))
+            }))
+            .sort((a, b) => b.stock - a.stock);
+
+          let remaining = unknownTotal;
+          for (const entry of sizeEntries) {
+            if (remaining <= 0) break;
+            const available = Math.max(0, toInteger(nextStockBySize[entry.size], 0));
+            const deduction = Math.min(available, remaining);
+            nextStockBySize[entry.size] = Math.max(0, available - deduction);
+            remaining -= deduction;
+          }
+
+          if (remaining > 0) {
+            await transaction.rollback();
+            return res.status(400).json({
+              message: `Stok ${product.name} tidak mencukupi untuk konfirmasi`
+            });
+          }
+        }
+
+        const nextStock = {
+          stockBySize: nextStockBySize,
+          stock: totalStockFromMap(nextStockBySize)
+        };
         await product.update(
           {
             stockBySize: nextStock.stockBySize,
