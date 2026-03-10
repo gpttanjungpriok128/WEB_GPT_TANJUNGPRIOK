@@ -571,11 +571,11 @@ function ShopPage() {
                   to={`/shop/${product.slug}`}
                   className="group flex flex-col overflow-hidden rounded-3xl border border-brand-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 dark:border-brand-700 dark:bg-brand-900/40"
                 >
-                  <div className="relative aspect-square overflow-hidden bg-brand-50 dark:bg-brand-800/30 p-4">
+                  <div className="relative aspect-square overflow-hidden bg-white p-4 dark:bg-brand-900/40">
                     <img
                       src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}
-                      className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 group-hover:scale-110"
+                      className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-brand-900/10 flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[2px]">
                       <span className="translate-y-4 rounded-full bg-white/95 px-6 py-2.5 text-sm font-bold text-brand-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 dark:bg-brand-800 dark:text-white">
