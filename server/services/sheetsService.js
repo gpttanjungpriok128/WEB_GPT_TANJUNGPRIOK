@@ -55,6 +55,17 @@ function formatDateTime(value) {
   return date.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 }
 
+function formatItemsSummary(value = '') {
+  const parts = String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (!parts.length) return '';
+  if (parts.length === 1) return parts[0];
+  return `• ${parts.join('\n• ')}`;
+}
+
 function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
   const nowLabel = formatDateTime(new Date());
   const statusLabel = String(filters.status || 'all');
@@ -90,7 +101,7 @@ function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
     row.status || '',
     Number(row.totalAmount) || 0,
     Number(row.itemCount) || 0,
-    row.itemsSummary || ''
+    formatItemsSummary(row.itemsSummary)
   ]));
 
   return [
