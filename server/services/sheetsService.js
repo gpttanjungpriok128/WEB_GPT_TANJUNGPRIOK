@@ -55,6 +55,15 @@ function formatDateTime(value) {
   return date.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 }
 
+function formatRupiah(value) {
+  const amount = Number(value) || 0;
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0
+  }).format(amount);
+}
+
 function formatItemsSummary(value = '') {
   const parts = String(value)
     .split(',')
@@ -73,15 +82,11 @@ function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
     ? `${filters.startDate || '-'} s/d ${filters.endDate || '-'}`
     : 'Semua periode';
 
-  const summaryRow = [
-    'Total Revenue',
-    meta.totalRevenue || 0,
-    'Total Orders',
-    meta.totalOrders || 0,
-    'Total Items',
-    meta.totalItems || 0,
-    'AOV',
-    meta.averageOrderValue || 0
+  const summaryRows = [
+    ['Total Revenue', formatRupiah(meta.totalRevenue)],
+    ['Total Orders', meta.totalOrders || 0],
+    ['Total Items', meta.totalItems || 0],
+    ['AOV', formatRupiah(meta.averageOrderValue)]
   ];
 
   const header = [
@@ -99,7 +104,7 @@ function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
     formatDateTime(row.createdAt),
     row.customerName || '',
     row.status || '',
-    Number(row.totalAmount) || 0,
+    formatRupiah(row.totalAmount),
     Number(row.itemCount) || 0,
     formatItemsSummary(row.itemsSummary)
   ]));
@@ -110,7 +115,7 @@ function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
     ['Filter Status', statusLabel],
     ['Periode', periodLabel],
     [],
-    summaryRow,
+    ...summaryRows,
     [],
     header,
     ...dataRows
