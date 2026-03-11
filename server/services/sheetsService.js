@@ -123,10 +123,11 @@ function buildRevenueSheetValues(rows = [], meta = {}) {
   return {
     values: [
       ['GTshirt Revenue Report'],
-      [],
+      ['SUMMARY'],
       summaryHeader,
       summaryValues,
       [],
+      ['ORDER DETAILS'],
       detailHeader,
       ...dataRows
     ],
@@ -137,14 +138,14 @@ function buildRevenueSheetValues(rows = [], meta = {}) {
 async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataRowCount) {
   if (sheetId === undefined) return;
 
-  const detailStartRow = 5;
-  const detailHeaderRow = 5;
-  const detailDataStartRow = 6;
-  const detailDataEndRow = detailDataStartRow + Math.max(0, dataRowCount);
-  const detailEndRow = detailDataEndRow;
-
+  const titleRow = 0;
+  const summaryLabelRow = 1;
   const summaryHeaderRow = 2;
   const summaryValueRow = 3;
+  const detailsLabelRow = 5;
+  const detailHeaderRow = 6;
+  const detailDataStartRow = 7;
+  const detailDataEndRow = detailDataStartRow + Math.max(0, dataRowCount);
 
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
@@ -155,9 +156,9 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
             range: {
               sheetId,
               startRowIndex: 0,
-              endRowIndex: 1,
+              endRowIndex: 7,
               startColumnIndex: 0,
-              endColumnIndex: 26
+              endColumnIndex: 7
             }
           }
         },
@@ -165,8 +166,8 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
           mergeCells: {
             range: {
               sheetId,
-              startRowIndex: 0,
-              endRowIndex: 1,
+              startRowIndex: titleRow,
+              endRowIndex: titleRow + 1,
               startColumnIndex: 0,
               endColumnIndex: 7
             },
@@ -177,8 +178,8 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
           repeatCell: {
             range: {
               sheetId,
-              startRowIndex: 0,
-              endRowIndex: 1,
+              startRowIndex: titleRow,
+              endRowIndex: titleRow + 1,
               startColumnIndex: 0,
               endColumnIndex: 7
             },
@@ -190,6 +191,37 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
               }
             },
             fields: 'userEnteredFormat(horizontalAlignment,verticalAlignment,textFormat)'
+          }
+        },
+        {
+          mergeCells: {
+            range: {
+              sheetId,
+              startRowIndex: summaryLabelRow,
+              endRowIndex: summaryLabelRow + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 4
+            },
+            mergeType: 'MERGE_ALL'
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startRowIndex: summaryLabelRow,
+              endRowIndex: summaryLabelRow + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 4
+            },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: { red: 0.92, green: 0.94, blue: 0.92 },
+                textFormat: { bold: true, fontSize: 11 },
+                horizontalAlignment: 'LEFT'
+              }
+            },
+            fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)'
           }
         },
         {
@@ -214,6 +246,55 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
           repeatCell: {
             range: {
               sheetId,
+              startRowIndex: summaryValueRow,
+              endRowIndex: summaryValueRow + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 4
+            },
+            cell: {
+              userEnteredFormat: {
+                horizontalAlignment: 'LEFT',
+                textFormat: { bold: true }
+              }
+            },
+            fields: 'userEnteredFormat(horizontalAlignment,textFormat)'
+          }
+        },
+        {
+          mergeCells: {
+            range: {
+              sheetId,
+              startRowIndex: detailsLabelRow,
+              endRowIndex: detailsLabelRow + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 7
+            },
+            mergeType: 'MERGE_ALL'
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startRowIndex: detailsLabelRow,
+              endRowIndex: detailsLabelRow + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 7
+            },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: { red: 0.92, green: 0.94, blue: 0.92 },
+                textFormat: { bold: true, fontSize: 11 },
+                horizontalAlignment: 'LEFT'
+              }
+            },
+            fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)'
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
               startRowIndex: detailHeaderRow,
               endRowIndex: detailHeaderRow + 1,
               startColumnIndex: 0,
@@ -229,11 +310,29 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
           }
         },
         {
+          addBanding: {
+            bandedRange: {
+              range: {
+                sheetId,
+                startRowIndex: detailHeaderRow,
+                endRowIndex: detailDataEndRow,
+                startColumnIndex: 0,
+                endColumnIndex: 7
+              },
+              rowProperties: {
+                headerColor: { red: 0.19, green: 0.36, blue: 0.29 },
+                firstBandColor: { red: 0.98, green: 0.99, blue: 0.98 },
+                secondBandColor: { red: 0.94, green: 0.96, blue: 0.95 }
+              }
+            }
+          }
+        },
+        {
           repeatCell: {
             range: {
               sheetId,
               startRowIndex: detailDataStartRow,
-              endRowIndex: detailEndRow,
+              endRowIndex: detailDataEndRow,
               startColumnIndex: 0,
               endColumnIndex: 7
             },
@@ -247,6 +346,40 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
           }
         },
         {
+          updateBorders: {
+            range: {
+              sheetId,
+              startRowIndex: summaryHeaderRow,
+              endRowIndex: summaryValueRow + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 4
+            },
+            top: { style: 'SOLID', width: 1, color: { red: 0.8, green: 0.8, blue: 0.8 } },
+            bottom: { style: 'SOLID', width: 1, color: { red: 0.8, green: 0.8, blue: 0.8 } },
+            left: { style: 'SOLID', width: 1, color: { red: 0.8, green: 0.8, blue: 0.8 } },
+            right: { style: 'SOLID', width: 1, color: { red: 0.8, green: 0.8, blue: 0.8 } },
+            innerHorizontal: { style: 'SOLID', width: 1, color: { red: 0.9, green: 0.9, blue: 0.9 } },
+            innerVertical: { style: 'SOLID', width: 1, color: { red: 0.9, green: 0.9, blue: 0.9 } }
+          }
+        },
+        {
+          updateBorders: {
+            range: {
+              sheetId,
+              startRowIndex: detailHeaderRow,
+              endRowIndex: detailDataEndRow,
+              startColumnIndex: 0,
+              endColumnIndex: 7
+            },
+            top: { style: 'SOLID', width: 1, color: { red: 0.8, green: 0.8, blue: 0.8 } },
+            bottom: { style: 'SOLID', width: 1, color: { red: 0.8, green: 0.8, blue: 0.8 } },
+            left: { style: 'SOLID', width: 1, color: { red: 0.8, green: 0.8, blue: 0.8 } },
+            right: { style: 'SOLID', width: 1, color: { red: 0.8, green: 0.8, blue: 0.8 } },
+            innerHorizontal: { style: 'SOLID', width: 1, color: { red: 0.9, green: 0.9, blue: 0.9 } },
+            innerVertical: { style: 'SOLID', width: 1, color: { red: 0.9, green: 0.9, blue: 0.9 } }
+          }
+        },
+        {
           updateDimensionProperties: {
             range: {
               sheetId,
@@ -255,7 +388,21 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
               endIndex: 7
             },
             properties: {
-              pixelSize: 140
+              pixelSize: 130
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'COLUMNS',
+              startIndex: 0,
+              endIndex: 1
+            },
+            properties: {
+              pixelSize: 180
             },
             fields: 'pixelSize'
           }
@@ -279,13 +426,122 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
             range: {
               sheetId,
               dimension: 'COLUMNS',
+              startIndex: 2,
+              endIndex: 3
+            },
+            properties: {
+              pixelSize: 150
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'COLUMNS',
+              startIndex: 3,
+              endIndex: 4
+            },
+            properties: {
+              pixelSize: 120
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'COLUMNS',
+              startIndex: 4,
+              endIndex: 5
+            },
+            properties: {
+              pixelSize: 130
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'COLUMNS',
+              startIndex: 5,
+              endIndex: 6
+            },
+            properties: {
+              pixelSize: 100
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'COLUMNS',
               startIndex: 6,
               endIndex: 7
             },
             properties: {
-              pixelSize: 360
+              pixelSize: 420
             },
             fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'ROWS',
+              startIndex: titleRow,
+              endIndex: titleRow + 1
+            },
+            properties: {
+              pixelSize: 42
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'ROWS',
+              startIndex: summaryHeaderRow,
+              endIndex: summaryValueRow + 1
+            },
+            properties: {
+              pixelSize: 28
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'ROWS',
+              startIndex: detailHeaderRow,
+              endIndex: detailHeaderRow + 1
+            },
+            properties: {
+              pixelSize: 28
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateSheetProperties: {
+            properties: {
+              sheetId,
+              gridProperties: {
+                frozenRowCount: detailHeaderRow + 1
+              }
+            },
+            fields: 'gridProperties.frozenRowCount'
           }
         }
       ]
