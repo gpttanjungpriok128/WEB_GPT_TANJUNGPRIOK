@@ -69,10 +69,6 @@ function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
     meta.totalOrders || 0,
     'Total Items',
     meta.totalItems || 0,
-    'Total Shipping',
-    meta.totalShipping || 0,
-    'Subtotal',
-    meta.totalSubtotal || 0,
     'AOV',
     meta.averageOrderValue || 0
   ];
@@ -81,14 +77,9 @@ function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
     'Kode Order',
     'Tanggal',
     'Nama',
-    'WhatsApp',
     'Status',
-    'Pengiriman',
-    'Pembayaran',
-    'Subtotal',
-    'Ongkir',
     'Total',
-    'Item',
+    'Item (Qty)',
     'Ringkasan Item'
   ];
 
@@ -96,12 +87,7 @@ function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
     row.orderCode || '',
     formatDateTime(row.createdAt),
     row.customerName || '',
-    row.customerPhone || '',
     row.status || '',
-    row.shippingMethod || '',
-    row.paymentMethod || '',
-    Number(row.subtotal) || 0,
-    Number(row.shippingCost) || 0,
     Number(row.totalAmount) || 0,
     Number(row.itemCount) || 0,
     row.itemsSummary || ''
