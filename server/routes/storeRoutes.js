@@ -13,6 +13,7 @@ const {
   deleteAdminProduct,
   getAdminOrders,
   getAdminRevenueReport,
+  syncAdminRevenueReport,
   resetAdminOrders,
   updateAdminOrderStatus,
   getAdminReviews,
@@ -57,6 +58,7 @@ router.put('/admin/products/:id', authenticate, authorizeRoles('admin'), uploadI
 router.delete('/admin/products/:id', authenticate, authorizeRoles('admin'), deleteAdminProduct);
 router.get('/admin/orders', authenticate, authorizeRoles('admin'), getAdminOrders);
 router.get('/admin/reports/revenue', authenticate, authorizeRoles('admin'), getAdminRevenueReport);
+router.post('/admin/reports/revenue/sync', authenticate, authorizeRoles('admin'), syncAdminRevenueReport);
 router.post('/admin/orders/reset', authenticate, authorizeRoles('admin'), resetAdminOrders);
 router.patch('/admin/orders/:id/status', authenticate, authorizeRoles('admin'), updateOrderStatusValidation, validate, updateAdminOrderStatus);
 router.get('/admin/reviews', authenticate, authorizeRoles('admin'), getAdminReviews);

@@ -323,12 +323,12 @@ function ShopPage() {
       <ShopHero />
 
       <section className="grid gap-6">
-        <div className="grid gap-4 rounded-3xl border border-brand-200 bg-white/80 p-5 shadow-sm md:grid-cols-[1.2fr_0.8fr] dark:border-brand-700 dark:bg-brand-900/40">
+        <div className="grid gap-4 rounded-3xl border border-brand-200 bg-white/80 p-4 shadow-sm md:grid-cols-[1.2fr_0.8fr] dark:border-brand-700 dark:bg-brand-900/40 sm:p-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
               Order Center
             </p>
-            <h2 className="mt-2 text-2xl font-bold text-brand-900 dark:text-white">
+            <h2 className="mt-2 text-xl font-bold text-brand-900 dark:text-white sm:text-2xl">
               Pantau pesanan langsung dari area toko
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-brand-600 dark:text-brand-300">
@@ -339,14 +339,14 @@ function ShopPage() {
             {user && (
               <Link
                 to="/my-orders"
-                className="btn-primary inline-flex items-center justify-center !rounded-2xl !py-3"
+                className="btn-primary inline-flex items-center justify-center !rounded-2xl !py-2.5 sm:!py-3"
               >
                 Buka Pesanan Saya
               </Link>
             )}
             <Link
               to="/track-order"
-              className="btn-outline inline-flex items-center justify-center !rounded-2xl !py-3"
+              className="btn-outline inline-flex items-center justify-center !rounded-2xl !py-2.5 sm:!py-3"
             >
               Lacak Pesanan
             </Link>
@@ -355,7 +355,7 @@ function ShopPage() {
 
         <div id="catalog-section" className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
+            <h2 className="text-xl font-bold text-brand-900 dark:text-white sm:text-2xl">
               Katalog Produk
             </h2>
             <p className="mt-1 text-sm text-brand-600 dark:text-brand-400">
@@ -400,7 +400,7 @@ function ShopPage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 rounded-3xl border border-brand-200 bg-white/85 p-4 shadow-sm lg:grid-cols-[1.2fr_0.8fr_0.7fr] dark:border-brand-700 dark:bg-brand-900/40">
+        <div className="grid gap-4 rounded-3xl border border-brand-200 bg-white/85 p-4 shadow-sm lg:grid-cols-[1.2fr_0.8fr_0.7fr] dark:border-brand-700 dark:bg-brand-900/40 sm:p-5">
           <label className="space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
               Cari Produk
@@ -479,7 +479,7 @@ function ShopPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
             {filteredProducts.map((product) => {
               const effectivePrice = Number(
                 product.finalPrice ?? product.basePrice ?? 0,
@@ -492,32 +492,32 @@ function ShopPage() {
                 <Link
                   key={product.id}
                   to={`/shop/${product.slug}`}
-                  className="group flex flex-col overflow-hidden rounded-3xl border border-brand-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 dark:border-brand-700 dark:bg-brand-900/40"
+                  className="group flex flex-col overflow-hidden rounded-2xl border border-brand-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 dark:border-brand-700 dark:bg-brand-900/40 sm:rounded-3xl"
                 >
-                  <div className="relative aspect-square overflow-hidden bg-white p-4 dark:bg-brand-900/40">
+                  <div className="relative aspect-square overflow-hidden bg-white p-3 dark:bg-brand-900/40 sm:p-4">
                     <img
                       src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}
                       className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-brand-900/10 flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[2px]">
-                      <span className="translate-y-4 rounded-full bg-white/95 px-6 py-2.5 text-sm font-bold text-brand-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 dark:bg-brand-800 dark:text-white">
+                      <span className="translate-y-4 rounded-full bg-white/95 px-4 py-2 text-xs font-bold text-brand-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 dark:bg-brand-800 dark:text-white sm:px-6 sm:py-2.5 sm:text-sm">
                         Lihat Produk
                       </span>
                     </div>
                   </div>
-                  <div className="flex flex-1 flex-col p-5">
+                  <div className="flex flex-1 flex-col p-4 sm:p-5">
                     <div className="mb-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400 sm:text-xs sm:tracking-[0.2em]">
                         {product.verse || "GTshirt"}
                       </p>
-                      <h3 className="mt-1 text-lg font-bold text-brand-900 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                      <h3 className="mt-1 text-sm font-bold text-brand-900 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors sm:text-lg">
                         {product.name}
                       </h3>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-brand-500 dark:text-brand-400 sm:text-xs">
                       <div className="flex items-center gap-0.5">
-                        {renderStars(ratingAverage)}
+                        {renderStars(ratingAverage, "text-[11px] sm:text-xs")}
                       </div>
                       <span>
                         {ratingCount > 0
@@ -532,36 +532,36 @@ function ShopPage() {
                           {product.promoIsActive &&
                           Number(product.discountAmount) > 0 ? (
                             <div className="flex flex-col">
-                              <span className="text-xs text-brand-500 line-through dark:text-brand-400">
+                              <span className="text-[11px] text-brand-500 line-through dark:text-brand-400 sm:text-xs">
                                 {formatRupiah(Number(product.basePrice) || 0)}
                               </span>
-                              <span className="text-[1.125rem] font-black text-rose-500">
+                              <span className="text-base font-black text-rose-500 sm:text-[1.125rem]">
                                 {formatRupiah(effectivePrice)}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-[1.125rem] font-black text-brand-900 dark:text-white">
+                            <span className="text-base font-black text-brand-900 dark:text-white sm:text-[1.125rem]">
                               {formatRupiah(effectivePrice)}
                             </span>
                           )}
                         </div>
-                        <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-600 dark:bg-brand-800 dark:text-brand-300">
+                        <span className="rounded-lg bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600 dark:bg-brand-800 dark:text-brand-300 sm:px-2.5 sm:py-1 sm:text-xs">
                           {product.color || "-"}
                         </span>
                       </div>
 
                       {product.promoIsActive && (
-                        <p className="inline-block rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+                        <p className="inline-block rounded-lg bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 sm:px-2.5 sm:py-1 sm:text-xs">
                           {product.promoLabel || "Harga Spesial"}
                         </p>
                       )}
 
                       <div className="flex items-center justify-between pt-2 border-t border-brand-100 dark:border-brand-800">
-                        <span className="text-xs font-medium text-brand-500 dark:text-brand-400">
+                        <span className="text-[11px] font-medium text-brand-500 dark:text-brand-400 sm:text-xs">
                           Stok Tersedia
                         </span>
                         <span
-                          className={`text-sm ${
+                          className={`text-sm sm:text-base ${
                             totalStock <= 0
                               ? "text-rose-500 font-bold"
                               : "text-brand-700 font-bold dark:text-brand-300"

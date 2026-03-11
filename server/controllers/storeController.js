@@ -10,6 +10,7 @@ const {
   StoreSetting,
   User
 } = require('../models');
+const { syncRevenueReportToSheet, isSheetsConfigured } = require('../services/sheetsService');
 
 const DEFAULT_SHIPPING_COST = 15000;
 const STORE_WHATSAPP_NUMBER = String(
@@ -224,6 +225,126 @@ function parseDateValue(value) {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function parseRevenueFilters(source = {}) {
+  const status = String(source.status || 'completed').trim().toLowerCase();
+  const startDate = parseDateValue(source.startDate);
+  const endDateRaw = parseDateValue(source.endDate);
+  const endDate = endDateRaw
+    ? new Date(
+      endDateRaw.getFullYear(),
+      endDateRaw.getMonth(),
+      endDateRaw.getDate(),
+      23,
+      59,
+      59,
+      999
+    )
+    : null;
+
+  return { status, startDate, endDate };
+}
+
+async function buildRevenueReport(filters = {}) {
+  const { status, startDate, endDate } = filters;
+  const where = {};
+
+  if (status && status !== 'all') {
+    if (!ORDER_STATUSES.includes(status)) {
+      const error = new Error('Status laporan tidak valid');
+      error.statusCode = 400;
+      throw error;
+    }
+    where.status = status;
+  }
+
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt[Op.gte] = startDate;
+    if (endDate) where.createdAt[Op.lte] = endDate;
+  }
+
+  const orders = await StoreOrder.findAll({
+    where,
+    include: [{ model: StoreOrderItem, as: 'items' }],
+    order: [['createdAt', 'ASC']]
+  });
+
+  const rows = orders.map((order) => {
+    const items = Array.isArray(order.items) ? order.items : [];
+    const itemCount = items.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
+    const itemsSummary = items.map((item) => (
+      `${item.productName} (${item.size} x${item.quantity})`
+    )).join(', ');
+
+    return {
+      id: order.id,
+      orderCode: order.orderCode,
+      createdAt: order.createdAt,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      status: order.status,
+      shippingMethod: order.shippingMethod,
+      paymentMethod: order.paymentMethod,
+      subtotal: Number(order.subtotal) || 0,
+      shippingCost: Number(order.shippingCost) || 0,
+      totalAmount: Number(order.totalAmount) || 0,
+      itemCount,
+      itemsSummary
+    };
+  });
+
+  const totals = rows.reduce(
+    (accumulator, row) => {
+      accumulator.totalRevenue += row.totalAmount;
+      accumulator.totalOrders += 1;
+      accumulator.totalItems += row.itemCount;
+      accumulator.totalShipping += row.shippingCost;
+      accumulator.totalSubtotal += row.subtotal;
+      return accumulator;
+    },
+    {
+      totalRevenue: 0,
+      totalOrders: 0,
+      totalItems: 0,
+      totalShipping: 0,
+      totalSubtotal: 0
+    }
+  );
+
+  const averageOrderValue = totals.totalOrders > 0
+    ? Math.round(totals.totalRevenue / totals.totalOrders)
+    : 0;
+
+  return {
+    rows,
+    meta: {
+      ...totals,
+      averageOrderValue
+    }
+  };
+}
+
+function shouldAutoSyncSheets() {
+  return String(process.env.GOOGLE_SHEETS_AUTO_SYNC || '').toLowerCase() === 'true';
+}
+
+function triggerRevenueSheetSync(filters = {}) {
+  if (!shouldAutoSyncSheets() || !isSheetsConfigured()) return;
+
+  setImmediate(async () => {
+    try {
+      const report = await buildRevenueReport(filters);
+      await syncRevenueReportToSheet({
+        rows: report.rows,
+        meta: report.meta,
+        filters
+      });
+    } catch (error) {
+      console.error('Sheets sync failed:', error.message);
+    }
+  });
 }
 
 function isPromoActive(product, now = new Date()) {
@@ -874,6 +995,7 @@ async function createOrder(req, res, next) {
     await order.update({ whatsappMessage }, { transaction });
 
     await transaction.commit();
+    triggerRevenueSheetSync({ status: 'all' });
 
     const whatsappLink = `https://wa.me/${STORE_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
     return res.status(201).json({
@@ -1070,87 +1192,41 @@ async function getAdminOrders(req, res, next) {
 
 async function getAdminRevenueReport(req, res, next) {
   try {
-    const status = String(req.query.status || 'completed').trim().toLowerCase();
-    const startDate = parseDateValue(req.query.startDate);
-    const endDateRaw = parseDateValue(req.query.endDate);
-    const endDate = endDateRaw
-      ? new Date(endDateRaw.getFullYear(), endDateRaw.getMonth(), endDateRaw.getDate(), 23, 59, 59, 999)
-      : null;
-
-    const where = {};
-    if (status && status !== 'all') {
-      if (!ORDER_STATUSES.includes(status)) {
-        return res.status(400).json({ message: 'Status laporan tidak valid' });
-      }
-      where.status = status;
-    }
-
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) where.createdAt[Op.gte] = startDate;
-      if (endDate) where.createdAt[Op.lte] = endDate;
-    }
-
-    const orders = await StoreOrder.findAll({
-      where,
-      include: [{ model: StoreOrderItem, as: 'items' }],
-      order: [['createdAt', 'ASC']]
+    const filters = parseRevenueFilters(req.query);
+    const report = await buildRevenueReport(filters);
+    return res.status(200).json({
+      data: report.rows,
+      meta: report.meta
     });
+  } catch (error) {
+    return next(error);
+  }
+}
 
-    const rows = orders.map((order) => {
-      const items = Array.isArray(order.items) ? order.items : [];
-      const itemCount = items.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
-      const itemsSummary = items.map((item) => (
-        `${item.productName} (${item.size} x${item.quantity})`
-      )).join(", ");
-
-      return {
-        id: order.id,
-        orderCode: order.orderCode,
-        createdAt: order.createdAt,
-        customerName: order.customerName,
-        customerPhone: order.customerPhone,
-        status: order.status,
-        shippingMethod: order.shippingMethod,
-        paymentMethod: order.paymentMethod,
-        subtotal: Number(order.subtotal) || 0,
-        shippingCost: Number(order.shippingCost) || 0,
-        totalAmount: Number(order.totalAmount) || 0,
-        itemCount,
-        itemsSummary
-      };
+async function syncAdminRevenueReport(req, res, next) {
+  try {
+    const filters = parseRevenueFilters({ ...req.body, ...req.query });
+    const report = await buildRevenueReport(filters);
+    const syncResult = await syncRevenueReportToSheet({
+      rows: report.rows,
+      meta: report.meta,
+      filters
     });
-
-    const totals = rows.reduce(
-      (accumulator, row) => {
-        accumulator.totalRevenue += row.totalAmount;
-        accumulator.totalOrders += 1;
-        accumulator.totalItems += row.itemCount;
-        accumulator.totalShipping += row.shippingCost;
-        accumulator.totalSubtotal += row.subtotal;
-        return accumulator;
-      },
-      {
-        totalRevenue: 0,
-        totalOrders: 0,
-        totalItems: 0,
-        totalShipping: 0,
-        totalSubtotal: 0
-      }
-    );
-
-    const averageOrderValue = totals.totalOrders > 0
-      ? Math.round(totals.totalRevenue / totals.totalOrders)
-      : 0;
 
     return res.status(200).json({
-      data: rows,
-      meta: {
-        ...totals,
-        averageOrderValue
+      message: 'Spreadsheet berhasil diperbarui',
+      data: {
+        ...syncResult,
+        totalRows: report.rows.length
       }
     });
   } catch (error) {
+    if (error.code === 'SHEETS_NOT_CONFIGURED') {
+      return res.status(503).json({
+        message:
+          'Integrasi spreadsheet belum dikonfigurasi. Tambahkan GOOGLE_SHEETS_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, dan GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.'
+      });
+    }
     return next(error);
   }
 }
@@ -1314,6 +1390,7 @@ async function resetAdminOrders(req, res, next) {
     const deletedOrders = await StoreOrder.destroy({ where: {}, transaction });
 
     await transaction.commit();
+    triggerRevenueSheetSync({ status: 'all' });
     return res.status(200).json({
       message: 'Semua pesanan berhasil dihapus',
       meta: {
@@ -1465,6 +1542,7 @@ async function updateAdminOrderStatus(req, res, next) {
 
     await order.update(updatePayload, { transaction });
     await transaction.commit();
+    triggerRevenueSheetSync({ status: 'all' });
 
     return res.status(200).json({
       message: 'Status order berhasil diperbarui',
@@ -1643,6 +1721,7 @@ module.exports = {
   deleteAdminProduct,
   getAdminOrders,
   getAdminRevenueReport,
+  syncAdminRevenueReport,
   resetAdminOrders,
   updateAdminOrderStatus,
   getAdminReviews,
