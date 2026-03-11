@@ -30,22 +30,32 @@ function getSheetsClient() {
 async function ensureSheetTab(sheets, spreadsheetId, sheetName) {
   const response = await sheets.spreadsheets.get({ spreadsheetId });
   const sheetsList = Array.isArray(response.data.sheets) ? response.data.sheets : [];
-  const exists = sheetsList.some((sheet) => sheet.properties?.title === sheetName);
+  const existingSheet = sheetsList.find((sheet) => sheet.properties?.title === sheetName);
 
-  if (!exists) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [
-          {
-            addSheet: {
-              properties: { title: sheetName }
-            }
-          }
-        ]
-      }
-    });
+  if (existingSheet?.properties?.sheetId !== undefined) {
+    return existingSheet.properties.sheetId;
   }
+
+  const createResponse = await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          addSheet: {
+            properties: { title: sheetName }
+          }
+        }
+      ]
+    }
+  });
+
+  const createdSheetId = createResponse.data.replies?.[0]?.addSheet?.properties?.sheetId;
+  if (createdSheetId !== undefined) return createdSheetId;
+
+  const refreshed = await sheets.spreadsheets.get({ spreadsheetId });
+  const refreshedList = Array.isArray(refreshed.data.sheets) ? refreshed.data.sheets : [];
+  const refreshedSheet = refreshedList.find((sheet) => sheet.properties?.title === sheetName);
+  return refreshedSheet?.properties?.sheetId;
 }
 
 function formatDateTime(value) {
@@ -75,21 +85,22 @@ function formatItemsSummary(value = '') {
   return `• ${parts.join('\n• ')}`;
 }
 
-function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
-  const nowLabel = formatDateTime(new Date());
-  const statusLabel = String(filters.status || 'all');
-  const periodLabel = filters.startDate || filters.endDate
-    ? `${filters.startDate || '-'} s/d ${filters.endDate || '-'}`
-    : 'Semua periode';
-
-  const summaryRows = [
-    ['Total Revenue', formatRupiah(meta.totalRevenue)],
-    ['Total Orders', meta.totalOrders || 0],
-    ['Total Items', meta.totalItems || 0],
-    ['AOV', formatRupiah(meta.averageOrderValue)]
+function buildRevenueSheetValues(rows = [], meta = {}) {
+  const summaryHeader = [
+    'Total Revenue',
+    'Total Orders',
+    'Total Items',
+    'AOV'
   ];
 
-  const header = [
+  const summaryValues = [
+    formatRupiah(meta.totalRevenue),
+    meta.totalOrders || 0,
+    meta.totalItems || 0,
+    formatRupiah(meta.averageOrderValue)
+  ];
+
+  const detailHeader = [
     'Kode Order',
     'Tanggal',
     'Nama',
@@ -109,20 +120,169 @@ function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
     formatItemsSummary(row.itemsSummary)
   ]));
 
-  return [
-    ['GTshirt Revenue Report'],
-    ['Last Sync', nowLabel],
-    ['Filter Status', statusLabel],
-    ['Periode', periodLabel],
-    [],
-    ...summaryRows,
-    [],
-    header,
-    ...dataRows
-  ];
+  return {
+    values: [
+      ['GTshirt Revenue Report'],
+      [],
+      summaryHeader,
+      summaryValues,
+      [],
+      detailHeader,
+      ...dataRows
+    ],
+    dataRowCount: dataRows.length
+  };
 }
 
-async function syncRevenueReportToSheet({ rows, meta, filters }) {
+async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataRowCount) {
+  if (sheetId === undefined) return;
+
+  const detailStartRow = 5;
+  const detailHeaderRow = 5;
+  const detailDataStartRow = 6;
+  const detailDataEndRow = detailDataStartRow + Math.max(0, dataRowCount);
+  const detailEndRow = detailDataEndRow;
+
+  const summaryHeaderRow = 2;
+  const summaryValueRow = 3;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          mergeCells: {
+            range: {
+              sheetId,
+              startRowIndex: 0,
+              endRowIndex: 1,
+              startColumnIndex: 0,
+              endColumnIndex: 7
+            },
+            mergeType: 'MERGE_ALL'
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startRowIndex: 0,
+              endRowIndex: 1,
+              startColumnIndex: 0,
+              endColumnIndex: 7
+            },
+            cell: {
+              userEnteredFormat: {
+                horizontalAlignment: 'CENTER',
+                verticalAlignment: 'MIDDLE',
+                textFormat: { bold: true, fontSize: 20 }
+              }
+            },
+            fields: 'userEnteredFormat(horizontalAlignment,verticalAlignment,textFormat)'
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startRowIndex: summaryHeaderRow,
+              endRowIndex: summaryHeaderRow + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 4
+            },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: { red: 0.19, green: 0.36, blue: 0.29 },
+                textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } }
+              }
+            },
+            fields: 'userEnteredFormat(backgroundColor,textFormat)'
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startRowIndex: detailHeaderRow,
+              endRowIndex: detailHeaderRow + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 7
+            },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: { red: 0.19, green: 0.36, blue: 0.29 },
+                textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } }
+              }
+            },
+            fields: 'userEnteredFormat(backgroundColor,textFormat)'
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startRowIndex: detailDataStartRow,
+              endRowIndex: detailEndRow,
+              startColumnIndex: 0,
+              endColumnIndex: 7
+            },
+            cell: {
+              userEnteredFormat: {
+                verticalAlignment: 'TOP',
+                wrapStrategy: 'WRAP'
+              }
+            },
+            fields: 'userEnteredFormat(verticalAlignment,wrapStrategy)'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'COLUMNS',
+              startIndex: 0,
+              endIndex: 7
+            },
+            properties: {
+              pixelSize: 140
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'COLUMNS',
+              startIndex: 1,
+              endIndex: 2
+            },
+            properties: {
+              pixelSize: 170
+            },
+            fields: 'pixelSize'
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: {
+              sheetId,
+              dimension: 'COLUMNS',
+              startIndex: 6,
+              endIndex: 7
+            },
+            properties: {
+              pixelSize: 360
+            },
+            fields: 'pixelSize'
+          }
+        }
+      ]
+    }
+  });
+}
+
+async function syncRevenueReportToSheet({ rows, meta }) {
   const config = getSheetConfig();
   if (!config.enabled) {
     const error = new Error('Spreadsheet integration not configured');
@@ -131,9 +291,9 @@ async function syncRevenueReportToSheet({ rows, meta, filters }) {
   }
 
   const sheets = getSheetsClient();
-  await ensureSheetTab(sheets, config.spreadsheetId, config.sheetName);
+  const sheetId = await ensureSheetTab(sheets, config.spreadsheetId, config.sheetName);
 
-  const values = buildRevenueSheetValues(rows, meta, filters);
+  const { values, dataRowCount } = buildRevenueSheetValues(rows, meta);
   const range = `${config.sheetName}!A1`;
 
   await sheets.spreadsheets.values.clear({
@@ -147,6 +307,13 @@ async function syncRevenueReportToSheet({ rows, meta, filters }) {
     valueInputOption: 'USER_ENTERED',
     requestBody: { values }
   });
+
+  await applyRevenueSheetFormatting(
+    sheets,
+    config.spreadsheetId,
+    sheetId,
+    dataRowCount
+  );
 
   return {
     spreadsheetId: config.spreadsheetId,
