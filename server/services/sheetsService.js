@@ -151,6 +151,17 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
     requestBody: {
       requests: [
         {
+          unmergeCells: {
+            range: {
+              sheetId,
+              startRowIndex: 0,
+              endRowIndex: 1,
+              startColumnIndex: 0,
+              endColumnIndex: 26
+            }
+          }
+        },
+        {
           mergeCells: {
             range: {
               sheetId,
