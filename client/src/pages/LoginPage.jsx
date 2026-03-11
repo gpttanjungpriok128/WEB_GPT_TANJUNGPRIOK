@@ -246,12 +246,6 @@ function LoginPage() {
           </Link>
         </form>
 
-        <p className="mt-4 text-center text-sm text-brand-600 dark:text-brand-400">
-          Belum punya akun?{" "}
-          <Link to="/register" className="font-semibold text-primary hover:text-primary-light transition-colors">
-            Daftar di sini
-          </Link>
-        </p>
       </div>
     </div>
   );
