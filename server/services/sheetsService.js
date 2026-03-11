@@ -107,7 +107,9 @@ function buildRevenueSheetValues(rows = [], meta = {}, filters = {}) {
   return [
     ['GTshirt Revenue Report'],
     ['Last Sync', nowLabel],
-    ['Filter Status', statusLabel, 'Periode', periodLabel],
+    ['Filter Status', statusLabel],
+    ['Periode', periodLabel],
+    [],
     summaryRow,
     [],
     header,
