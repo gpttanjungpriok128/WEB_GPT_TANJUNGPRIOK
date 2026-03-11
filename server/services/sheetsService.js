@@ -147,10 +147,30 @@ async function applyRevenueSheetFormatting(sheets, spreadsheetId, sheetId, dataR
   const detailDataStartRow = 7;
   const detailDataEndRow = detailDataStartRow + Math.max(0, dataRowCount);
 
+  let deleteBandingRequests = [];
+  try {
+    const meta = await sheets.spreadsheets.get({
+      spreadsheetId,
+      fields: 'sheets(properties(sheetId),bandedRanges(bandedRangeId,range))'
+    });
+    const targetSheet = (meta.data.sheets || []).find(
+      (sheet) => sheet.properties?.sheetId === sheetId
+    );
+    if (Array.isArray(targetSheet?.bandedRanges)) {
+      deleteBandingRequests = targetSheet.bandedRanges
+        .map((bandedRange) => bandedRange?.bandedRangeId)
+        .filter((bandedRangeId) => Number.isFinite(bandedRangeId))
+        .map((bandedRangeId) => ({ deleteBanding: { bandedRangeId } }));
+    }
+  } catch {
+    deleteBandingRequests = [];
+  }
+
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
     requestBody: {
       requests: [
+        ...deleteBandingRequests,
         {
           unmergeCells: {
             range: {
