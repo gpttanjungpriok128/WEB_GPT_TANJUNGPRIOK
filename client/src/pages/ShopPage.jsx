@@ -670,7 +670,7 @@ function ShopPage() {
                 <Link
                   key={product.id}
                   to={`/shop/${product.slug}`}
-                  className="group flex flex-col overflow-hidden rounded-2xl border border-brand-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 dark:border-brand-700 dark:bg-brand-900/40 sm:rounded-3xl"
+                  className="group card-soft flex flex-col overflow-hidden rounded-2xl border border-brand-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 dark:border-brand-700 dark:bg-brand-900/40 sm:rounded-3xl"
                 >
                   <div className="relative aspect-square overflow-hidden bg-white p-3 dark:bg-brand-900/40 sm:p-4">
                     <img
@@ -678,7 +678,9 @@ function ShopPage() {
                       alt={product.name}
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
+                      className="image-soft h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
+                      onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
+                      onError={(event) => event.currentTarget.classList.add("is-loaded")}
                     />
                     <div className="absolute left-3 top-3 flex flex-col gap-1 text-[10px] font-semibold sm:text-xs">
                       {product.promoIsActive && (

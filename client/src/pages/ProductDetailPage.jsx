@@ -604,10 +604,14 @@ function ProductDetailPage() {
             <img
               src={resolveStoreImageUrl(images[selectedImageIndex])}
               alt={product.name}
-              onError={() => handleImageError(selectedImageIndex)}
+              onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
+              onError={(event) => {
+                event.currentTarget.classList.add("is-loaded");
+                handleImageError(selectedImageIndex);
+              }}
               loading="eager"
               decoding="async"
-              className="h-full w-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal"
+              className="image-soft h-full w-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal"
             />
           </div>
 
@@ -627,10 +631,14 @@ function ProductDetailPage() {
                   <img
                     src={resolveStoreImageUrl(image)}
                     alt={`Foto ${index + 1}`}
-                    onError={() => handleImageError(index)}
+                    onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
+                    onError={(event) => {
+                      event.currentTarget.classList.add("is-loaded");
+                      handleImageError(index);
+                    }}
                     loading="lazy"
                     decoding="async"
-                    className="h-20 w-full object-contain p-1 bg-white dark:bg-brand-900/50 mix-blend-multiply dark:mix-blend-normal"
+                    className="image-soft h-20 w-full object-contain p-1 bg-white dark:bg-brand-900/50 mix-blend-multiply dark:mix-blend-normal"
                   />
                 </button>
               ))}

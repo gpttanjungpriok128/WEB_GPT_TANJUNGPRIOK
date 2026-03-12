@@ -408,7 +408,8 @@ function CartPage() {
                           <img
                             src={imageSrc}
                             alt={item.name}
-                            onError={() => {
+                            onError={(event) => {
+                              event.currentTarget.classList.add("is-loaded");
                               if (activeImageIndex < imageCandidates.length - 1) {
                                 setImageIndexByKey((previous) => ({
                                   ...previous,
@@ -425,7 +426,8 @@ function CartPage() {
                             }}
                             loading="lazy"
                             decoding="async"
-                            className="h-full w-full object-cover"
+                            className="image-soft h-full w-full object-cover"
+                            onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
                           />
                         ) : (
                           <span className="px-2 text-center text-[11px] font-semibold uppercase tracking-wide text-brand-400 dark:text-brand-500">
