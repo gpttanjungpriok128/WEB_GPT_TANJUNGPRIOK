@@ -762,10 +762,10 @@ function ManageStorePage() {
       </section>
 
       {/* ── Tab Navigation ──────────────────────── */}
-      <div className="flex gap-2 border-b border-brand-200 dark:border-brand-700">
+      <div className="flex gap-2 border-b border-brand-200 dark:border-brand-700 overflow-x-auto pb-1">
         <button
           onClick={() => setActiveTab("produk")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
             activeTab === "produk"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -778,7 +778,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("pesanan")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
             activeTab === "pesanan"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -791,7 +791,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("ulasan")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
             activeTab === "ulasan"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -804,7 +804,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("laporan")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
             activeTab === "laporan"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -817,7 +817,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("ongkir")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
             activeTab === "ongkir"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
