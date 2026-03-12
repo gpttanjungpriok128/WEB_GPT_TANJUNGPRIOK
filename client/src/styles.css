@@ -1394,6 +1394,137 @@ html {
   touch-action: pan-y;
 }
 
+.image-zoom-trigger {
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+  z-index: 10;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 132, 88, 0.2);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0f5132;
+  box-shadow: 0 8px 18px rgba(14, 69, 50, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.image-zoom-trigger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(14, 69, 50, 0.16);
+}
+
+.dark .image-zoom-trigger {
+  border-color: rgba(45, 80, 65, 0.6);
+  background: rgba(10, 10, 10, 0.9);
+  color: #d1fae5;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
+}
+
+.image-zoom-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 10, 8, 0.65);
+  padding: 1rem;
+}
+
+.image-zoom-shell {
+  width: min(96vw, 760px);
+  max-height: 90vh;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(213, 245, 227, 0.7);
+  box-shadow: 0 30px 60px rgba(6, 18, 13, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dark .image-zoom-shell {
+  background: rgba(7, 10, 9, 0.96);
+  border-color: rgba(31, 47, 39, 0.9);
+}
+
+.image-zoom-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(213, 245, 227, 0.5);
+}
+
+.dark .image-zoom-toolbar {
+  border-bottom-color: rgba(31, 47, 39, 0.8);
+}
+
+.image-zoom-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.image-zoom-btn {
+  height: 36px;
+  min-width: 36px;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(20, 132, 88, 0.25);
+  background: rgba(240, 253, 246, 0.9);
+  font-weight: 700;
+  color: #0f5132;
+}
+
+.image-zoom-close {
+  height: 36px;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(20, 132, 88, 0.3);
+  background: rgba(20, 132, 88, 0.12);
+  padding: 0 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0f5132;
+}
+
+.dark .image-zoom-btn,
+.dark .image-zoom-close {
+  border-color: rgba(45, 80, 65, 0.7);
+  background: rgba(10, 22, 17, 0.8);
+  color: #d1fae5;
+}
+
+.image-zoom-body {
+  padding: 1rem;
+  overflow: auto;
+  background: rgba(240, 253, 246, 0.4);
+  flex: 1;
+}
+
+.dark .image-zoom-body {
+  background: rgba(5, 9, 7, 0.7);
+}
+
+.image-zoom-media {
+  display: block;
+  max-width: none;
+  height: auto;
+  border-radius: 1rem;
+}
+
+.image-zoom-hint {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.dark .image-zoom-hint {
+  color: #94a3b8;
+}
+
 /* ─── Card Shadow Tuning ─── */
 .card-soft {
   box-shadow: 0 12px 24px rgba(14, 69, 50, 0.08);

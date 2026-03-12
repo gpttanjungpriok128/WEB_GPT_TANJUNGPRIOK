@@ -169,6 +169,8 @@ function ProductDetailPage() {
   });
   const [reviewFeedback, setReviewFeedback] = useState({ type: "", text: "" });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchDeltaRef = useRef({ x: 0, y: 0 });
 
@@ -483,6 +485,24 @@ function ProductDetailPage() {
     touchDeltaRef.current = { x: 0, y: 0 };
   };
 
+  const openZoom = () => {
+    setZoomScale(1);
+    setIsZoomOpen(true);
+  };
+
+  const closeZoom = () => {
+    setIsZoomOpen(false);
+    setZoomScale(1);
+  };
+
+  const zoomIn = () => {
+    setZoomScale((prev) => Math.min(prev + 0.25, 2.5));
+  };
+
+  const zoomOut = () => {
+    setZoomScale((prev) => Math.max(prev - 0.25, 1));
+  };
+
   const reviewHeader = (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
@@ -644,12 +664,20 @@ function ProductDetailPage() {
         <div className="space-y-4">
           {/* Main Image */}
           <div
-            className="image-swipe overflow-hidden rounded-2xl bg-white dark:bg-brand-900/50 aspect-square border border-brand-100 dark:border-brand-800"
+            className="image-swipe relative overflow-hidden rounded-2xl bg-white dark:bg-brand-900/50 aspect-square border border-brand-100 dark:border-brand-800"
             onTouchStart={handleSwipeStart}
             onTouchMove={handleSwipeMove}
             onTouchEnd={handleSwipeEnd}
             onTouchCancel={handleSwipeEnd}
           >
+            <button
+              type="button"
+              onClick={openZoom}
+              className="image-zoom-trigger"
+              aria-label="Perbesar foto produk"
+            >
+              Zoom
+            </button>
             <img
               src={resolveStoreImageUrl(images[selectedImageIndex])}
               alt={product.name}
@@ -666,7 +694,7 @@ function ProductDetailPage() {
 
           {/* Thumbnail Gallery */}
           {images.length > 1 && (
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-2 sm:gap-3">
               {images.map((image, index) => (
                 <button
                   key={index}
@@ -687,7 +715,7 @@ function ProductDetailPage() {
                     }}
                     loading="lazy"
                     decoding="async"
-                    className="image-soft h-20 w-full object-contain p-1 bg-white dark:bg-brand-900/50 mix-blend-multiply dark:mix-blend-normal"
+                    className="image-soft h-14 w-full object-contain p-1 bg-white dark:bg-brand-900/50 mix-blend-multiply dark:mix-blend-normal sm:h-20"
                   />
                 </button>
               ))}
@@ -1076,6 +1104,38 @@ function ProductDetailPage() {
           </button>
         </div>
       </div>
+
+      {isZoomOpen && (
+        <div className="image-zoom-backdrop" onClick={closeZoom} role="presentation">
+          <div className="image-zoom-shell" onClick={(event) => event.stopPropagation()}>
+            <div className="image-zoom-toolbar">
+              <p className="text-sm font-semibold text-brand-900 dark:text-white">Detail Foto Produk</p>
+              <div className="image-zoom-actions">
+                <button type="button" onClick={zoomOut} className="image-zoom-btn" aria-label="Perkecil">
+                  −
+                </button>
+                <button type="button" onClick={zoomIn} className="image-zoom-btn" aria-label="Perbesar">
+                  +
+                </button>
+                <button type="button" onClick={closeZoom} className="image-zoom-close" aria-label="Tutup">
+                  Tutup
+                </button>
+              </div>
+            </div>
+            <div className="image-zoom-body">
+              <img
+                src={resolveStoreImageUrl(images[selectedImageIndex])}
+                alt={product.name}
+                className="image-zoom-media"
+                style={{ width: `${zoomScale * 100}%` }}
+                loading="eager"
+                decoding="async"
+              />
+              <p className="image-zoom-hint">Gunakan tombol + untuk memperbesar.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
