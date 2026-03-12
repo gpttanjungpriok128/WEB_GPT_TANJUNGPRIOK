@@ -1666,6 +1666,44 @@ html {
     overflow: visible !important;
     padding-right: 0 !important;
   }
+
+  .admin-hero {
+    padding: 1.4rem;
+    border-radius: 1.5rem;
+  }
+
+  .admin-hero h1 {
+    font-size: 1.55rem;
+  }
+
+  .admin-hero p {
+    font-size: 0.9rem;
+  }
+
+  .admin-hero-orb {
+    display: none;
+  }
+
+  .admin-quick-actions {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(72%, 1fr);
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .admin-quick-actions > a {
+    scroll-snap-align: start;
+  }
+
+  .admin-quick-actions::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .admin-quick-actions::-webkit-scrollbar-thumb {
+    background: rgba(20, 132, 88, 0.2);
+    border-radius: 999px;
+  }
 }
 
 @media (max-width: 360px) {

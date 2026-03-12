@@ -47,10 +47,10 @@ function DashboardPage() {
   return (
     <div className="page-stack space-y-10">
       {/* Welcome Banner */}
-      <section className="organic-banner relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 via-primary to-brand-600 p-8 md:p-10 text-white">
+      <section className="admin-hero organic-banner relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 via-primary to-brand-600 p-8 md:p-10 text-white">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute h-48 w-48 rounded-full bg-white/5 animate-float blur-2xl" style={{ top: "10%", right: "10%" }} />
-          <div className="absolute h-36 w-36 rounded-full bg-white/5 animate-float-delayed blur-2xl" style={{ bottom: "10%", left: "10%" }} />
+          <div className="admin-hero-orb absolute h-48 w-48 rounded-full bg-white/5 animate-float blur-2xl" style={{ top: "10%", right: "10%" }} />
+          <div className="admin-hero-orb absolute h-36 w-36 rounded-full bg-white/5 animate-float-delayed blur-2xl" style={{ bottom: "10%", left: "10%" }} />
         </div>
         <div className="relative z-10">
           <h1 className="mb-2 text-3xl md:text-4xl font-extrabold">
@@ -89,7 +89,7 @@ function DashboardPage() {
       {["admin", "multimedia"].includes(user?.role) && (
         <section className="space-y-5">
           <h2 className="text-2xl font-bold text-brand-900 dark:text-white">Aksi Cepat</h2>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="admin-quick-actions grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { to: "/dashboard/articles/new", icon: "📝", title: "Buat Renungan Baru", desc: "Tulis dan publikasikan renungan baru untuk jemaat." },
               { to: "/dashboard/articles/manage", icon: "📋", title: "Kelola Renungan", desc: "Lihat, edit, dan kelola semua renungan Anda." },
@@ -128,67 +128,150 @@ function DashboardPage() {
         <h2 className="mb-5 text-2xl font-bold text-brand-900 dark:text-white">
           Informasi Role Anda
         </h2>
-        {user?.role === "admin" && (
-          <div className="space-y-3 text-brand-700 dark:text-brand-300">
-            <p className="font-semibold text-primary">👨‍💼 Sebagai Admin, Anda dapat:</p>
-            <ul className="ml-4 space-y-2">
-              {[
-                "Membuat dan menerbitkan renungan langsung",
-                "Menyetujui atau menolak renungan dari multimedia",
-                "Mengelola jadwal ibadah dan galeri",
-                "Mengelola data pengguna dan permissions",
-                "Mengelola pendataan jemaat",
-                "Melihat statistik dan laporan lengkap",
-                "Mengelola toko GTshirt (produk, harga, promo, order, analitik)",
-                "Mengelola link live streaming di halaman Live",
-                "Menangani prayer request jemaat di halaman Doa",
-              ].map((text, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">✓</span>
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {user?.role === "multimedia" && (
-          <div className="space-y-3 text-brand-700 dark:text-brand-300">
-            <p className="font-semibold text-primary">🎬 Sebagai Multimedia, Anda dapat:</p>
-            <ul className="ml-4 space-y-2">
-              {[
-                "Membuat renungan yang menunggu approval admin",
-                "Upload foto untuk galeri",
-                "Mengelola link live streaming di halaman Live",
-                "Mengelola konten multimedia gereja",
-              ].map((text, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">✓</span>
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {user?.role === "jemaat" && (
-          <div className="space-y-3 text-brand-700 dark:text-brand-300">
-            <p className="font-semibold text-primary">👥 Sebagai Jemaat, Anda dapat:</p>
-            <ul className="ml-4 space-y-2">
-              {[
-                "Membaca renungan dari gereja",
-                "Melihat jadwal ibadah dan kegiatan",
-                "Menonton galeri foto kegiatan gereja",
-                "Mengirimkan permohonan doa kepada gereja",
-                "Menyaksikan live streaming ibadah",
-                "Mengisi pendataan diri dan keluarga",
-              ].map((text, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">✓</span>
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <div className="sm:hidden">
+          <details className="admin-role-accordion rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45">
+            <summary className="mobile-summary flex cursor-pointer items-center justify-between gap-3">
+              <span className="text-sm font-semibold text-brand-900 dark:text-white">
+                Lihat Hak Akses
+              </span>
+              <svg
+                className="mobile-summary-icon h-5 w-5 text-brand-500 dark:text-brand-300"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.6}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
+              </svg>
+            </summary>
+            <div className="pt-3">
+              {user?.role === "admin" && (
+                <div className="space-y-3 text-brand-700 dark:text-brand-300">
+                  <p className="font-semibold text-primary">👨‍💼 Sebagai Admin, Anda dapat:</p>
+                  <ul className="ml-4 space-y-2">
+                    {[
+                      "Membuat dan menerbitkan renungan langsung",
+                      "Menyetujui atau menolak renungan dari multimedia",
+                      "Mengelola jadwal ibadah dan galeri",
+                      "Mengelola data pengguna dan permissions",
+                      "Mengelola pendataan jemaat",
+                      "Melihat statistik dan laporan lengkap",
+                      "Mengelola toko GTshirt (produk, harga, promo, order, analitik)",
+                      "Mengelola link live streaming di halaman Live",
+                      "Menangani prayer request jemaat di halaman Doa",
+                    ].map((text, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>{text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {user?.role === "multimedia" && (
+                <div className="space-y-3 text-brand-700 dark:text-brand-300">
+                  <p className="font-semibold text-primary">🎬 Sebagai Multimedia, Anda dapat:</p>
+                  <ul className="ml-4 space-y-2">
+                    {[
+                      "Membuat renungan yang menunggu approval admin",
+                      "Upload foto untuk galeri",
+                      "Mengelola link live streaming di halaman Live",
+                      "Mengelola konten multimedia gereja",
+                    ].map((text, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>{text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {user?.role === "jemaat" && (
+                <div className="space-y-3 text-brand-700 dark:text-brand-300">
+                  <p className="font-semibold text-primary">👥 Sebagai Jemaat, Anda dapat:</p>
+                  <ul className="ml-4 space-y-2">
+                    {[
+                      "Membaca renungan dari gereja",
+                      "Melihat jadwal ibadah dan kegiatan",
+                      "Menonton galeri foto kegiatan gereja",
+                      "Mengirimkan permohonan doa kepada gereja",
+                      "Menyaksikan live streaming ibadah",
+                      "Mengisi pendataan diri dan keluarga",
+                    ].map((text, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>{text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </details>
+        </div>
+        <div className="hidden sm:block">
+          {user?.role === "admin" && (
+            <div className="space-y-3 text-brand-700 dark:text-brand-300">
+              <p className="font-semibold text-primary">👨‍💼 Sebagai Admin, Anda dapat:</p>
+              <ul className="ml-4 space-y-2">
+                {[
+                  "Membuat dan menerbitkan renungan langsung",
+                  "Menyetujui atau menolak renungan dari multimedia",
+                  "Mengelola jadwal ibadah dan galeri",
+                  "Mengelola data pengguna dan permissions",
+                  "Mengelola pendataan jemaat",
+                  "Melihat statistik dan laporan lengkap",
+                  "Mengelola toko GTshirt (produk, harga, promo, order, analitik)",
+                  "Mengelola link live streaming di halaman Live",
+                  "Menangani prayer request jemaat di halaman Doa",
+                ].map((text, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">✓</span>
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {user?.role === "multimedia" && (
+            <div className="space-y-3 text-brand-700 dark:text-brand-300">
+              <p className="font-semibold text-primary">🎬 Sebagai Multimedia, Anda dapat:</p>
+              <ul className="ml-4 space-y-2">
+                {[
+                  "Membuat renungan yang menunggu approval admin",
+                  "Upload foto untuk galeri",
+                  "Mengelola link live streaming di halaman Live",
+                  "Mengelola konten multimedia gereja",
+                ].map((text, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">✓</span>
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {user?.role === "jemaat" && (
+            <div className="space-y-3 text-brand-700 dark:text-brand-300">
+              <p className="font-semibold text-primary">👥 Sebagai Jemaat, Anda dapat:</p>
+              <ul className="ml-4 space-y-2">
+                {[
+                  "Membaca renungan dari gereja",
+                  "Melihat jadwal ibadah dan kegiatan",
+                  "Menonton galeri foto kegiatan gereja",
+                  "Mengirimkan permohonan doa kepada gereja",
+                  "Menyaksikan live streaming ibadah",
+                  "Mengisi pendataan diri dan keluarga",
+                ].map((text, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">✓</span>
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Help */}
