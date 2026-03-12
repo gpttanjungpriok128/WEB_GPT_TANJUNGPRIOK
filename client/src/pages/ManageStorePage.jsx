@@ -578,48 +578,19 @@ function ManageStorePage() {
     }
   };
 
-  const handleToggleProductStatus = async (product, nextActive) => {
-    const actionLabel = nextActive ? "Aktifkan" : "Nonaktifkan";
-    const confirmed = window.confirm(
-      `${actionLabel} produk "${product.name}" ${nextActive ? "ke" : "dari"} katalog?`,
-    );
-    if (!confirmed) return;
-
-    setFeedback({ type: "", text: "" });
-    try {
-      const formData = new FormData();
-      formData.append("isActive", String(nextActive));
-      await api.put(`/store/admin/products/${product.id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setFeedback({
-        type: "success",
-        text: `Produk berhasil ${nextActive ? "diaktifkan" : "dinonaktifkan"}.`,
-      });
-      await Promise.all([fetchProducts(), fetchAnalytics()]);
-    } catch (error) {
-      setFeedback({
-        type: "error",
-        text: error.response?.data?.message || `Gagal ${actionLabel.toLowerCase()} produk.`,
-      });
-    }
-  };
-
-  const handleDeleteProduct = async (product) => {
-    const confirmed = window.confirm(
-      `Hapus permanen produk "${product.name}"? Tindakan ini tidak bisa dibatalkan.`,
-    );
+  const handleDeactivateProduct = async (product) => {
+    const confirmed = window.confirm(`Nonaktifkan produk "${product.name}" dari katalog?`);
     if (!confirmed) return;
 
     setFeedback({ type: "", text: "" });
     try {
       await api.delete(`/store/admin/products/${product.id}`);
-      setFeedback({ type: "success", text: "Produk berhasil dihapus permanen." });
+      setFeedback({ type: "success", text: "Produk berhasil dinonaktifkan." });
       await Promise.all([fetchProducts(), fetchAnalytics()]);
     } catch (error) {
       setFeedback({
         type: "error",
-        text: error.response?.data?.message || "Gagal menghapus produk.",
+        text: error.response?.data?.message || "Gagal menonaktifkan produk.",
       });
     }
   };
@@ -771,7 +742,7 @@ function ManageStorePage() {
         </section>
       )}
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {loadingAnalytics && (
           <div className="col-span-full flex justify-center py-8">
             <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -779,11 +750,11 @@ function ManageStorePage() {
         )}
         {!loadingAnalytics &&
           metricCards.map((item) => (
-            <article key={item.label} className="glass-card p-4 sm:p-5">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400 sm:text-xs">
+            <article key={item.label} className="glass-card p-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">
                 {item.label}
               </p>
-              <p className="mt-2 text-xl font-bold gradient-text sm:text-2xl">
+              <p className="mt-2 text-2xl font-bold gradient-text">
                 {item.value}
               </p>
             </article>
@@ -791,10 +762,10 @@ function ManageStorePage() {
       </section>
 
       {/* ── Tab Navigation ──────────────────────── */}
-      <div className="flex gap-2 border-b border-brand-200 dark:border-brand-700 overflow-x-auto pb-1">
+      <div className="flex gap-2 border-b border-brand-200 dark:border-brand-700">
         <button
           onClick={() => setActiveTab("produk")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
+          className={`px-4 py-3 font-semibold transition relative ${
             activeTab === "produk"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -807,7 +778,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("pesanan")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
+          className={`px-4 py-3 font-semibold transition relative ${
             activeTab === "pesanan"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -820,7 +791,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("ulasan")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
+          className={`px-4 py-3 font-semibold transition relative ${
             activeTab === "ulasan"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -833,7 +804,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("laporan")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
+          className={`px-4 py-3 font-semibold transition relative ${
             activeTab === "laporan"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -846,7 +817,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("ongkir")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 ${
+          className={`px-4 py-3 font-semibold transition relative ${
             activeTab === "ongkir"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -1244,21 +1215,10 @@ function ManageStorePage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleToggleProductStatus(product, !product.isActive)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition ${
-                        product.isActive
-                          ? "bg-rose-500 hover:bg-rose-600"
-                          : "bg-emerald-600 hover:bg-emerald-700"
-                      }`}
+                      onClick={() => handleDeactivateProduct(product)}
+                      className="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600"
                     >
-                      {product.isActive ? "Nonaktifkan" : "Aktifkan"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteProduct(product)}
-                      className="rounded-lg bg-brand-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-950"
-                    >
-                      Hapus
+                      Nonaktifkan
                     </button>
                   </div>
                 </div>

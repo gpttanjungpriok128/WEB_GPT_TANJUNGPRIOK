@@ -33,6 +33,7 @@ function MyOrdersPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [expandedInvoiceId, setExpandedInvoiceId] = useState(null);
+  const [orderFilter, setOrderFilter] = useState("active");
 
   const fetchMyOrders = async () => {
     setLoading(true);
@@ -60,6 +61,17 @@ function MyOrdersPage() {
     [orders],
   );
 
+  const completedOrders = useMemo(
+    () => orders.filter((order) => order.status === "completed" || order.status === "cancelled"),
+    [orders],
+  );
+
+  const filteredOrders = useMemo(() => {
+    if (orderFilter === "active") return activeOrders;
+    if (orderFilter === "completed") return completedOrders;
+    return orders;
+  }, [activeOrders, completedOrders, orderFilter, orders]);
+
   return (
     <div>
       <PageHero
@@ -76,7 +88,7 @@ function MyOrdersPage() {
                 Total pesanan: {orders.length}
               </p>
               <p className="text-xs text-brand-500 dark:text-brand-400">
-                Pesanan aktif: {activeOrders.length} • Estimasi pre-order 5 hari kerja setelah konfirmasi.
+                Pesanan aktif: {activeOrders.length} • Selesai: {completedOrders.length} • Estimasi pre-order 5 hari kerja setelah konfirmasi.
               </p>
             </div>
             <div className="flex gap-2">
@@ -95,6 +107,26 @@ function MyOrdersPage() {
               </Link>
             </div>
           </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {[
+              { value: "active", label: `Aktif (${activeOrders.length})` },
+              { value: "completed", label: `Selesai (${completedOrders.length})` },
+              { value: "all", label: `Semua (${orders.length})` },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setOrderFilter(option.value)}
+                className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+                  orderFilter === option.value
+                    ? "border-primary bg-primary text-white shadow-sm"
+                    : "border-brand-200 text-brand-700 hover:border-brand-300 hover:bg-brand-50 dark:border-brand-700 dark:text-brand-200 dark:hover:bg-brand-800/40"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </section>
 
         {error && (
@@ -107,10 +139,16 @@ function MyOrdersPage() {
           <section className="flex justify-center py-16">
             <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
           </section>
-        ) : orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
           <section className="rounded-2xl border border-brand-200 bg-white/80 p-10 text-center dark:border-brand-700 dark:bg-brand-900/40">
             <p className="text-base font-semibold text-brand-800 dark:text-brand-200">
-              Belum ada pesanan
+              {orders.length === 0
+                ? "Belum ada pesanan"
+                : orderFilter === "active"
+                  ? "Belum ada pesanan aktif"
+                  : orderFilter === "completed"
+                    ? "Belum ada pesanan selesai"
+                    : "Belum ada pesanan"}
             </p>
             <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
               Pesanan yang sudah checkout akan muncul di halaman ini.
@@ -122,8 +160,8 @@ function MyOrdersPage() {
             </div>
           </section>
         ) : (
-          <section className="space-y-3">
-            {orders.map((order) => (
+          <section className="space-y-4">
+            {filteredOrders.map((order) => (
               <article
                 key={order.id}
                 className="rounded-2xl border border-brand-200 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-900/50"
@@ -137,7 +175,7 @@ function MyOrdersPage() {
                       Dibuat: {formatDateTime(order.createdAt)}
                     </p>
                   </div>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ORDER_STATUS_BADGE[order.status] || ORDER_STATUS_BADGE.new}`}>
+                  <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${ORDER_STATUS_BADGE[order.status] || ORDER_STATUS_BADGE.new}`}>
                     {ORDER_STATUS_LABEL[order.status] || order.status}
                   </span>
                 </div>

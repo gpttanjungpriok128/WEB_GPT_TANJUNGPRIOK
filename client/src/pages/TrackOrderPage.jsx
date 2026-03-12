@@ -134,6 +134,17 @@ function TrackOrderPage() {
             <div className="mt-5 rounded-2xl border border-brand-200 bg-brand-50/70 p-4 text-sm text-brand-600 dark:border-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
               Status order akan bergerak dari `Order Masuk` ke `Dikonfirmasi`, lalu `Dikemas`, dan terakhir `Selesai`.
             </div>
+
+            <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-700/80 dark:text-blue-200/80">
+                Cara Menemukan Kode Pesanan
+              </p>
+              <ul className="mt-2 space-y-1">
+                <li>• Kode pesanan muncul setelah checkout dan dikirim via WhatsApp.</li>
+                <li>• Format kode: GTS-YYYYMMDD-XXXX (contoh: GTS-20260310-0001).</li>
+                <li>• Jika belum ada, cek kembali chat konfirmasi atau hubungi admin GTshirt.</li>
+              </ul>
+            </div>
           </article>
         </section>
 
@@ -173,7 +184,7 @@ function TrackOrderPage() {
                       Dibuat {formatDateTime(order.createdAt)}
                     </p>
                   </div>
-                  <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${ORDER_STATUS_BADGE[order.status] || ORDER_STATUS_BADGE.new}`}>
+                  <span className={`status-pill rounded-full px-3 py-1.5 text-xs font-semibold ${ORDER_STATUS_BADGE[order.status] || ORDER_STATUS_BADGE.new}`}>
                     {ORDER_STATUS_LABEL[order.status] || order.status}
                   </span>
                 </div>

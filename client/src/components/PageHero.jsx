@@ -1,6 +1,8 @@
-function PageHero({ image, title, titleAccent, subtitle }) {
+function PageHero({ image, title, titleAccent, subtitle, tone = "default" }) {
+  const shadowClass = tone === "dense" ? "shadow-lg" : "shadow-xl";
+
   return (
-    <section className="page-hero page-hero-organic relative overflow-hidden shadow-xl">
+    <section className={`page-hero page-hero-organic relative overflow-hidden ${shadowClass}`}>
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
