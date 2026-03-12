@@ -180,18 +180,22 @@ function CartPage() {
   const proceedCheckout = async () => {
     if (selectedItemsList.length === 0) {
       setCheckoutError("Pilih minimal 1 produk untuk checkout");
+      scrollToCheckout();
       return;
     }
     if (!checkoutForm.name.trim()) {
       setCheckoutError("Nama lengkap wajib diisi");
+      scrollToCheckout();
       return;
     }
     if (!checkoutForm.phone.trim()) {
       setCheckoutError("No. WhatsApp wajib diisi");
+      scrollToCheckout();
       return;
     }
     if (!checkoutForm.address.trim()) {
       setCheckoutError("Alamat wajib diisi");
+      scrollToCheckout();
       return;
     }
 
@@ -200,6 +204,7 @@ function CartPage() {
     );
     if (hasInvalidProduct) {
       setCheckoutError("Ada item lama/tidak valid di keranjang. Hapus lalu tambah ulang produk.");
+      scrollToCheckout();
       return;
     }
 
@@ -546,10 +551,13 @@ function CartPage() {
             <button
               onClick={proceedCheckout}
               disabled={isSubmittingOrder || selectedItemsList.length === 0}
-              className="w-full bg-primary px-4 py-2.5 rounded-lg text-white font-semibold transition hover:bg-primary/90 disabled:opacity-50"
+              className="hidden sm:inline-flex w-full items-center justify-center bg-primary px-4 py-2.5 rounded-lg text-white font-semibold transition hover:bg-primary/90 disabled:opacity-50"
             >
               {isSubmittingOrder ? "Processing..." : "Checkout & Konfirmasi WhatsApp"}
             </button>
+            <p className="text-[11px] text-brand-500 dark:text-brand-400 sm:hidden">
+              Gunakan tombol Checkout di bar bawah untuk melanjutkan.
+            </p>
 
             {user && (
               <Link
@@ -626,11 +634,11 @@ function CartPage() {
           </div>
           <button
             type="button"
-            onClick={scrollToCheckout}
-            disabled={selectedItemsList.length === 0}
+            onClick={proceedCheckout}
+            disabled={isSubmittingOrder || selectedItemsList.length === 0}
             className="btn-primary min-h-[44px] !px-4 !py-3 text-sm disabled:opacity-60"
           >
-            Checkout
+            {isSubmittingOrder ? "Processing..." : "Checkout"}
           </button>
         </div>
       </div>

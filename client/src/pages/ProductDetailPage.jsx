@@ -700,7 +700,7 @@ function ProductDetailPage() {
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="hidden sm:flex flex-col gap-3 sm:flex-row">
             <button
               onClick={addToCart}
               disabled={selectedSizeStock <= 0}
@@ -762,6 +762,12 @@ function ProductDetailPage() {
               ← Kembali ke Toko
             </Link>
           </div>
+          <Link
+            to="/shop"
+            className="sm:hidden inline-flex items-center justify-center rounded-xl border border-brand-300 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+          >
+            ← Kembali ke Toko
+          </Link>
 
           {/* Reviews */}
           <div className="space-y-5 rounded-2xl border border-brand-200 bg-white/80 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/40">
