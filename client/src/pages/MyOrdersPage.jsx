@@ -117,7 +117,7 @@ function MyOrdersPage() {
                 key={option.value}
                 type="button"
                 onClick={() => setOrderFilter(option.value)}
-                className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+                className={`min-h-[44px] rounded-full border px-4 py-2.5 text-sm font-semibold transition ${
                   orderFilter === option.value
                     ? "border-primary bg-primary text-white shadow-sm"
                     : "border-brand-200 text-brand-700 hover:border-brand-300 hover:bg-brand-50 dark:border-brand-700 dark:text-brand-200 dark:hover:bg-brand-800/40"

@@ -1190,6 +1190,8 @@ function ManageStorePage() {
                       <img
                         src={resolveImageUrl(product.imageUrl)}
                         alt={product.name}
+                        loading="lazy"
+                        decoding="async"
                         className="h-14 w-14 flex-shrink-0 rounded-xl border border-brand-200 object-cover dark:border-brand-700"
                       />
                     )}
@@ -1238,14 +1240,14 @@ function ManageStorePage() {
                     <button
                       type="button"
                       onClick={() => fillProductForm(product)}
-                      className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-600"
+                      className="min-h-[44px] rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => handleToggleProductStatus(product, !product.isActive)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition ${
+                      className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-semibold text-white transition ${
                         product.isActive
                           ? "bg-rose-500 hover:bg-rose-600"
                           : "bg-emerald-600 hover:bg-emerald-700"
@@ -1256,7 +1258,7 @@ function ManageStorePage() {
                     <button
                       type="button"
                       onClick={() => handleDeleteProduct(product)}
-                      className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
+                      className="min-h-[44px] rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
                     >
                       Hapus
                     </button>
@@ -1537,14 +1539,14 @@ function ManageStorePage() {
                       <button
                         type="button"
                         onClick={() => handleReviewStatusToggle(review.id, !review.isApproved)}
-                        className="rounded-xl border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:border-primary hover:text-primary dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300"
+                        className="min-h-[44px] rounded-xl border border-brand-200 bg-white px-3 py-2 text-xs font-semibold text-brand-700 transition hover:border-primary hover:text-primary dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300"
                       >
                         {review.isApproved ? "Sembunyikan" : "Tayangkan"}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteReview(review.id)}
-                        className="rounded-xl border border-rose-500 bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:border-rose-600 hover:bg-rose-700 dark:border-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
+                        className="min-h-[44px] rounded-xl border border-rose-500 bg-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:border-rose-600 hover:bg-rose-700 dark:border-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
                       >
                         Hapus
                       </button>

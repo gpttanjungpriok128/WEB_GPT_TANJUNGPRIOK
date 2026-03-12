@@ -1412,3 +1412,12 @@ html {
 .dark .glass-card.dense-card {
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
 }
+
+/* ─── Safe Area Utilities ─── */
+.safe-bottom-offset {
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+.safe-bottom-inset {
+  padding-bottom: env(safe-area-inset-bottom);
+}

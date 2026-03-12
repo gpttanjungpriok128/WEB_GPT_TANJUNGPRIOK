@@ -260,12 +260,21 @@ function CartPage() {
     }
   };
 
+  const scrollToCheckout = () => {
+    const target = document.getElementById("checkout-form");
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  };
+
   if (cartItems.length === 0) {
     return (
       <div>
-        <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" image={cartHeroImage} />
+        <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" image={cartHeroImage} tone="dense" />
         <div className="page-stack space-y-6">
-          <div className="rounded-2xl border border-brand-200 bg-brand-50 p-12 text-center dark:border-brand-700 dark:bg-brand-900/30">
+          <div className="rounded-2xl border border-brand-200 bg-brand-50 p-8 sm:p-12 text-center dark:border-brand-700 dark:bg-brand-900/30">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm dark:bg-brand-900 dark:text-brand-300">
               <svg
                 className="h-7 w-7"
@@ -302,14 +311,14 @@ function CartPage() {
   }
 
   return (
-    <div>
-      <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" image={cartHeroImage} />
+    <div className="pb-24 sm:pb-0">
+      <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" image={cartHeroImage} tone="dense" />
 
       <div className="page-stack grid gap-6 lg:grid-cols-[1fr_380px]">
         {/* ── Left: Cart Items ──────────────────── */}
         <section className="space-y-4">
           {/* Header */}
-          <div className="rounded-2xl border border-brand-200 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-900/50">
+          <div className="rounded-2xl border border-brand-200 bg-white/90 p-3 sm:p-4 dark:border-brand-700 dark:bg-brand-900/50">
             <div className="flex items-center justify-between gap-4">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
@@ -331,7 +340,7 @@ function CartPage() {
                   toRemove.forEach((i) => removeItem(i));
                 }}
                 disabled={selectedItems.size === 0}
-                className="text-xs font-semibold text-rose-500 transition hover:text-rose-600 disabled:opacity-50"
+                className="min-h-[44px] px-2 text-xs font-semibold text-rose-500 transition hover:text-rose-600 disabled:opacity-50"
               >
                 Hapus Terpilih
               </button>
@@ -339,7 +348,7 @@ function CartPage() {
           </div>
 
           {/* Cart Items */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {cartItems.map((item, index) => {
               const imageCandidates = collectCartImageCandidates(item);
               const activeImageIndex = imageIndexByKey[item.variantKey] || 0;
@@ -350,7 +359,7 @@ function CartPage() {
               return (
                 <div
                   key={item.variantKey}
-                  className="rounded-2xl border border-brand-200 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-900/50"
+                  className="rounded-2xl border border-brand-200 bg-white/90 p-3 sm:p-4 dark:border-brand-700 dark:bg-brand-900/50"
                 >
                   <div className="flex gap-4">
                     {/* Checkbox */}
@@ -385,6 +394,8 @@ function CartPage() {
                                 return next;
                               });
                             }}
+                            loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-cover"
                           />
                         ) : (
@@ -415,7 +426,7 @@ function CartPage() {
                       </p>
                       <button
                         onClick={() => removeItem(index)}
-                        className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
+                        className="min-h-[44px] px-2 text-xs font-semibold text-rose-500 transition hover:text-rose-600"
                       >
                         Hapus
                       </button>
@@ -428,7 +439,7 @@ function CartPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQuantity(index, item.quantity - 1)}
-                        className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                        className="min-h-[44px] min-w-[44px] rounded-lg border border-brand-200 px-3 py-2 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
                       >
                         −
                       </button>
@@ -436,13 +447,13 @@ function CartPage() {
                         type="number"
                         min="1"
                         max={item.stock || 99}
-                        className="input-modern !w-16 !py-1.5 text-center text-sm"
+                        className="input-modern !w-16 !py-2.5 text-center text-sm"
                         value={item.quantity}
                         onChange={(e) => updateQuantity(index, e.target.value)}
                       />
                       <button
                         onClick={() => updateQuantity(index, item.quantity + 1)}
-                        className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                        className="min-h-[44px] min-w-[44px] rounded-lg border border-brand-200 px-3 py-2 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
                       >
                         +
                       </button>
@@ -454,7 +465,7 @@ function CartPage() {
           </div>
 
           {/* GTshirt Info */}
-          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
             <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
               ℹ️ Toko GTshirt Official
             </p>
@@ -466,7 +477,7 @@ function CartPage() {
           {/* Checkout Form */}
           <div
             id="checkout-form"
-            className="rounded-2xl border border-brand-200 bg-white/90 p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-4"
+            className="rounded-2xl border border-brand-200 bg-white/90 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-4"
           >
             <h4 className="font-bold text-brand-900 dark:text-white">Lengkapi Data Checkout</h4>
             <p className="text-xs text-brand-600 dark:text-brand-400">
@@ -563,7 +574,7 @@ function CartPage() {
         {/* ── Right: Checkout Summary ──────────────────── */}
         <aside className="sticky top-24 h-fit">
           {/* Summary Card */}
-          <div className="rounded-2xl border border-brand-200 bg-white/90 p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-4">
+          <div className="rounded-2xl border border-brand-200 bg-white/90 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-4">
             <h3 className="font-bold text-brand-900 dark:text-white">Ringkasan Pesanan</h3>
 
             <div className="space-y-3 border-b border-brand-200 pb-4 dark:border-brand-700">
@@ -600,6 +611,28 @@ function CartPage() {
             </div>
           </div>
         </aside>
+      </div>
+
+      {/* ── Sticky Mobile Summary ──────────────────── */}
+      <div className="fixed left-0 right-0 z-40 px-4 sm:hidden safe-bottom-offset">
+        <div className="safe-bottom-inset flex items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-white/95 p-3 shadow-md backdrop-blur dark:border-brand-700 dark:bg-brand-900/90">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+              Total ({selectedItemsList.length} item)
+            </p>
+            <p className="text-base font-bold text-brand-900 dark:text-white">
+              {formatRupiah(grandTotal)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={scrollToCheckout}
+            disabled={selectedItemsList.length === 0}
+            className="btn-primary min-h-[44px] !px-4 !py-3 text-sm disabled:opacity-60"
+          >
+            Checkout
+          </button>
+        </div>
       </div>
     </div>
   );

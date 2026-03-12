@@ -438,7 +438,7 @@ function ProductDetailPage() {
   };
 
   return (
-    <div className="page-stack space-y-8">
+    <div className="page-stack space-y-8 pb-24 sm:pb-8">
       {/* ── Breadcrumb ──────────────────────── */}
       <nav className="flex flex-wrap items-center justify-between gap-3 text-sm text-brand-600 dark:text-brand-400">
         <div className="flex min-w-0 items-center gap-2">
@@ -466,6 +466,8 @@ function ProductDetailPage() {
               src={resolveStoreImageUrl(images[selectedImageIndex])}
               alt={product.name}
               onError={() => handleImageError(selectedImageIndex)}
+              loading="eager"
+              decoding="async"
               className="h-full w-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal"
             />
           </div>
@@ -487,6 +489,8 @@ function ProductDetailPage() {
                     src={resolveStoreImageUrl(image)}
                     alt={`Foto ${index + 1}`}
                     onError={() => handleImageError(index)}
+                    loading="lazy"
+                    decoding="async"
                     className="h-20 w-full object-contain p-1 bg-white dark:bg-brand-900/50 mix-blend-multiply dark:mix-blend-normal"
                   />
                 </button>
@@ -630,7 +634,7 @@ function ProductDetailPage() {
                       setQuantity((prev) => clampQuantity(prev, getStockForSize(product, size)));
                     }}
                     disabled={isOutOfStock}
-                    className={`rounded-lg py-2 font-semibold transition ${
+                    className={`min-h-[44px] rounded-lg py-2.5 font-semibold transition ${
                       selectedSize === size
                         ? "bg-primary text-white border-2 border-primary"
                         : "border-2 border-brand-200 bg-white text-brand-700 hover:border-primary dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300"
@@ -652,7 +656,7 @@ function ProductDetailPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-200 bg-white font-bold transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:hover:bg-brand-900"
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-brand-200 bg-white font-bold transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:hover:bg-brand-900"
               >
                 −
               </button>
@@ -672,7 +676,7 @@ function ProductDetailPage() {
                     clampQuantity(quantity + 1, selectedSizeStock || 1),
                   )
                 }
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-200 bg-white font-bold transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:hover:bg-brand-900"
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-brand-200 bg-white font-bold transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:hover:bg-brand-900"
               >
                 +
               </button>
@@ -760,7 +764,7 @@ function ProductDetailPage() {
           </div>
 
           {/* Reviews */}
-          <div className="space-y-5 rounded-2xl border border-brand-200 bg-white/80 p-5 dark:border-brand-700 dark:bg-brand-900/40">
+          <div className="space-y-5 rounded-2xl border border-brand-200 bg-white/80 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/40">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
@@ -780,7 +784,7 @@ function ProductDetailPage() {
               </div>
             </div>
 
-            <div className="space-y-3 rounded-xl border border-brand-200 bg-brand-50/60 p-4 dark:border-brand-700 dark:bg-brand-900/30">
+            <div className="space-y-3 rounded-xl border border-brand-200 bg-brand-50/60 p-3 sm:p-4 dark:border-brand-700 dark:bg-brand-900/30">
               <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">
                 Tulis Ulasan
               </p>
@@ -895,7 +899,7 @@ function ProductDetailPage() {
           </div>
 
           {/* Info Box */}
-          <div className="space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
+          <div className="space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
             <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
               ℹ️ Informasi Produk
             </p>
@@ -908,6 +912,41 @@ function ProductDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Sticky Mobile CTA ─────────────────────── */}
+      <div className="fixed left-0 right-0 z-40 px-4 sm:hidden safe-bottom-offset">
+        <div className="pointer-events-auto safe-bottom-inset flex items-center gap-3 rounded-2xl border border-brand-200 bg-white/95 p-3 shadow-md backdrop-blur dark:border-brand-700 dark:bg-brand-900/90">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+              Harga
+            </p>
+            <p className="text-base font-bold text-brand-900 dark:text-white">
+              {formatRupiah(effectivePrice)}
+            </p>
+            <p className="text-[11px] text-brand-500 dark:text-brand-400">
+              Ukuran {selectedSize ? normalizeSizeKey(selectedSize) : "-"} • Stok {selectedSizeStock ?? 0}
+            </p>
+          </div>
+          <Link
+            to="/cart"
+            className="btn-outline min-h-[44px] !px-4 !py-3 text-sm"
+          >
+            Keranjang
+            {cartCount > 0 && (
+              <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={addToCart}
+            disabled={selectedSizeStock <= 0}
+            className="btn-primary min-h-[44px] !px-4 !py-3 text-sm disabled:opacity-60"
+          >
+            Tambah
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

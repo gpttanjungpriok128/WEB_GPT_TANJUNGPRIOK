@@ -90,7 +90,7 @@ function TrackOrderPage() {
 
       <div className="page-stack grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <section className="space-y-5">
-          <article className="glass-card p-6">
+          <article className="glass-card p-5 sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
               Order Tracking
             </p>
@@ -150,7 +150,7 @@ function TrackOrderPage() {
 
         <section className="space-y-5">
           {!order ? (
-            <article className="glass-card p-8 text-center">
+            <article className="glass-card p-6 sm:p-8 text-center">
               <p className="text-lg font-semibold text-brand-800 dark:text-brand-200">
                 Belum ada data pesanan yang ditampilkan
               </p>
@@ -171,7 +171,7 @@ function TrackOrderPage() {
             </article>
           ) : (
             <>
-              <article className="glass-card p-6">
+              <article className="glass-card p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
@@ -194,7 +194,7 @@ function TrackOrderPage() {
                 </div>
               </article>
 
-              <article className="glass-card p-6">
+              <article className="glass-card p-5 sm:p-6">
                 <div className="grid gap-3 text-sm text-brand-700 dark:text-brand-300 sm:grid-cols-2">
                   <p><span className="font-semibold text-brand-900 dark:text-white">Nama:</span> {order.customerName}</p>
                   <p><span className="font-semibold text-brand-900 dark:text-white">WhatsApp:</span> {order.customerPhone}</p>

@@ -573,6 +573,8 @@ function ShopPage() {
                     <img
                       src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-brand-900/10 flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[2px]">
@@ -656,7 +658,7 @@ function ShopPage() {
 
       {/* Product detail page and cart page are now separate routes */}
 
-      <section className="glass-card p-6 md:p-8">
+      <section className="glass-card p-5 sm:p-6 md:p-8">
         <div className="grid gap-5 md:grid-cols-3">
           {[
             {
@@ -677,7 +679,7 @@ function ShopPage() {
           ].map((item) => (
             <article
               key={item.title}
-              className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/50"
+              className="rounded-2xl border border-brand-200/80 bg-white/70 p-3 sm:p-4 dark:border-brand-700/80 dark:bg-brand-900/50"
             >
               <h3 className="text-sm font-bold uppercase tracking-[0.13em] text-brand-700 dark:text-brand-200">
                 {item.title}
