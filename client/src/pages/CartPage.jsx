@@ -482,12 +482,24 @@ function CartPage() {
           {/* Checkout Form */}
           <div
             id="checkout-form"
-            className="rounded-2xl border border-brand-200 bg-white/90 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-4"
+            className="checkout-compact rounded-2xl border border-brand-200 bg-white/90 p-3 sm:p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-3"
           >
             <h4 className="font-bold text-brand-900 dark:text-white">Lengkapi Data Checkout</h4>
             <p className="text-xs text-brand-600 dark:text-brand-400">
               Setelah cek produk di keranjang, isi data pemesan untuk simpan order lalu lanjut konfirmasi via WhatsApp.
             </p>
+
+            {checkoutError && (
+              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900/80 dark:bg-rose-900/30 dark:text-rose-300">
+                {checkoutError}
+              </p>
+            )}
+
+            {checkoutInfo && (
+              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
+                {checkoutInfo}
+              </p>
+            )}
 
             <div className="space-y-3">
               <input
@@ -535,18 +547,6 @@ function CartPage() {
                 onChange={(e) => handleCheckoutField("notes", e.target.value)}
               />
             </div>
-
-            {checkoutError && (
-              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900/80 dark:bg-rose-900/30 dark:text-rose-300">
-                {checkoutError}
-              </p>
-            )}
-
-            {checkoutInfo && (
-              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
-                {checkoutInfo}
-              </p>
-            )}
 
             <button
               onClick={proceedCheckout}

@@ -1432,6 +1432,15 @@ html {
     display: none !important;
   }
 
+  .checkout-compact .input-modern {
+    padding: 0.65rem 0.9rem;
+    font-size: 0.875rem;
+  }
+
+  .checkout-compact textarea.input-modern {
+    min-height: 70px;
+  }
+
   .admin-tabs {
     position: sticky;
     top: 0.75rem;
