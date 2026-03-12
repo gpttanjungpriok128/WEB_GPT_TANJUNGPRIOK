@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
 import worshipSmokeImage from "../img/store/made-to-worship.png";
@@ -169,6 +169,8 @@ function ProductDetailPage() {
   });
   const [reviewFeedback, setReviewFeedback] = useState({ type: "", text: "" });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const touchStartRef = useRef({ x: 0, y: 0 });
+  const touchDeltaRef = useRef({ x: 0, y: 0 });
 
   const syncCartCount = () => {
     try {
@@ -440,6 +442,47 @@ function ProductDetailPage() {
     }
   };
 
+  const goToNextImage = () => {
+    if (images.length <= 1) return;
+    setSelectedImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const goToPrevImage = () => {
+    if (images.length <= 1) return;
+    setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleSwipeStart = (event) => {
+    if (images.length <= 1) return;
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    touchDeltaRef.current = { x: 0, y: 0 };
+  };
+
+  const handleSwipeMove = (event) => {
+    if (images.length <= 1) return;
+    const touch = event.touches[0];
+    touchDeltaRef.current = {
+      x: touch.clientX - touchStartRef.current.x,
+      y: touch.clientY - touchStartRef.current.y,
+    };
+  };
+
+  const handleSwipeEnd = () => {
+    if (images.length <= 1) return;
+    const { x, y } = touchDeltaRef.current;
+    const absX = Math.abs(x);
+    const absY = Math.abs(y);
+    if (absX > 50 && absX > absY) {
+      if (x < 0) {
+        goToNextImage();
+      } else {
+        goToPrevImage();
+      }
+    }
+    touchDeltaRef.current = { x: 0, y: 0 };
+  };
+
   const reviewHeader = (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
@@ -600,7 +643,13 @@ function ProductDetailPage() {
         {/* ── Left: Image Gallery ──────────────────────── */}
         <div className="space-y-4">
           {/* Main Image */}
-          <div className="overflow-hidden rounded-2xl bg-white dark:bg-brand-900/50 aspect-square border border-brand-100 dark:border-brand-800">
+          <div
+            className="image-swipe overflow-hidden rounded-2xl bg-white dark:bg-brand-900/50 aspect-square border border-brand-100 dark:border-brand-800"
+            onTouchStart={handleSwipeStart}
+            onTouchMove={handleSwipeMove}
+            onTouchEnd={handleSwipeEnd}
+            onTouchCancel={handleSwipeEnd}
+          >
             <img
               src={resolveStoreImageUrl(images[selectedImageIndex])}
               alt={product.name}

@@ -1390,6 +1390,10 @@ html {
   transform: scale(1);
 }
 
+.image-swipe {
+  touch-action: pan-y;
+}
+
 /* ─── Card Shadow Tuning ─── */
 .card-soft {
   box-shadow: 0 12px 24px rgba(14, 69, 50, 0.08);
