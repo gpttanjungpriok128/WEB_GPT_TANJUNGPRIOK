@@ -1276,7 +1276,7 @@ function ManageStorePage() {
         </article>
 
         <article className="glass-card dense-card p-6">
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="admin-filter-card flex flex-wrap items-end gap-3">
             <div className="min-w-[200px] flex-1 space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                 Cari Produk
@@ -1452,7 +1452,7 @@ function ManageStorePage() {
       {activeTab === "pesanan" && (
         <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <article className="glass-card dense-card p-6">
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="admin-filter-card flex flex-wrap items-end gap-3">
             <div className="min-w-[220px] flex-1 space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                 Cari Order
@@ -1623,7 +1623,7 @@ function ManageStorePage() {
       {activeTab === "ulasan" && (
         <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <article className="glass-card dense-card p-6">
-            <div className="flex flex-wrap items-end gap-3">
+            <div className="admin-filter-card flex flex-wrap items-end gap-3">
               <div className="min-w-[220px] flex-1 space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                   Cari Ulasan
@@ -1769,7 +1769,7 @@ function ManageStorePage() {
       {activeTab === "laporan" && (
         <section className="grid gap-6">
           <article className="glass-card dense-card p-6">
-            <div className="flex flex-wrap items-end gap-3">
+            <div className="admin-filter-card flex flex-wrap items-end gap-3">
               <div className="min-w-[180px] space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                   Mulai

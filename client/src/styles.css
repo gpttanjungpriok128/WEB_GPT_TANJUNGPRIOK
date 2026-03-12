@@ -1704,6 +1704,28 @@ html {
     background: rgba(20, 132, 88, 0.2);
     border-radius: 999px;
   }
+
+  .admin-filter-card {
+    border-radius: 1.25rem;
+    border: 1px solid rgba(213, 245, 227, 0.7);
+    background: rgba(255, 255, 255, 0.86);
+    padding: 0.9rem;
+    box-shadow: 0 10px 24px rgba(14, 69, 50, 0.08);
+  }
+
+  .dark .admin-filter-card {
+    border-color: rgba(31, 47, 39, 0.8);
+    background: rgba(7, 10, 9, 0.86);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .admin-filter-card .btn-primary {
+    width: 100%;
+  }
+
+  .admin-filter-card button {
+    width: 100%;
+  }
 }
 
 @media (max-width: 360px) {
