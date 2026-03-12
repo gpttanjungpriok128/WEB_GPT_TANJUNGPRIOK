@@ -169,6 +169,20 @@ const GTSHIRT_SOCIALS = [
   },
 ];
 
+const AVAILABILITY_LABELS = {
+  all: "Semua Produk",
+  ready: "Stok Tersedia",
+  promo: "Sedang Promo",
+};
+
+const SORT_LABELS = {
+  featured: "Terbaru",
+  "price-low": "Harga Termurah",
+  "price-high": "Harga Tertinggi",
+  stock: "Stok Terbanyak",
+  name: "Nama A-Z",
+};
+
 function getDefaultSize(product) {
   const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
   if (!sizes.length) return "M";
@@ -294,6 +308,8 @@ function ShopPage() {
     (total, item) => total + item.quantity,
     0,
   );
+  const availabilityLabel = AVAILABILITY_LABELS[availabilityFilter] || "Semua Produk";
+  const sortLabel = SORT_LABELS[sortBy] || "Terbaru";
 
   const updateSelection = (productId, key, value) => {
     setSelections((previous) => ({
@@ -440,7 +456,7 @@ function ShopPage() {
           </div>
           <Link
             to="/cart"
-            className={`group relative inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition ${
+            className={`group relative inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
               totalItems > 0
                 ? "border-primary bg-primary text-white shadow-md hover:bg-primary/90"
                 : "border-brand-300 bg-white text-brand-700 hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/60"
@@ -449,7 +465,7 @@ function ShopPage() {
             aria-label="Buka keranjang belanja"
           >
             <svg
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -475,12 +491,82 @@ function ShopPage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 rounded-3xl border border-brand-200 bg-white/85 p-4 shadow-sm lg:grid-cols-[1.2fr_0.8fr_0.7fr] dark:border-brand-700 dark:bg-brand-900/40 sm:p-5">
+        <div className="grid gap-3 sm:hidden">
           <label className="space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
               Cari Produk
             </span>
             <input
+              type="search"
+              className="input-modern"
+              placeholder="Cari nama, warna, atau tema desain"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </label>
+
+          <details className="mobile-filter rounded-2xl border border-brand-200 bg-white/85 shadow-sm dark:border-brand-700 dark:bg-brand-900/40">
+            <summary className="mobile-summary flex cursor-pointer items-center justify-between gap-3 px-4 py-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                  Filter & Urutkan
+                </p>
+                <p className="text-sm font-semibold text-brand-900 dark:text-white">
+                  {availabilityLabel} • {sortLabel}
+                </p>
+              </div>
+              <svg
+                className="mobile-summary-icon h-5 w-5 text-brand-500 dark:text-brand-300"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.6}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
+              </svg>
+            </summary>
+            <div className="mobile-filter-panel space-y-3 border-t border-brand-100 px-4 pb-4 pt-3 dark:border-brand-800">
+              <label className="space-y-1.5">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                  Filter
+                </span>
+                <select
+                  className="input-modern"
+                  value={availabilityFilter}
+                  onChange={(event) => setAvailabilityFilter(event.target.value)}
+                >
+                  <option value="all">Semua Produk</option>
+                  <option value="ready">Stok Tersedia</option>
+                  <option value="promo">Sedang Promo</option>
+                </select>
+              </label>
+              <label className="space-y-1.5">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                  Urutkan
+                </span>
+                <select
+                  className="input-modern"
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value)}
+                >
+                  <option value="featured">Terbaru</option>
+                  <option value="price-low">Harga Termurah</option>
+                  <option value="price-high">Harga Tertinggi</option>
+                  <option value="stock">Stok Terbanyak</option>
+                  <option value="name">Nama A-Z</option>
+                </select>
+              </label>
+            </div>
+          </details>
+        </div>
+
+        <div className="hidden sm:grid gap-4 rounded-3xl border border-brand-200 bg-white/85 p-4 shadow-sm lg:grid-cols-[1.2fr_0.8fr_0.7fr] dark:border-brand-700 dark:bg-brand-900/40 sm:p-5">
+          <label className="space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+              Cari Produk
+            </span>
+            <input
+              type="search"
               className="input-modern"
               placeholder="Cari nama, warna, atau tema desain"
               value={searchQuery}

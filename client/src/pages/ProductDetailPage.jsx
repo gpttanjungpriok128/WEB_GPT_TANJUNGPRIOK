@@ -413,6 +413,9 @@ function ProductDetailPage() {
   const ratingCount = Number(
     reviewSummary.count || product.ratingCount || 0,
   );
+  const ratingSummaryText = ratingCount > 0
+    ? `Rata-rata ${ratingAverage.toFixed(1)} / 5 dari ${ratingCount} ulasan`
+    : "Belum ada ulasan untuk produk ini.";
   const canSubmitReview =
     reviewForm.orderCode.trim().length > 0 &&
     reviewForm.phone.trim().length > 0 &&
@@ -436,6 +439,142 @@ function ProductDetailPage() {
       }
     }
   };
+
+  const reviewHeader = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+          Ulasan Pembeli
+        </p>
+        <h3 className="mt-2 text-lg font-bold text-brand-900 dark:text-white">
+          Rating Produk
+        </h3>
+        <p className="mt-1 text-sm text-brand-600 dark:text-brand-300">
+          {ratingSummaryText}
+        </p>
+      </div>
+      <div className="flex items-center gap-1">
+        {renderStars(ratingAverage, "text-xl")}
+      </div>
+    </div>
+  );
+
+  const reviewBody = (
+    <>
+      <div className="space-y-3 rounded-xl border border-brand-200 bg-brand-50/60 p-3 sm:p-4 dark:border-brand-700 dark:bg-brand-900/30">
+        <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">
+          Tulis Ulasan
+        </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+              Kode Pesanan
+            </span>
+            <input
+              className="input-modern"
+              placeholder="Contoh: GTS-20260310-0001"
+              value={reviewForm.orderCode}
+              onChange={(event) => updateReviewField("orderCode", event.target.value)}
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+              Nomor WhatsApp
+            </span>
+            <input
+              className="input-modern"
+              placeholder="08xx atau +62xx"
+              value={reviewForm.phone}
+              onChange={(event) => updateReviewField("phone", event.target.value)}
+            />
+          </label>
+        </div>
+        <label className="space-y-1">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+            Rating
+          </span>
+          <select
+            className="input-modern"
+            value={reviewForm.rating}
+            onChange={(event) => updateReviewField("rating", event.target.value)}
+          >
+            <option value={5}>5 - Sangat Suka</option>
+            <option value={4}>4 - Suka</option>
+            <option value={3}>3 - Cukup</option>
+            <option value={2}>2 - Kurang</option>
+            <option value={1}>1 - Tidak Suka</option>
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+            Ceritakan pengalamanmu (opsional)
+          </span>
+          <textarea
+            className="input-modern min-h-[110px] resize-none"
+            placeholder="Contoh: Bahan adem, ukuran pas, sablon rapi."
+            value={reviewForm.reviewText}
+            onChange={(event) => updateReviewField("reviewText", event.target.value)}
+          />
+        </label>
+        {reviewFeedback.text && (
+          <div
+            className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+              reviewFeedback.type === "error"
+                ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300"
+            }`}
+          >
+            {reviewFeedback.text}
+          </div>
+        )}
+        <button
+          onClick={submitReview}
+          disabled={!canSubmitReview || isSubmittingReview}
+          className="btn-primary w-full !rounded-xl !py-3 disabled:opacity-60"
+        >
+          {isSubmittingReview ? "Mengirim..." : "Kirim Ulasan"}
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {isLoadingReviews ? (
+          <div className="flex justify-center py-6">
+            <div className="h-8 w-8 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
+          </div>
+        ) : reviews.length === 0 ? (
+          <p className="text-sm text-brand-600 dark:text-brand-300">
+            Belum ada ulasan. Jadilah yang pertama memberi ulasan!
+          </p>
+        ) : (
+          reviews.map((review) => (
+            <div
+              key={review.id}
+              className="rounded-xl border border-brand-200 bg-white p-4 dark:border-brand-700 dark:bg-brand-900/50"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-brand-900 dark:text-white">
+                    {review.reviewerName || "Pembeli"}
+                  </p>
+                  <p className="text-xs text-brand-500 dark:text-brand-400">
+                    {formatReviewDate(review.createdAt)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  {renderStars(review.rating, "text-sm")}
+                </div>
+              </div>
+              {review.reviewText && (
+                <p className="mt-3 text-sm leading-relaxed text-brand-700 dark:text-brand-300">
+                  {review.reviewText}
+                </p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div className="page-stack space-y-8 pb-24 sm:pb-8">
@@ -770,137 +909,45 @@ function ProductDetailPage() {
           </Link>
 
           {/* Reviews */}
-          <div className="space-y-5 rounded-2xl border border-brand-200 bg-white/80 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/40">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                  Ulasan Pembeli
-                </p>
-                <h3 className="mt-2 text-lg font-bold text-brand-900 dark:text-white">
-                  Rating Produk
-                </h3>
-                <p className="mt-1 text-sm text-brand-600 dark:text-brand-300">
-                  {ratingCount > 0
-                    ? `Rata-rata ${ratingAverage.toFixed(1)} / 5 dari ${ratingCount} ulasan`
-                    : "Belum ada ulasan untuk produk ini."}
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                {renderStars(ratingAverage, "text-xl")}
-              </div>
-            </div>
-
-            <div className="space-y-3 rounded-xl border border-brand-200 bg-brand-50/60 p-3 sm:p-4 dark:border-brand-700 dark:bg-brand-900/30">
-              <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">
-                Tulis Ulasan
-              </p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <label className="space-y-1">
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                    Kode Pesanan
-                  </span>
-                  <input
-                    className="input-modern"
-                    placeholder="Contoh: GTS-20260310-0001"
-                    value={reviewForm.orderCode}
-                    onChange={(event) => updateReviewField("orderCode", event.target.value)}
-                  />
-                </label>
-                <label className="space-y-1">
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                    Nomor WhatsApp
-                  </span>
-                  <input
-                    className="input-modern"
-                    placeholder="08xx atau +62xx"
-                    value={reviewForm.phone}
-                    onChange={(event) => updateReviewField("phone", event.target.value)}
-                  />
-                </label>
-              </div>
-              <label className="space-y-1">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                  Rating
-                </span>
-                <select
-                  className="input-modern"
-                  value={reviewForm.rating}
-                  onChange={(event) => updateReviewField("rating", event.target.value)}
-                >
-                  <option value={5}>5 - Sangat Suka</option>
-                  <option value={4}>4 - Suka</option>
-                  <option value={3}>3 - Cukup</option>
-                  <option value={2}>2 - Kurang</option>
-                  <option value={1}>1 - Tidak Suka</option>
-                </select>
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                  Ceritakan pengalamanmu (opsional)
-                </span>
-                <textarea
-                  className="input-modern min-h-[110px] resize-none"
-                  placeholder="Contoh: Bahan adem, ukuran pas, sablon rapi."
-                  value={reviewForm.reviewText}
-                  onChange={(event) => updateReviewField("reviewText", event.target.value)}
-                />
-              </label>
-              {reviewFeedback.text && (
-                <div
-                  className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-                    reviewFeedback.type === "error"
-                      ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300"
-                      : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300"
-                  }`}
-                >
-                  {reviewFeedback.text}
+          <div className="sm:hidden">
+            <details className="mobile-review rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+              <summary className="mobile-summary flex cursor-pointer items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    Ulasan Pembeli
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">
+                    Rating Produk
+                  </p>
+                  <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                    {ratingSummaryText}
+                  </p>
                 </div>
-              )}
-              <button
-                onClick={submitReview}
-                disabled={!canSubmitReview || isSubmittingReview}
-                className="btn-primary w-full !rounded-xl !py-3 disabled:opacity-60"
-              >
-                {isSubmittingReview ? "Mengirim..." : "Kirim Ulasan"}
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {isLoadingReviews ? (
-                <div className="flex justify-center py-6">
-                  <div className="h-8 w-8 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
-                </div>
-              ) : reviews.length === 0 ? (
-                <p className="text-sm text-brand-600 dark:text-brand-300">
-                  Belum ada ulasan. Jadilah yang pertama memberi ulasan!
-                </p>
-              ) : (
-                reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="rounded-xl border border-brand-200 bg-white p-4 dark:border-brand-700 dark:bg-brand-900/50"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-brand-900 dark:text-white">
-                          {review.reviewerName || "Pembeli"}
-                        </p>
-                        <p className="text-xs text-brand-500 dark:text-brand-400">
-                          {formatReviewDate(review.createdAt)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {renderStars(review.rating, "text-sm")}
-                      </div>
-                    </div>
-                    {review.reviewText && (
-                      <p className="mt-3 text-sm leading-relaxed text-brand-700 dark:text-brand-300">
-                        {review.reviewText}
-                      </p>
-                    )}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {renderStars(ratingAverage, "text-base")}
                   </div>
-                ))
-              )}
+                  <svg
+                    className="mobile-summary-icon h-5 w-5 text-brand-500 dark:text-brand-300"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.6}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
+                  </svg>
+                </div>
+              </summary>
+              <div className="pt-4 space-y-5">
+                {reviewBody}
+              </div>
+            </details>
+          </div>
+
+          <div className="hidden sm:block">
+            <div className="space-y-5 rounded-2xl border border-brand-200 bg-white/80 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/40">
+              {reviewHeader}
+              {reviewBody}
             </div>
           </div>
 

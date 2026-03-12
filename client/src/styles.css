@@ -1490,3 +1490,20 @@ html {
 .admin-action-summary::-webkit-details-marker {
   display: none;
 }
+
+/* ─── Mobile Accordions ─── */
+.mobile-summary {
+  list-style: none;
+}
+
+.mobile-summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-summary-icon {
+  transition: transform 0.2s ease;
+}
+
+details[open] .mobile-summary-icon {
+  transform: rotate(180deg);
+}

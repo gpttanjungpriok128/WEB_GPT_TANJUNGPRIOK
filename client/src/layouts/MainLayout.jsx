@@ -194,7 +194,7 @@ function MainLayout({ children }) {
           }`}
         >
           <div className="container-custom">
-            <div className="flex items-center justify-between gap-3 h-16">
+            <div className="flex items-center justify-between gap-3 h-14 sm:h-16">
               {/* Logo */}
               <Link
                 to="/"
@@ -249,7 +249,7 @@ function MainLayout({ children }) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleTheme}
-                  className="relative rounded-xl p-2.5 hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
+                  className="relative rounded-xl p-2 sm:p-2.5 hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
                   title={theme === "dark" ? "Light Mode" : "Dark Mode"}
                 >
                   <span className="text-lg transition-transform duration-300 block" style={{ transform: theme === "dark" ? "rotate(180deg)" : "rotate(0deg)" }}>
@@ -285,7 +285,7 @@ function MainLayout({ children }) {
                   <div ref={profileMenuRef} className="relative">
                     <button
                       onClick={() => setProfileMenuOpen((prev) => !prev)}
-                      className="relative h-10 w-10 overflow-hidden rounded-full border border-brand-200 bg-white shadow-sm transition-all hover:scale-[1.03] hover:border-brand-300 dark:border-brand-700 dark:bg-brand-900"
+                      className="relative h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-brand-200 bg-white shadow-sm transition-all hover:scale-[1.03] hover:border-brand-300 dark:border-brand-700 dark:bg-brand-900"
                       title="Profil"
                     >
                       <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-brand-700 dark:text-brand-200">
@@ -317,7 +317,7 @@ function MainLayout({ children }) {
                 <button
                   ref={mobileMenuToggleRef}
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="rounded-xl p-2.5 lg:hidden hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
+                  className="rounded-xl p-2 sm:p-2.5 lg:hidden hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
                 >
                   <div className="w-5 h-4 relative flex flex-col justify-between">
                     <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 origin-center ${mobileMenuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
