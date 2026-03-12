@@ -511,8 +511,11 @@ function CartPage() {
             className="checkout-compact rounded-2xl border border-brand-200 bg-white/90 p-3 sm:p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-3"
           >
             <h4 className="font-bold text-brand-900 dark:text-white">Lengkapi Data Checkout</h4>
-            <p className="text-xs text-brand-600 dark:text-brand-400">
+            <p className="text-xs text-brand-600 dark:text-brand-400 hidden sm:block">
               Setelah cek produk di keranjang, isi data pemesan untuk simpan order lalu lanjut konfirmasi via WhatsApp.
+            </p>
+            <p className="text-xs text-brand-600 dark:text-brand-400 sm:hidden">
+              Isi data lalu lanjut konfirmasi WA.
             </p>
 
             {checkoutError && (
