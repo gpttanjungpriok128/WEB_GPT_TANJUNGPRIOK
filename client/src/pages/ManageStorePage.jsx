@@ -578,19 +578,48 @@ function ManageStorePage() {
     }
   };
 
-  const handleDeactivateProduct = async (product) => {
-    const confirmed = window.confirm(`Nonaktifkan produk "${product.name}" dari katalog?`);
+  const handleToggleProductStatus = async (product, nextActive) => {
+    const actionLabel = nextActive ? "Aktifkan" : "Nonaktifkan";
+    const confirmed = window.confirm(
+      `${actionLabel} produk "${product.name}" ${nextActive ? "ke" : "dari"} katalog?`,
+    );
+    if (!confirmed) return;
+
+    setFeedback({ type: "", text: "" });
+    try {
+      const formData = new FormData();
+      formData.append("isActive", String(nextActive));
+      await api.put(`/store/admin/products/${product.id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setFeedback({
+        type: "success",
+        text: `Produk berhasil ${nextActive ? "diaktifkan" : "dinonaktifkan"}.`,
+      });
+      await Promise.all([fetchProducts(), fetchAnalytics()]);
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        text: error.response?.data?.message || `Gagal ${actionLabel.toLowerCase()} produk.`,
+      });
+    }
+  };
+
+  const handleDeleteProduct = async (product) => {
+    const confirmed = window.confirm(
+      `Hapus permanen produk "${product.name}"? Tindakan ini tidak bisa dibatalkan.`,
+    );
     if (!confirmed) return;
 
     setFeedback({ type: "", text: "" });
     try {
       await api.delete(`/store/admin/products/${product.id}`);
-      setFeedback({ type: "success", text: "Produk berhasil dinonaktifkan." });
+      setFeedback({ type: "success", text: "Produk berhasil dihapus permanen." });
       await Promise.all([fetchProducts(), fetchAnalytics()]);
     } catch (error) {
       setFeedback({
         type: "error",
-        text: error.response?.data?.message || "Gagal menonaktifkan produk.",
+        text: error.response?.data?.message || "Gagal menghapus produk.",
       });
     }
   };
@@ -1215,10 +1244,21 @@ function ManageStorePage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDeactivateProduct(product)}
-                      className="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600"
+                      onClick={() => handleToggleProductStatus(product, !product.isActive)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition ${
+                        product.isActive
+                          ? "bg-rose-500 hover:bg-rose-600"
+                          : "bg-emerald-600 hover:bg-emerald-700"
+                      }`}
                     >
-                      Nonaktifkan
+                      {product.isActive ? "Nonaktifkan" : "Aktifkan"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteProduct(product)}
+                      className="rounded-lg bg-brand-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-950"
+                    >
+                      Hapus
                     </button>
                   </div>
                 </div>
