@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -55,6 +55,7 @@ function CartPage() {
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutInfo, setCheckoutInfo] = useState("");
   const [latestOrderCode, setLatestOrderCode] = useState("");
+  const [checkoutFieldErrors, setCheckoutFieldErrors] = useState({});
   const [checkoutForm, setCheckoutForm] = useState({
     name: "",
     phone: "",
@@ -63,6 +64,9 @@ function CartPage() {
     paymentMethod: "Transfer Bank",
     notes: "",
   });
+  const nameInputRef = useRef(null);
+  const phoneInputRef = useRef(null);
+  const addressInputRef = useRef(null);
 
   // Load cart from localStorage
   useEffect(() => {
@@ -174,27 +178,46 @@ function CartPage() {
   const handleCheckoutField = (field, value) => {
     setCheckoutForm((prev) => ({ ...prev, [field]: value }));
     setCheckoutError("");
+    setCheckoutFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
 
   // Process checkout
   const proceedCheckout = async () => {
     if (selectedItemsList.length === 0) {
       setCheckoutError("Pilih minimal 1 produk untuk checkout");
+      setCheckoutFieldErrors({});
       scrollToCheckout();
       return;
     }
+
+    const nextErrors = {};
     if (!checkoutForm.name.trim()) {
-      setCheckoutError("Nama lengkap wajib diisi");
-      scrollToCheckout();
-      return;
+      nextErrors.name = "Nama lengkap wajib diisi";
     }
     if (!checkoutForm.phone.trim()) {
-      setCheckoutError("No. WhatsApp wajib diisi");
-      scrollToCheckout();
-      return;
+      nextErrors.phone = "No. WhatsApp wajib diisi";
     }
     if (!checkoutForm.address.trim()) {
-      setCheckoutError("Alamat wajib diisi");
+      nextErrors.address = "Alamat wajib diisi";
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setCheckoutFieldErrors(nextErrors);
+      const firstErrorKey = ["name", "phone", "address"].find(
+        (key) => nextErrors[key],
+      );
+      if (firstErrorKey === "name") {
+        nameInputRef.current?.focus();
+      } else if (firstErrorKey === "phone") {
+        phoneInputRef.current?.focus();
+      } else if (firstErrorKey === "address") {
+        addressInputRef.current?.focus();
+      }
+      setCheckoutError(nextErrors[firstErrorKey] || "Lengkapi data checkout");
       scrollToCheckout();
       return;
     }
@@ -204,6 +227,7 @@ function CartPage() {
     );
     if (hasInvalidProduct) {
       setCheckoutError("Ada item lama/tidak valid di keranjang. Hapus lalu tambah ulang produk.");
+      setCheckoutFieldErrors({});
       scrollToCheckout();
       return;
     }
@@ -505,23 +529,44 @@ function CartPage() {
               <input
                 type="text"
                 placeholder="Nama lengkap"
-                className="input-modern"
+                ref={nameInputRef}
+                className={`input-modern ${checkoutFieldErrors.name ? "input-error" : ""}`}
                 value={checkoutForm.name}
                 onChange={(e) => handleCheckoutField("name", e.target.value)}
+                aria-invalid={Boolean(checkoutFieldErrors.name)}
               />
+              {checkoutFieldErrors.name && (
+                <p className="text-[11px] font-semibold text-rose-500">
+                  {checkoutFieldErrors.name}
+                </p>
+              )}
               <input
                 type="tel"
                 placeholder="No. WhatsApp"
-                className="input-modern"
+                ref={phoneInputRef}
+                className={`input-modern ${checkoutFieldErrors.phone ? "input-error" : ""}`}
                 value={checkoutForm.phone}
                 onChange={(e) => handleCheckoutField("phone", e.target.value)}
+                aria-invalid={Boolean(checkoutFieldErrors.phone)}
               />
+              {checkoutFieldErrors.phone && (
+                <p className="text-[11px] font-semibold text-rose-500">
+                  {checkoutFieldErrors.phone}
+                </p>
+              )}
               <textarea
                 placeholder="Alamat lengkap pengiriman"
-                className="input-modern min-h-[80px] resize-y"
+                ref={addressInputRef}
+                className={`input-modern min-h-[80px] resize-y ${checkoutFieldErrors.address ? "input-error" : ""}`}
                 value={checkoutForm.address}
                 onChange={(e) => handleCheckoutField("address", e.target.value)}
+                aria-invalid={Boolean(checkoutFieldErrors.address)}
               />
+              {checkoutFieldErrors.address && (
+                <p className="text-[11px] font-semibold text-rose-500">
+                  {checkoutFieldErrors.address}
+                </p>
+              )}
               <select
                 className="input-modern"
                 value={checkoutForm.shippingMethod}

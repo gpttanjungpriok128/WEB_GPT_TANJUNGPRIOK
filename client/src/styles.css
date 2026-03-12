@@ -1355,6 +1355,37 @@ html {
   max-width: 100%;
 }
 
+/* ─── Skeleton Loading ─── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(219, 233, 225, 0.6) 0%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(219, 233, 225, 0.6) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(20, 28, 25, 0.8) 0%,
+    rgba(34, 48, 41, 0.9) 50%,
+    rgba(20, 28, 25, 0.8) 100%
+  );
+}
+
+.input-error {
+  border-color: rgba(244, 63, 94, 0.6) !important;
+  background: rgba(254, 242, 242, 0.8);
+}
+
+.dark .input-error {
+  border-color: rgba(248, 113, 113, 0.6) !important;
+  background: rgba(88, 28, 35, 0.45);
+}
+
 @media (max-width: 767px) {
   .article-reader-header {
     padding-right: 3.5rem;
@@ -1441,6 +1472,10 @@ html {
     min-height: 70px;
   }
 
+  .shop-grid {
+    gap: 0.75rem;
+  }
+
   .admin-tabs {
     position: sticky;
     top: 0.75rem;
@@ -1458,6 +1493,12 @@ html {
 
   .admin-tabs button {
     min-height: 44px;
+  }
+}
+
+@media (max-width: 360px) {
+  .shop-grid {
+    grid-template-columns: 1fr;
   }
 }
 

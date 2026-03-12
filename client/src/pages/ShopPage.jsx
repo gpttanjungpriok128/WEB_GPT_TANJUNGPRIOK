@@ -606,8 +606,25 @@ function ShopPage() {
         </div>
 
         {isLoadingProducts ? (
-          <div className="flex justify-center py-20">
-            <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
+          <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={`skeleton-${index}`}
+                className="flex flex-col overflow-hidden rounded-2xl border border-brand-200 bg-white shadow-sm dark:border-brand-700 dark:bg-brand-900/40 sm:rounded-3xl"
+              >
+                <div className="aspect-square bg-brand-50/80 p-3 dark:bg-brand-900/60 sm:p-4">
+                  <div className="h-full w-full rounded-2xl skeleton" />
+                </div>
+                <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
+                  <div className="h-3 w-1/2 rounded-full skeleton" />
+                  <div className="h-4 w-4/5 rounded-full skeleton" />
+                  <div className="mt-auto space-y-2">
+                    <div className="h-4 w-2/3 rounded-full skeleton" />
+                    <div className="h-3 w-1/2 rounded-full skeleton" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -640,7 +657,7 @@ function ShopPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+          <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
             {filteredProducts.map((product) => {
               const effectivePrice = Number(
                 product.finalPrice ?? product.basePrice ?? 0,
