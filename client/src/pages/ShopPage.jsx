@@ -94,6 +94,81 @@ const renderStars = (value, className = "text-xs") => {
   ));
 };
 
+const InstagramIcon = ({ className = "h-5 w-5" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.6}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+    <circle cx="12" cy="12" r="4" />
+    <circle cx="17.2" cy="6.8" r="1.2" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+const TikTokIcon = ({ className = "h-5 w-5" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.6}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M14 4v9.5a3.5 3.5 0 1 1-2-3.15V6.5c2 .9 3.5 1.2 5 1.3V5.6c-1.2-.1-2.3-.6-3-1.6Z" />
+  </svg>
+);
+
+const ShopeeIcon = ({ className = "h-5 w-5" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.6}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M6 8h12l-1.2 11H7.2L6 8Z" />
+    <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+  </svg>
+);
+
+const GTSHIRT_SOCIALS = [
+  {
+    key: "instagram",
+    label: "Instagram",
+    handle: "@gtshirtwear",
+    href: "https://www.instagram.com/gtshirtwear?igsh=dzFvM2N4bHFyNTV5&utm_source=qr",
+    accent: "bg-gradient-to-br from-pink-500 via-rose-500 to-amber-400",
+    Icon: InstagramIcon,
+  },
+  {
+    key: "tiktok",
+    label: "TikTok",
+    handle: "@gtshirt3",
+    href: "https://www.tiktok.com/@gtshirt3?_r=1&_t=ZS-94QeyHn8jRc",
+    accent: "bg-neutral-900",
+    Icon: TikTokIcon,
+  },
+  {
+    key: "shopee",
+    label: "Shopee",
+    handle: "GTshirtwear",
+    href: "https://shopee.co.id/gtshirtwear",
+    accent: "bg-orange-500",
+    Icon: ShopeeIcon,
+  },
+];
+
 function getDefaultSize(product) {
   const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
   if (!sizes.length) return "M";
@@ -626,6 +701,38 @@ function ShopPage() {
           >
             Cek Jadwal Ibadah
           </Link>
+        </div>
+
+        <div className="mt-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-500 dark:text-brand-400">
+            Ikuti GTshirtwear
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            {GTSHIRT_SOCIALS.map(({ key, label, handle, href, accent, Icon }) => (
+              <a
+                key={key}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-3 rounded-2xl border border-brand-200 bg-white/70 px-4 py-3 text-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-white dark:border-brand-700 dark:bg-brand-900/40 dark:hover:bg-brand-900/60"
+              >
+                <span className={`flex h-10 w-10 items-center justify-center rounded-full text-white ${accent}`}>
+                  <Icon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    {label}
+                  </p>
+                  <p className="truncate text-sm font-semibold text-brand-900 dark:text-white">
+                    {handle}
+                  </p>
+                </div>
+                <span className="ml-auto text-[11px] font-semibold text-brand-500 dark:text-brand-400">
+                  Buka
+                </span>
+              </a>
+            ))}
+          </div>
         </div>
       </section>
     </div>
