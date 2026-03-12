@@ -578,19 +578,48 @@ function ManageStorePage() {
     }
   };
 
-  const handleDeactivateProduct = async (product) => {
-    const confirmed = window.confirm(`Nonaktifkan produk "${product.name}" dari katalog?`);
+  const handleToggleProductStatus = async (product, nextActive) => {
+    const actionLabel = nextActive ? "Aktifkan" : "Nonaktifkan";
+    const confirmed = window.confirm(
+      `${actionLabel} produk "${product.name}" ${nextActive ? "ke" : "dari"} katalog?`,
+    );
+    if (!confirmed) return;
+
+    setFeedback({ type: "", text: "" });
+    try {
+      const formData = new FormData();
+      formData.append("isActive", String(nextActive));
+      await api.put(`/store/admin/products/${product.id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setFeedback({
+        type: "success",
+        text: `Produk berhasil ${nextActive ? "diaktifkan" : "dinonaktifkan"}.`,
+      });
+      await Promise.all([fetchProducts(), fetchAnalytics()]);
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        text: error.response?.data?.message || `Gagal ${actionLabel.toLowerCase()} produk.`,
+      });
+    }
+  };
+
+  const handleDeleteProduct = async (product) => {
+    const confirmed = window.confirm(
+      `Hapus permanen produk "${product.name}"? Tindakan ini tidak bisa dibatalkan.`,
+    );
     if (!confirmed) return;
 
     setFeedback({ type: "", text: "" });
     try {
       await api.delete(`/store/admin/products/${product.id}`);
-      setFeedback({ type: "success", text: "Produk berhasil dinonaktifkan." });
+      setFeedback({ type: "success", text: "Produk berhasil dihapus permanen." });
       await Promise.all([fetchProducts(), fetchAnalytics()]);
     } catch (error) {
       setFeedback({
         type: "error",
-        text: error.response?.data?.message || "Gagal menonaktifkan produk.",
+        text: error.response?.data?.message || "Gagal menghapus produk.",
       });
     }
   };
@@ -706,7 +735,7 @@ function ManageStorePage() {
 
   return (
     <div className="page-stack admin-shell space-y-6">
-      <section className="glass-card overflow-hidden p-0">
+      <section className="glass-card dense-card overflow-hidden p-0">
         <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
           <div className="p-6 md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
@@ -750,7 +779,7 @@ function ManageStorePage() {
         )}
         {!loadingAnalytics &&
           metricCards.map((item) => (
-            <article key={item.label} className="glass-card p-5">
+            <article key={item.label} className="glass-card dense-card p-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">
                 {item.label}
               </p>
@@ -833,7 +862,7 @@ function ManageStorePage() {
       {/* ── TAB: PRODUK GTSHIRT ──────────────────── */}
       {activeTab === "produk" && (
         <section className="grid gap-6 xl:grid-cols-[1fr_1.1fr]">
-          <article className="glass-card p-6">
+          <article className="glass-card dense-card p-6">
             <h2 className="text-xl font-bold text-brand-900 dark:text-white">
               {editingProductId ? "Edit Produk GTshirt" : "Tambah Produk GTshirt"}
             </h2>
@@ -1100,7 +1129,7 @@ function ManageStorePage() {
           </form>
         </article>
 
-        <article className="glass-card p-6">
+        <article className="glass-card dense-card p-6">
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[200px] flex-1 space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
@@ -1138,7 +1167,7 @@ function ManageStorePage() {
             </button>
           </div>
 
-          <div className="mt-4 max-h-[560px] space-y-3 overflow-auto pr-1">
+          <div className="mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
             {loadingProducts && (
               <div className="flex justify-center py-8">
                 <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -1175,7 +1204,7 @@ function ManageStorePage() {
                           </p>
                         </div>
                         <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${
                             product.isActive
                               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
                               : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
@@ -1215,10 +1244,21 @@ function ManageStorePage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDeactivateProduct(product)}
-                      className="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600"
+                      onClick={() => handleToggleProductStatus(product, !product.isActive)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition ${
+                        product.isActive
+                          ? "bg-rose-500 hover:bg-rose-600"
+                          : "bg-emerald-600 hover:bg-emerald-700"
+                      }`}
                     >
-                      Nonaktifkan
+                      {product.isActive ? "Nonaktifkan" : "Aktifkan"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteProduct(product)}
+                      className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
+                    >
+                      Hapus
                     </button>
                   </div>
                 </div>
@@ -1231,7 +1271,7 @@ function ManageStorePage() {
       {/* ── TAB: PESANAN MASUK ──────────────────── */}
       {activeTab === "pesanan" && (
         <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <article className="glass-card p-6">
+        <article className="glass-card dense-card p-6">
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[220px] flex-1 space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
@@ -1271,13 +1311,13 @@ function ManageStorePage() {
             <button
               type="button"
               onClick={handleClearOrders}
-              className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300"
+              className="rounded-2xl border border-rose-500 bg-rose-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:border-rose-600 hover:bg-rose-700 dark:border-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
             >
               Reset Semua Pesanan
             </button>
           </div>
 
-          <div className="mt-4 max-h-[560px] space-y-3 overflow-auto pr-1">
+          <div className="mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
             {loadingOrders && (
               <div className="flex justify-center py-8">
                 <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -1308,7 +1348,7 @@ function ManageStorePage() {
                         </p>
                       )}
                     </div>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>
+                    <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>
                       {mapOrderStatusLabel(order.status)}
                     </span>
                   </div>
@@ -1348,7 +1388,7 @@ function ManageStorePage() {
           </div>
         </article>
 
-        <article className="glass-card p-6">
+        <article className="glass-card dense-card p-6">
           <h3 className="text-lg font-bold text-brand-900 dark:text-white">
             Top Produk Terlaris
           </h3>
@@ -1402,7 +1442,7 @@ function ManageStorePage() {
       {/* ── TAB: ULASAN PRODUK ──────────────────── */}
       {activeTab === "ulasan" && (
         <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <article className="glass-card p-6">
+          <article className="glass-card dense-card p-6">
             <div className="flex flex-wrap items-end gap-3">
               <div className="min-w-[220px] flex-1 space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
@@ -1440,7 +1480,7 @@ function ManageStorePage() {
               </button>
             </div>
 
-            <div className="mt-4 max-h-[560px] space-y-3 overflow-auto pr-1">
+            <div className="mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
               {loadingReviews && (
                 <div className="flex justify-center py-8">
                   <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -1472,7 +1512,7 @@ function ManageStorePage() {
                         )}
                       </div>
                       <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${reviewStatusBadge(review.isApproved)}`}
+                        className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${reviewStatusBadge(review.isApproved)}`}
                       >
                         {review.isApproved ? "Tayang" : "Menunggu"}
                       </span>
@@ -1504,7 +1544,7 @@ function ManageStorePage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteReview(review.id)}
-                        className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300"
+                        className="rounded-xl border border-rose-500 bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:border-rose-600 hover:bg-rose-700 dark:border-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
                       >
                         Hapus
                       </button>
@@ -1514,7 +1554,7 @@ function ManageStorePage() {
             </div>
           </article>
 
-          <article className="glass-card p-6">
+          <article className="glass-card dense-card p-6">
             <h3 className="text-lg font-bold text-brand-900 dark:text-white">
               Ringkasan Rating
             </h3>
@@ -1548,7 +1588,7 @@ function ManageStorePage() {
       {/* ── TAB: LAPORAN PEMASUKAN ──────────────────── */}
       {activeTab === "laporan" && (
         <section className="grid gap-6">
-          <article className="glass-card p-6">
+          <article className="glass-card dense-card p-6">
             <div className="flex flex-wrap items-end gap-3">
               <div className="min-w-[180px] space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
@@ -1710,7 +1750,7 @@ function ManageStorePage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(row.status)}`}>
+                          <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(row.status)}`}>
                             {mapOrderStatusLabel(row.status)}
                           </span>
                         </td>
@@ -1732,7 +1772,7 @@ function ManageStorePage() {
 
       {/* ── TAB: PENGATURAN ONGKIR ──────────────────── */}
       {activeTab === "ongkir" && (
-        <section className="glass-card p-6">
+        <section className="glass-card dense-card p-6">
           <h2 className="text-xl font-bold text-brand-900 dark:text-white">
             ⚙️ Pengaturan Ongkir
           </h2>
