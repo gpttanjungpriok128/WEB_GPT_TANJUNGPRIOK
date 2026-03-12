@@ -44,6 +44,36 @@ function normalizeCartItem(item = {}) {
   };
 }
 
+function reconcileCartItems(items = [], products = []) {
+  const productMap = new Map(
+    products.map((product) => [Number(product.id), product]),
+  );
+
+  return items.map((item) => {
+    const product = productMap.get(Number(item.productId));
+    if (!product) {
+      return normalizeCartItem({
+        ...item,
+        isActive: false,
+        stockBySize: {},
+        stock: 0,
+      });
+    }
+
+    return normalizeCartItem({
+      ...item,
+      isActive: product.isActive !== false,
+      price: Number(product.finalPrice ?? product.basePrice ?? item.price),
+      image: product.imageUrl ?? item.image,
+      imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls : item.imageUrls,
+      color: product.color ?? item.color,
+      sizes: product.sizes ?? item.sizes,
+      stockBySize: product.stockBySize ?? item.stockBySize,
+      stock: product.stock ?? item.stock,
+    });
+  });
+}
+
 function CartPage() {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState([]);
@@ -55,6 +85,7 @@ function CartPage() {
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutInfo, setCheckoutInfo] = useState("");
   const [latestOrderCode, setLatestOrderCode] = useState("");
+  const [isCatalogSynced, setIsCatalogSynced] = useState(false);
   const [checkoutForm, setCheckoutForm] = useState({
     name: "",
     phone: "",
@@ -79,27 +110,48 @@ function CartPage() {
     }
   }, []);
 
-  // Load shipping cost from store settings (public meta)
+  // Load shipping cost from store settings (public meta) and sync catalog status once
   useEffect(() => {
+    if (isCatalogSynced) return;
     const fetchShippingCost = async () => {
       try {
         const { data } = await api.get("/store/products");
+        const activeProducts = Array.isArray(data?.data) ? data.data : [];
         const cost = Number(data?.meta?.shippingCost);
         if (Number.isFinite(cost) && cost >= 0) {
           setShippingCost(cost);
         }
+        setIsCatalogSynced(true);
+
+        if (cartItems.length > 0) {
+          const updated = reconcileCartItems(cartItems, activeProducts);
+          setCartItems(updated);
+          const activeIndices = updated
+            .map((item, index) => (item.isActive === false ? null : index))
+            .filter((index) => index !== null);
+          setSelectedItems(new Set(activeIndices));
+          window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updated));
+        }
       } catch {
+        setIsCatalogSynced(true);
         // keep default shipping cost
       }
     };
 
     fetchShippingCost();
-  }, []);
+  }, [cartItems, isCatalogSynced]);
 
   // Calculate totals for selected items
   const selectedItemsList = useMemo(() => {
-    return cartItems.filter((_, i) => selectedItems.has(i));
+    return cartItems.filter(
+      (item, i) => selectedItems.has(i) && item.isActive !== false,
+    );
   }, [cartItems, selectedItems]);
+
+  const activeCartCount = useMemo(
+    () => cartItems.filter((item) => item.isActive !== false).length,
+    [cartItems],
+  );
 
   const subtotal = useMemo(() => {
     return selectedItemsList.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -111,6 +163,7 @@ function CartPage() {
 
   // Toggle item selection
   const toggleItemSelect = (index) => {
+    if (cartItems[index]?.isActive === false) return;
     const newSelected = new Set(selectedItems);
     if (newSelected.has(index)) {
       newSelected.delete(index);
@@ -122,15 +175,20 @@ function CartPage() {
 
   // Toggle all items
   const toggleAllItems = () => {
-    if (selectedItems.size === cartItems.length) {
+    const activeIndices = cartItems
+      .map((item, index) => (item.isActive === false ? null : index))
+      .filter((index) => index !== null);
+
+    if (selectedItems.size === activeIndices.length) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(cartItems.map((_, i) => i)));
+      setSelectedItems(new Set(activeIndices));
     }
   };
 
   // Update quantity
   const updateQuantity = (index, newQuantity) => {
+    if (cartItems[index]?.isActive === false) return;
     const qty = clampQuantity(newQuantity, cartItems[index].stock || 99);
     const updated = [...cartItems];
     updated[index].quantity = qty;
@@ -180,6 +238,10 @@ function CartPage() {
   const proceedCheckout = async () => {
     if (selectedItemsList.length === 0) {
       setCheckoutError("Pilih minimal 1 produk untuk checkout");
+      return;
+    }
+    if (selectedItemsList.some((item) => item.isActive === false)) {
+      setCheckoutError("Ada produk nonaktif di keranjang. Hapus produk tersebut untuk lanjut.");
       return;
     }
     if (!checkoutForm.name.trim()) {
@@ -314,12 +376,12 @@ function CartPage() {
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={selectedItems.size === cartItems.length && cartItems.length > 0}
+                  checked={selectedItems.size === activeCartCount && activeCartCount > 0}
                   onChange={toggleAllItems}
                   className="h-5 w-5 rounded border-brand-300 text-primary"
                 />
                 <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">
-                  Pilih Semua ({selectedItems.size}/{cartItems.length})
+                  Pilih Semua ({selectedItems.size}/{activeCartCount})
                 </span>
               </label>
               <button
@@ -341,6 +403,7 @@ function CartPage() {
           {/* Cart Items */}
           <div className="space-y-3">
             {cartItems.map((item, index) => {
+              const isInactive = item.isActive === false;
               const imageCandidates = collectCartImageCandidates(item);
               const activeImageIndex = imageIndexByKey[item.variantKey] || 0;
               const activeImagePath = imageCandidates[activeImageIndex] || "";
@@ -350,7 +413,9 @@ function CartPage() {
               return (
                 <div
                   key={item.variantKey}
-                  className="rounded-2xl border border-brand-200 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-900/50"
+                  className={`rounded-2xl border border-brand-200 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-900/50 ${
+                    isInactive ? "opacity-75" : ""
+                  }`}
                 >
                   <div className="flex gap-4">
                     {/* Checkbox */}
@@ -359,7 +424,8 @@ function CartPage() {
                         type="checkbox"
                         checked={selectedItems.has(index)}
                         onChange={() => toggleItemSelect(index)}
-                        className="h-5 w-5 rounded border-brand-300 text-primary mt-1"
+                        disabled={isInactive}
+                        className="h-5 w-5 rounded border-brand-300 text-primary mt-1 disabled:opacity-50"
                       />
                     </label>
 
@@ -400,6 +466,11 @@ function CartPage() {
                       <h3 className="line-clamp-2 font-semibold text-brand-900 dark:text-white">
                         {item.name}
                       </h3>
+                      {isInactive && (
+                        <span className="mt-1 inline-flex rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
+                          Produk nonaktif
+                        </span>
+                      )}
                       <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
                         Size <span className="font-semibold">{item.size}</span> · {item.color}
                       </p>
@@ -428,7 +499,8 @@ function CartPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQuantity(index, item.quantity - 1)}
-                        className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                        disabled={isInactive}
+                        className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 disabled:opacity-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
                       >
                         −
                       </button>
@@ -436,13 +508,15 @@ function CartPage() {
                         type="number"
                         min="1"
                         max={item.stock || 99}
-                        className="input-modern !w-16 !py-1.5 text-center text-sm"
+                        disabled={isInactive}
+                        className="input-modern !w-16 !py-1.5 text-center text-sm disabled:opacity-50"
                         value={item.quantity}
                         onChange={(e) => updateQuantity(index, e.target.value)}
                       />
                       <button
                         onClick={() => updateQuantity(index, item.quantity + 1)}
-                        className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                        disabled={isInactive}
+                        className="rounded-lg border border-brand-200 px-2 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 disabled:opacity-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
                       >
                         +
                       </button>
