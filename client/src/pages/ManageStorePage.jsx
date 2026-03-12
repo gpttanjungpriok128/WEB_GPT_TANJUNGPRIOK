@@ -205,6 +205,13 @@ function ManageStorePage() {
   const [shippingCost, setShippingCost] = useState(15000);
   const [shippingCostInput, setShippingCostInput] = useState("15000");
   const [savingShipping, setSavingShipping] = useState(false);
+  const [productAccordion, setProductAccordion] = useState({
+    basic: true,
+    media: true,
+    stock: false,
+    promo: false,
+    status: true,
+  });
 
   const fetchProducts = async (overrides = {}) => {
     setLoadingProducts(true);
@@ -733,6 +740,28 @@ function ManageStorePage() {
     }
   };
 
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 640;
+      setProductAccordion((prev) => ({
+        ...prev,
+        basic: true,
+        media: true,
+        stock: !isMobile ? true : prev.stock,
+        promo: !isMobile ? true : prev.promo,
+        status: true,
+      }));
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const toggleAccordion = (key) => {
+    setProductAccordion((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   return (
     <div className="page-stack admin-shell space-y-6">
       <section className="glass-card dense-card overflow-hidden p-0">
@@ -791,10 +820,10 @@ function ManageStorePage() {
       </section>
 
       {/* ── Tab Navigation ──────────────────────── */}
-      <div className="flex gap-2 border-b border-brand-200 dark:border-brand-700">
+      <div className="admin-tabs flex gap-2 border-b border-brand-200 dark:border-brand-700 overflow-x-auto pb-1">
         <button
           onClick={() => setActiveTab("produk")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
             activeTab === "produk"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -807,7 +836,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("pesanan")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
             activeTab === "pesanan"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -820,7 +849,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("ulasan")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
             activeTab === "ulasan"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -833,7 +862,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("laporan")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
             activeTab === "laporan"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -846,7 +875,7 @@ function ManageStorePage() {
         </button>
         <button
           onClick={() => setActiveTab("ongkir")}
-          className={`px-4 py-3 font-semibold transition relative ${
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
             activeTab === "ongkir"
               ? "text-primary"
               : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
@@ -867,266 +896,383 @@ function ManageStorePage() {
               {editingProductId ? "Edit Produk GTshirt" : "Tambah Produk GTshirt"}
             </h2>
 
-            <form onSubmit={handleSaveProduct} className="mt-4 grid gap-4 md:grid-cols-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Nama Produk *
-              </label>
-              <input
-                required
-                className="input-modern"
-                value={productForm.name}
-                onChange={(event) => handleProductFormChange("name", event.target.value)}
-                placeholder="Contoh: Hope in Him Tee"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Slug
-              </label>
-              <input
-                className="input-modern"
-                value={productForm.slug}
-                onChange={(event) => handleProductFormChange("slug", event.target.value)}
-                placeholder="auto dari nama jika kosong"
-              />
-            </div>
-            <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Deskripsi
-              </label>
-              <textarea
-                className="input-modern min-h-[86px] resize-y"
-                value={productForm.description}
-                onChange={(event) => handleProductFormChange("description", event.target.value)}
-                placeholder="Deskripsi produk"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Warna
-              </label>
-              <input
-                className="input-modern"
-                value={productForm.color}
-                onChange={(event) => handleProductFormChange("color", event.target.value)}
-                placeholder="Jet Black"
-              />
-            </div>
-
-            {/* ── Image Upload Section ────────────────── */}
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                📷 Foto Produk * (max 8 file, jpeg/png/webp, maks 2MB per file)
-              </label>
-
-              {/* Drop zone */}
-              <div
-                className="relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50/50 p-4 transition hover:border-primary hover:bg-brand-50 dark:border-brand-600 dark:bg-brand-900/30 dark:hover:border-primary"
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDropFiles}
-              >
-                <svg className="h-8 w-8 text-brand-400 dark:text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
-                </svg>
-                <p className="text-sm text-brand-500 dark:text-brand-400">
-                  <span className="font-semibold text-primary">Klik untuk pilih file</span> atau drag & drop
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={handleFileInputChange}
-                />
-              </div>
-
-              {/* Existing images (saat edit) */}
-              {existingImages.length > 0 && (
-                <div>
-                  <p className="mb-1 text-xs font-medium text-brand-500 dark:text-brand-400">
-                    Gambar saat ini (tidak dikirim ulang jika tidak upload baru):
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {existingImages.map((src, index) => (
-                      <div key={`existing-${index}`} className="group relative">
-                        <img
-                          src={resolveImageUrl(src)}
-                          alt={`Existing ${index + 1}`}
-                          className="h-20 w-20 rounded-xl border border-brand-200 object-cover dark:border-brand-700"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeExistingImage(index)}
-                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white opacity-0 shadow transition group-hover:opacity-100"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
+            <form onSubmit={handleSaveProduct} className="mt-4 space-y-4">
+              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("basic")}
+                  className="flex w-full items-center justify-between gap-3 text-left"
+                  aria-expanded={productAccordion.basic}
+                >
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                      Informasi
+                    </p>
+                    <p className="text-sm font-bold text-brand-900 dark:text-white">
+                      Detail Produk
+                    </p>
                   </div>
-                </div>
-              )}
-
-              {/* New image previews */}
-              {imagePreviews.length > 0 && (
-                <div>
-                  <p className="mb-1 text-xs font-medium text-brand-500 dark:text-brand-400">
-                    Foto baru yang akan diupload:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {imagePreviews.map((src, index) => (
-                      <div key={`new-${index}`} className="group relative">
-                        <img
-                          src={src}
-                          alt={`Preview ${index + 1}`}
-                          className="h-20 w-20 rounded-xl border border-brand-200 object-cover dark:border-brand-700"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeNewImage(index)}
-                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white opacity-0 shadow transition group-hover:opacity-100"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Harga Dasar
-              </label>
-              <input
-                type="number"
-                min="0"
-                className="input-modern"
-                value={productForm.basePrice}
-                onChange={(event) => handleProductFormChange("basePrice", event.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Ukuran (pisahkan koma)
-              </label>
-              <input
-                className="input-modern"
-                value={productForm.sizesText}
-                onChange={(event) => handleProductFormChange("sizesText", event.target.value)}
-                placeholder="S, M, L, XL, XXL"
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                  Stok per Ukuran
-                </label>
-                <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">
-                  Total stok: {productFormTotalStock}
-                </span>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4">
-                {productFormSizes.map((size) => (
-                  <label
-                    key={size}
-                    className="rounded-xl border border-brand-200 bg-white/70 p-2 text-xs dark:border-brand-700 dark:bg-brand-900/45"
-                  >
-                    <span className="mb-1 block font-semibold text-brand-700 dark:text-brand-300">
-                      {size}
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      className="input-modern !py-2 !text-sm"
-                      value={productFormStockBySize[size] ?? 0}
-                      onChange={(event) => handleStockBySizeChange(size, event.target.value)}
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Jenis Promo
-              </label>
-              <select
-                className="input-modern"
-                value={productForm.promoType}
-                onChange={(event) => handleProductFormChange("promoType", event.target.value)}
-              >
-                <option value="none">Tanpa Promo</option>
-                <option value="percentage">Persentase (%)</option>
-                <option value="fixed">Potongan Nominal</option>
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Nilai Promo
-              </label>
-              <input
-                type="number"
-                min="0"
-                className="input-modern"
-                value={productForm.promoValue}
-                onChange={(event) => handleProductFormChange("promoValue", event.target.value)}
-                disabled={productForm.promoType === "none"}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Promo Mulai
-              </label>
-              <input
-                type="datetime-local"
-                className="input-modern"
-                value={productForm.promoStartAt}
-                onChange={(event) => handleProductFormChange("promoStartAt", event.target.value)}
-                disabled={productForm.promoType === "none"}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Promo Selesai
-              </label>
-              <input
-                type="datetime-local"
-                className="input-modern"
-                value={productForm.promoEndAt}
-                onChange={(event) => handleProductFormChange("promoEndAt", event.target.value)}
-                disabled={productForm.promoType === "none"}
-              />
-            </div>
-
-            <label className="md:col-span-2 inline-flex items-center gap-2 text-sm font-medium text-brand-700 dark:text-brand-300">
-              <input
-                type="checkbox"
-                checked={productForm.isActive}
-                onChange={(event) => handleProductFormChange("isActive", event.target.checked)}
-              />
-              Produk aktif ditampilkan di katalog
-            </label>
-
-            <div className="md:col-span-2 flex flex-wrap gap-3">
-              <button type="submit" disabled={savingProduct} className="btn-primary !px-6 !py-2.5 disabled:opacity-60">
-                {savingProduct
-                  ? "Menyimpan..."
-                  : editingProductId
-                    ? "Update Produk"
-                    : "Tambah Produk"}
-              </button>
-              {editingProductId && (
-                <button type="button" onClick={resetProductForm} className="btn-outline !px-6 !py-2.5">
-                  Batal Edit
+                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
+                    {productAccordion.basic ? "−" : "+"}
+                  </span>
                 </button>
-              )}
-            </div>
-          </form>
+                {productAccordion.basic && (
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Nama Produk *
+                      </label>
+                      <input
+                        required
+                        className="input-modern"
+                        value={productForm.name}
+                        onChange={(event) => handleProductFormChange("name", event.target.value)}
+                        placeholder="Contoh: Hope in Him Tee"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Slug
+                      </label>
+                      <input
+                        className="input-modern"
+                        value={productForm.slug}
+                        onChange={(event) => handleProductFormChange("slug", event.target.value)}
+                        placeholder="auto dari nama jika kosong"
+                      />
+                    </div>
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Deskripsi
+                      </label>
+                      <textarea
+                        className="input-modern min-h-[86px] resize-y"
+                        value={productForm.description}
+                        onChange={(event) => handleProductFormChange("description", event.target.value)}
+                        placeholder="Deskripsi produk"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Warna
+                      </label>
+                      <input
+                        className="input-modern"
+                        value={productForm.color}
+                        onChange={(event) => handleProductFormChange("color", event.target.value)}
+                        placeholder="Jet Black"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("media")}
+                  className="flex w-full items-center justify-between gap-3 text-left"
+                  aria-expanded={productAccordion.media}
+                >
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                      Media
+                    </p>
+                    <p className="text-sm font-bold text-brand-900 dark:text-white">
+                      Foto Produk
+                    </p>
+                  </div>
+                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
+                    {productAccordion.media ? "−" : "+"}
+                  </span>
+                </button>
+                {productAccordion.media && (
+                  <div className="mt-4 space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                      📷 Foto Produk * (max 8 file, jpeg/png/webp, maks 2MB per file)
+                    </label>
+
+                    {/* Drop zone */}
+                    <div
+                      className="relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50/50 p-4 transition hover:border-primary hover:bg-brand-50 dark:border-brand-600 dark:bg-brand-900/30 dark:hover:border-primary"
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={handleDropFiles}
+                    >
+                      <svg className="h-8 w-8 text-brand-400 dark:text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+                      </svg>
+                      <p className="text-sm text-brand-500 dark:text-brand-400">
+                        <span className="font-semibold text-primary">Klik untuk pilih file</span> atau drag & drop
+                      </p>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={handleFileInputChange}
+                      />
+                    </div>
+
+                    {/* Existing images (saat edit) */}
+                    {existingImages.length > 0 && (
+                      <div>
+                        <p className="mb-1 text-xs font-medium text-brand-500 dark:text-brand-400">
+                          Gambar saat ini (tidak dikirim ulang jika tidak upload baru):
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {existingImages.map((src, index) => (
+                            <div key={`existing-${index}`} className="group relative">
+                              <img
+                                src={resolveImageUrl(src)}
+                                alt={`Existing ${index + 1}`}
+                                className="h-20 w-20 rounded-xl border border-brand-200 object-cover dark:border-brand-700"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeExistingImage(index)}
+                                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white opacity-0 shadow transition group-hover:opacity-100"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* New image previews */}
+                    {imagePreviews.length > 0 && (
+                      <div>
+                        <p className="mb-1 text-xs font-medium text-brand-500 dark:text-brand-400">
+                          Foto baru yang akan diupload:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {imagePreviews.map((src, index) => (
+                            <div key={`new-${index}`} className="group relative">
+                              <img
+                                src={src}
+                                alt={`Preview ${index + 1}`}
+                                className="h-20 w-20 rounded-xl border border-brand-200 object-cover dark:border-brand-700"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeNewImage(index)}
+                                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white opacity-0 shadow transition group-hover:opacity-100"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("stock")}
+                  className="flex w-full items-center justify-between gap-3 text-left"
+                  aria-expanded={productAccordion.stock}
+                >
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                      Harga & Stok
+                    </p>
+                    <p className="text-sm font-bold text-brand-900 dark:text-white">
+                      Pengaturan Stok
+                    </p>
+                  </div>
+                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
+                    {productAccordion.stock ? "−" : "+"}
+                  </span>
+                </button>
+                {productAccordion.stock && (
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Harga Dasar
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="input-modern"
+                        value={productForm.basePrice}
+                        onChange={(event) => handleProductFormChange("basePrice", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Ukuran (pisahkan koma)
+                      </label>
+                      <input
+                        className="input-modern"
+                        value={productForm.sizesText}
+                        onChange={(event) => handleProductFormChange("sizesText", event.target.value)}
+                        placeholder="S, M, L, XL, XXL"
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                          Stok per Ukuran
+                        </label>
+                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">
+                          Total stok: {productFormTotalStock}
+                        </span>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4">
+                        {productFormSizes.map((size) => (
+                          <label
+                            key={size}
+                            className="rounded-xl border border-brand-200 bg-white/70 p-2 text-xs dark:border-brand-700 dark:bg-brand-900/45"
+                          >
+                            <span className="mb-1 block font-semibold text-brand-700 dark:text-brand-300">
+                              {size}
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              className="input-modern !py-2 !text-sm"
+                              value={productFormStockBySize[size] ?? 0}
+                              onChange={(event) => handleStockBySizeChange(size, event.target.value)}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("promo")}
+                  className="flex w-full items-center justify-between gap-3 text-left"
+                  aria-expanded={productAccordion.promo}
+                >
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                      Promo
+                    </p>
+                    <p className="text-sm font-bold text-brand-900 dark:text-white">
+                      Harga Spesial
+                    </p>
+                  </div>
+                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
+                    {productAccordion.promo ? "−" : "+"}
+                  </span>
+                </button>
+                {productAccordion.promo && (
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Jenis Promo
+                      </label>
+                      <select
+                        className="input-modern"
+                        value={productForm.promoType}
+                        onChange={(event) => handleProductFormChange("promoType", event.target.value)}
+                      >
+                        <option value="none">Tanpa Promo</option>
+                        <option value="percentage">Persentase (%)</option>
+                        <option value="fixed">Potongan Nominal</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Nilai Promo
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="input-modern"
+                        value={productForm.promoValue}
+                        onChange={(event) => handleProductFormChange("promoValue", event.target.value)}
+                        disabled={productForm.promoType === "none"}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Promo Mulai
+                      </label>
+                      <input
+                        type="datetime-local"
+                        className="input-modern"
+                        value={productForm.promoStartAt}
+                        onChange={(event) => handleProductFormChange("promoStartAt", event.target.value)}
+                        disabled={productForm.promoType === "none"}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                        Promo Selesai
+                      </label>
+                      <input
+                        type="datetime-local"
+                        className="input-modern"
+                        value={productForm.promoEndAt}
+                        onChange={(event) => handleProductFormChange("promoEndAt", event.target.value)}
+                        disabled={productForm.promoType === "none"}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
+                <button
+                  type="button"
+                  onClick={() => toggleAccordion("status")}
+                  className="flex w-full items-center justify-between gap-3 text-left"
+                  aria-expanded={productAccordion.status}
+                >
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                      Status
+                    </p>
+                    <p className="text-sm font-bold text-brand-900 dark:text-white">
+                      Simpan Produk
+                    </p>
+                  </div>
+                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
+                    {productAccordion.status ? "−" : "+"}
+                  </span>
+                </button>
+                {productAccordion.status && (
+                  <div className="mt-4 space-y-4">
+                    <label className="inline-flex items-center gap-2 text-sm font-medium text-brand-700 dark:text-brand-300">
+                      <input
+                        type="checkbox"
+                        checked={productForm.isActive}
+                        onChange={(event) => handleProductFormChange("isActive", event.target.checked)}
+                      />
+                      Produk aktif ditampilkan di katalog
+                    </label>
+
+                    <div className="flex flex-wrap gap-3">
+                      <button type="submit" disabled={savingProduct} className="btn-primary !px-6 !py-2.5 disabled:opacity-60">
+                        {savingProduct
+                          ? "Menyimpan..."
+                          : editingProductId
+                            ? "Update Produk"
+                            : "Tambah Produk"}
+                      </button>
+                      {editingProductId && (
+                        <button type="button" onClick={resetProductForm} className="btn-outline !px-6 !py-2.5">
+                          Batal Edit
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </form>
         </article>
 
         <article className="glass-card dense-card p-6">
@@ -1236,7 +1382,7 @@ function ManageStorePage() {
                       Promo aktif: {product.promoLabel}
                     </p>
                   )}
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
                     <button
                       type="button"
                       onClick={() => fillProductForm(product)}
@@ -1263,6 +1409,38 @@ function ManageStorePage() {
                       Hapus
                     </button>
                   </div>
+                  <details className="mt-3 sm:hidden">
+                    <summary className="admin-action-summary min-h-[44px] cursor-pointer rounded-xl border border-brand-200 bg-white/70 px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200">
+                      Aksi Produk
+                    </summary>
+                    <div className="mt-2 grid gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fillProductForm(product)}
+                        className="min-h-[44px] rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleProductStatus(product, !product.isActive)}
+                        className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-semibold text-white transition ${
+                          product.isActive
+                            ? "bg-rose-500 hover:bg-rose-600"
+                            : "bg-emerald-600 hover:bg-emerald-700"
+                        }`}
+                      >
+                        {product.isActive ? "Nonaktifkan" : "Aktifkan"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProduct(product)}
+                        className="min-h-[44px] rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </details>
                 </div>
               ))}
           </div>
