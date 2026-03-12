@@ -742,7 +742,7 @@ function ManageStorePage() {
         </section>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {loadingAnalytics && (
           <div className="col-span-full flex justify-center py-8">
             <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -750,11 +750,11 @@ function ManageStorePage() {
         )}
         {!loadingAnalytics &&
           metricCards.map((item) => (
-            <article key={item.label} className="glass-card p-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">
+            <article key={item.label} className="glass-card p-4 sm:p-5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400 sm:text-xs">
                 {item.label}
               </p>
-              <p className="mt-2 text-2xl font-bold gradient-text">
+              <p className="mt-2 text-xl font-bold gradient-text sm:text-2xl">
                 {item.value}
               </p>
             </article>
