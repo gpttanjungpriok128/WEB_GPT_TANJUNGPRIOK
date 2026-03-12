@@ -93,12 +93,6 @@ function MyOrdersPage() {
               >
                 Belanja Lagi
               </Link>
-              <Link
-                to="/track-order"
-                className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-              >
-                Lacak Pesanan
-              </Link>
             </div>
           </div>
         </section>
@@ -124,9 +118,6 @@ function MyOrdersPage() {
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link to="/shop" className="btn-primary inline-block">
                 Mulai Belanja
-              </Link>
-              <Link to="/track-order" className="btn-outline inline-block">
-                Lacak Pesanan
               </Link>
             </div>
           </section>
