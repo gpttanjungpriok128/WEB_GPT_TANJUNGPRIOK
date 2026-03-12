@@ -1313,7 +1313,7 @@ function ManageStorePage() {
             </button>
           </div>
 
-          <div className="mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
+          <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
             {loadingProducts && (
               <div className="flex justify-center py-8">
                 <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -1497,7 +1497,7 @@ function ManageStorePage() {
             </button>
           </div>
 
-          <div className="mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
+          <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
             {loadingOrders && (
               <div className="flex justify-center py-8">
                 <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -1660,7 +1660,7 @@ function ManageStorePage() {
               </button>
             </div>
 
-            <div className="mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
+            <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
               {loadingReviews && (
                 <div className="flex justify-center py-8">
                   <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -1890,7 +1890,7 @@ function ManageStorePage() {
               ))}
             </div>
 
-            <div className="mt-6 overflow-x-auto rounded-2xl border border-brand-200 dark:border-brand-700">
+            <div className="mt-6 rounded-2xl border border-brand-200 dark:border-brand-700">
               {loadingReport ? (
                 <div className="flex justify-center py-8">
                   <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -1900,50 +1900,85 @@ function ManageStorePage() {
                   Belum ada data pemasukan.
                 </div>
               ) : (
-                <table className="min-w-full text-left text-sm">
-                  <thead className="bg-brand-50 text-xs uppercase tracking-[0.2em] text-brand-500 dark:bg-brand-900/50 dark:text-brand-400">
-                    <tr>
-                      <th className="px-4 py-3">Kode</th>
-                      <th className="px-4 py-3">Tanggal</th>
-                      <th className="px-4 py-3">Pelanggan</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Total</th>
-                      <th className="px-4 py-3">Item</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <>
+                  <div className="sm:hidden space-y-3 p-4">
                     {reportRows.map((row) => (
-                      <tr
+                      <div
                         key={row.id}
-                        className="border-t border-brand-100 text-brand-700 dark:border-brand-800 dark:text-brand-300"
+                        className="rounded-2xl border border-brand-200 bg-white/70 p-4 text-sm dark:border-brand-700 dark:bg-brand-900/45"
                       >
-                        <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
-                          {row.orderCode}
-                        </td>
-                        <td className="px-4 py-3">{formatDateTime(row.createdAt)}</td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-brand-900 dark:text-white">
-                            {row.customerName}
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-brand-900 dark:text-white">
+                              {row.orderCode}
+                            </p>
+                            <p className="text-xs text-brand-500 dark:text-brand-400">
+                              {formatDateTime(row.createdAt)}
+                            </p>
                           </div>
-                          <div className="text-xs text-brand-500 dark:text-brand-400">
-                            {row.customerPhone}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
                           <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(row.status)}`}>
                             {mapOrderStatusLabel(row.status)}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
-                          {formatRupiah(row.totalAmount)}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-brand-500 dark:text-brand-400">
+                        </div>
+                        <div className="mt-2 text-xs text-brand-500 dark:text-brand-400">
+                          {row.customerName} • {row.customerPhone}
+                        </div>
+                        <div className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
+                          Total: {formatRupiah(row.totalAmount)}
+                        </div>
+                        <div className="mt-1 text-xs text-brand-500 dark:text-brand-400">
                           {row.itemsSummary}
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="bg-brand-50 text-xs uppercase tracking-[0.2em] text-brand-500 dark:bg-brand-900/50 dark:text-brand-400">
+                        <tr>
+                          <th className="px-4 py-3">Kode</th>
+                          <th className="px-4 py-3">Tanggal</th>
+                          <th className="px-4 py-3">Pelanggan</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3">Total</th>
+                          <th className="px-4 py-3">Item</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportRows.map((row) => (
+                          <tr
+                            key={row.id}
+                            className="border-t border-brand-100 text-brand-700 dark:border-brand-800 dark:text-brand-300"
+                          >
+                            <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
+                              {row.orderCode}
+                            </td>
+                            <td className="px-4 py-3">{formatDateTime(row.createdAt)}</td>
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-brand-900 dark:text-white">
+                                {row.customerName}
+                              </div>
+                              <div className="text-xs text-brand-500 dark:text-brand-400">
+                                {row.customerPhone}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(row.status)}`}>
+                                {mapOrderStatusLabel(row.status)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
+                              {formatRupiah(row.totalAmount)}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-brand-500 dark:text-brand-400">
+                              {row.itemsSummary}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </article>

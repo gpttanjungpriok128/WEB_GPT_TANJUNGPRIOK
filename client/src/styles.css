@@ -1660,6 +1660,12 @@ html {
   .admin-tabs button {
     min-height: 44px;
   }
+
+  .admin-scroll-panel {
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
 }
 
 @media (max-width: 360px) {
