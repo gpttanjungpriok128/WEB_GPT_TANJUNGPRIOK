@@ -551,7 +551,7 @@ function CartPage() {
             <button
               onClick={proceedCheckout}
               disabled={isSubmittingOrder || selectedItemsList.length === 0}
-              className="hidden sm:inline-flex w-full items-center justify-center bg-primary px-4 py-2.5 rounded-lg text-white font-semibold transition hover:bg-primary/90 disabled:opacity-50"
+              className="checkout-desktop hidden sm:inline-flex w-full items-center justify-center bg-primary px-4 py-2.5 rounded-lg text-white font-semibold transition hover:bg-primary/90 disabled:opacity-50"
             >
               {isSubmittingOrder ? "Processing..." : "Checkout & Konfirmasi WhatsApp"}
             </button>

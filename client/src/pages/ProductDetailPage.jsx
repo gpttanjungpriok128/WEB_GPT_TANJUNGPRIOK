@@ -700,7 +700,7 @@ function ProductDetailPage() {
           )}
 
           {/* Action Buttons */}
-          <div className="hidden sm:flex flex-col gap-3 sm:flex-row">
+          <div className="action-buttons-desktop hidden sm:flex flex-col gap-3 sm:flex-row">
             <button
               onClick={addToCart}
               disabled={selectedSizeStock <= 0}

@@ -1421,3 +1421,14 @@ html {
 .safe-bottom-inset {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ─── Mobile Only Visibility Guards ─── */
+@media (max-width: 639px) {
+  .action-buttons-desktop {
+    display: none !important;
+  }
+
+  .checkout-desktop {
+    display: none !important;
+  }
+}
