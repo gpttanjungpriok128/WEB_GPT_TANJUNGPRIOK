@@ -921,7 +921,7 @@ function ProductDetailPage() {
 
       {/* ── Sticky Mobile CTA ─────────────────────── */}
       <div className="sticky-mobile-bar sm:hidden">
-        <div className="sticky-mobile-surface safe-bottom-inset flex items-center gap-3 p-3">
+        <div className="sticky-mobile-surface flex items-center gap-3 p-3">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
               Harga
