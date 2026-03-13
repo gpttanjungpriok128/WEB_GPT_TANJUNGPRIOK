@@ -41,6 +41,24 @@ const API_BASE =
 const DEFAULT_SIZES = ["S", "M", "L", "XL"];
 const REPORT_FILTERS_KEY = "gpt_tanjungpriok_admin_report_filters_v1";
 
+const normalizeSizeLabel = (value) =>
+  String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+
+const isAboveXL = (value) => {
+  const normalized = normalizeSizeLabel(value);
+  if (!normalized) return false;
+  if (["XXL", "XXXL", "XXXXL"].includes(normalized)) return true;
+  const match = normalized.match(/^(\d+)XL$/);
+  if (match) return Number(match[1]) >= 2;
+  return false;
+};
+
+const filterOutXXL = (sizes = []) =>
+  sizes.filter((size) => normalizeSizeLabel(size) !== "XXL");
+
 function formatRupiah(amount) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -110,10 +128,11 @@ function toLocalDatetimeInput(value) {
 }
 
 function normalizeSizePayload(text) {
-  const parsed = String(text || "")
-    .split(",")
-    .map((item) => item.trim().toUpperCase())
-    .filter(Boolean);
+  const parsed = filterOutXXL(
+    String(text || "")
+      .split(",")
+      .map((item) => item.trim().toUpperCase())
+      .filter(Boolean);
   return parsed.length > 0 ? parsed : [...DEFAULT_SIZES];
 }
 
@@ -436,6 +455,10 @@ function ManageStorePage() {
     () => normalizeSizePayload(productForm.sizesText),
     [productForm.sizesText],
   );
+  const productFormHasPreorderSizes = useMemo(
+    () => productFormSizes.some(isAboveXL),
+    [productFormSizes],
+  );
 
   const productFormStockBySize = useMemo(
     () => normalizeStockBySizeMap(productForm.stockBySize, productFormSizes),
@@ -550,10 +573,13 @@ function ManageStorePage() {
   };
 
   const fillProductForm = (product) => {
-    const sizes = Array.isArray(product.sizes) && product.sizes.length > 0
-      ? product.sizes.map((size) => String(size).toUpperCase())
-      : [...DEFAULT_SIZES];
-    const stockBySize = normalizeStockBySizeMap(product.stockBySize, sizes);
+    const sizes = filterOutXXL(
+      Array.isArray(product.sizes) && product.sizes.length > 0
+        ? product.sizes.map((size) => String(size).toUpperCase())
+        : [...DEFAULT_SIZES],
+    );
+    const safeSizes = sizes.length > 0 ? sizes : [...DEFAULT_SIZES];
+    const stockBySize = normalizeStockBySizeMap(product.stockBySize, safeSizes);
 
     setEditingProductId(product.id);
     setProductForm({
@@ -562,7 +588,7 @@ function ManageStorePage() {
       description: product.description || "",
       color: product.color || "",
       basePrice: product.basePrice || 0,
-      sizesText: sizes.join(", "),
+      sizesText: safeSizes.join(", "),
       stockBySize,
       promoType: product.promoType || "none",
       promoValue: product.promoValue || 0,
@@ -1303,9 +1329,24 @@ function ManageStorePage() {
                         className={`input-modern ${productFieldErrors.sizesText ? "input-error" : ""}`}
                         value={productForm.sizesText}
                         onChange={(event) => handleProductFormChange("sizesText", event.target.value)}
+                        onBlur={() => {
+                          const sanitized = normalizeSizePayload(productForm.sizesText);
+                          setProductForm((previous) => ({
+                            ...previous,
+                            sizesText: sanitized.join(", "),
+                          }));
+                        }}
                         placeholder="S, M, L, XL"
                         aria-invalid={Boolean(productFieldErrors.sizesText)}
                       />
+                      <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                        XXL tidak tersedia. Ukuran di atas XL akan masuk preorder.
+                      </p>
+                      {productFormHasPreorderSizes && (
+                        <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-300">
+                          Ukuran di atas XL terdeteksi — tandai sebagai preorder.
+                        </p>
+                      )}
                       {productFieldErrors.sizesText && (
                         <p className="text-[11px] font-semibold text-rose-500">
                           {productFieldErrors.sizesText}
@@ -1599,12 +1640,17 @@ function ManageStorePage() {
                     <span>Harga: {formatRupiah(product.basePrice)}</span>
                     <span>Final: {formatRupiah(product.finalPrice)}</span>
                     <span>Stok: {product.stock}</span>
-                    <span>Size: {Array.isArray(product.sizes) ? product.sizes.join("/") : "-"}</span>
+                    <span>
+                      Size: {Array.isArray(product.sizes)
+                        ? filterOutXXL(product.sizes).join("/") || "-"
+                        : "-"}
+                    </span>
                     <span>Foto: {Array.isArray(product.imageUrls) ? product.imageUrls.length : 0}</span>
                   </div>
                   {product.stockBySize && (
                     <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
                       Stok per ukuran: {Object.entries(product.stockBySize)
+                        .filter(([size]) => normalizeSizeLabel(size) !== "XXL")
                         .map(([size, qty]) => `${String(size).toUpperCase()}=${Number(qty) || 0}`)
                         .join(" • ")}
                     </p>

@@ -184,8 +184,15 @@ const SORT_LABELS = {
 };
 const PRODUCTS_PER_PAGE = 16;
 
+const normalizeSizeLabel = (value) =>
+  String(value || "")
+    .toUpperCase()
+    .replace(/\s+/g, "");
+
 function getDefaultSize(product) {
-  const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
+  const sizes = Array.isArray(product?.sizes)
+    ? product.sizes.filter((size) => normalizeSizeLabel(size) !== "XXL")
+    : [];
   if (!sizes.length) return "M";
 
   const firstAvailable = sizes.find((size) => getStockForSize(product, size) > 0);
