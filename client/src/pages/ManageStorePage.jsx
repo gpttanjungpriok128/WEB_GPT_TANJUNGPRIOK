@@ -477,6 +477,8 @@ function ManageStorePage() {
   const [lastScannedCode, setLastScannedCode] = useState("");
   const [lastScannedAt, setLastScannedAt] = useState(null);
   const [scanSession, setScanSession] = useState(0);
+  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
   const [bulkStatus, setBulkStatus] = useState("");
   const [orderPage, setOrderPage] = useState(1);
   const [orderMeta, setOrderMeta] = useState({ page: 1, totalPages: 1, total: 0 });
@@ -1106,6 +1108,24 @@ function ManageStorePage() {
     };
   };
 
+  const toggleTorch = async () => {
+    if (!scanStreamRef.current) return;
+    const track = scanStreamRef.current.getVideoTracks?.()[0];
+    if (!track) return;
+    try {
+      const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+      if (!capabilities.torch) {
+        setTorchSupported(false);
+        return;
+      }
+      await track.applyConstraints({ advanced: [{ torch: !torchEnabled }] });
+      setTorchEnabled((prev) => !prev);
+      setTorchSupported(true);
+    } catch {
+      setTorchSupported(false);
+    }
+  };
+
   const printOrderLabel = (order) => {
     if (!order) return;
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -1152,6 +1172,8 @@ function ManageStorePage() {
       qrVideoRef.current.srcObject = null;
     }
     hasScannedRef.current = false;
+    setTorchEnabled(false);
+    setTorchSupported(false);
   };
 
   useEffect(() => {
@@ -1252,6 +1274,9 @@ function ManageStorePage() {
           qrVideoRef.current.srcObject = stream;
           await qrVideoRef.current.play();
         }
+        const track = stream.getVideoTracks?.()[0];
+        const capabilities = track?.getCapabilities ? track.getCapabilities() : {};
+        setTorchSupported(Boolean(capabilities?.torch));
         hasScannedRef.current = false;
         scanIntervalRef.current = window.setInterval(scanFrame, 360);
       } catch (error) {
@@ -2860,6 +2885,14 @@ function ManageStorePage() {
                 className="rounded-xl border border-brand-200 bg-white/80 px-4 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
               >
                 Restart Scanner
+              </button>
+              <button
+                type="button"
+                onClick={toggleTorch}
+                disabled={!torchSupported}
+                className="rounded-xl border border-brand-200 bg-white/80 px-4 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 disabled:opacity-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
+              >
+                {torchEnabled ? "Matikan Flash" : "Nyalakan Flash"}
               </button>
               <button
                 type="button"

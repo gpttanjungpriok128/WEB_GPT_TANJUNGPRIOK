@@ -605,7 +605,6 @@ function CartPage() {
                 onChange={(e) => handleCheckoutField("paymentMethod", e.target.value)}
               >
                 <option>Transfer Bank</option>
-                <option>Flazz</option>
                 <option>QRIS</option>
                 <option>Bayar Tunai di Gereja</option>
               </select>
