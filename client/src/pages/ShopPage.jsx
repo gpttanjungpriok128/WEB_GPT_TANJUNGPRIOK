@@ -297,6 +297,11 @@ function ShopPage() {
     return nextProducts;
   }, [availabilityFilter, products, searchQuery, sortBy]);
 
+  const totalStockAll = useMemo(
+    () => products.reduce((sum, product) => sum + getTotalStock(product), 0),
+    [products],
+  );
+
   const subtotal = useMemo(
     () =>
       cartItems.reduce((total, item) => total + item.price * item.quantity, 0),
@@ -649,12 +654,43 @@ function ShopPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-brand-900 dark:text-white">
-              Produk belum ditemukan
-            </h3>
-            <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">
-              Coba ubah kata kunci pencarian atau filter katalog untuk melihat produk lain yang tersedia.
-            </p>
+            {products.length === 0 ? (
+              <>
+                <h3 className="text-xl font-bold text-brand-900 dark:text-white">
+                  Katalog belum tersedia
+                </h3>
+                <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">
+                  Produk sedang disiapkan. Silakan cek kembali sebentar lagi.
+                </p>
+              </>
+            ) : totalStockAll === 0 && !searchQuery.trim() && availabilityFilter === "all" ? (
+              <>
+                <h3 className="text-xl font-bold text-brand-900 dark:text-white">
+                  Stok sedang habis
+                </h3>
+                <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">
+                  Semua produk sedang kosong. Pantau terus, kami akan restock segera.
+                </p>
+              </>
+            ) : availabilityFilter !== "all" && !searchQuery.trim() ? (
+              <>
+                <h3 className="text-xl font-bold text-brand-900 dark:text-white">
+                  Tidak ada produk sesuai filter
+                </h3>
+                <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">
+                  Coba ubah filter katalog untuk melihat produk lainnya.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl font-bold text-brand-900 dark:text-white">
+                  Produk belum ditemukan
+                </h3>
+                <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">
+                  Coba ubah kata kunci pencarian atau filter katalog untuk melihat produk lain yang tersedia.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">

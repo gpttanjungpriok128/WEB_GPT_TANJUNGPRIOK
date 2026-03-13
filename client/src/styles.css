@@ -1654,6 +1654,7 @@ html {
     border-radius: 1rem;
     background: color-mix(in srgb, #ffffff 92%, #f0fdf6 8%);
     box-shadow: 0 14px 30px rgba(14, 69, 50, 0.12);
+    transition: transform 0.25s ease, opacity 0.25s ease;
   }
 
   .dark .admin-tabs {
@@ -1663,6 +1664,12 @@ html {
 
   .admin-tabs button {
     min-height: 44px;
+  }
+
+  .admin-tabs.admin-tabs-hidden {
+    transform: translateY(-120%);
+    opacity: 0;
+    pointer-events: none;
   }
 
   .admin-scroll-panel {

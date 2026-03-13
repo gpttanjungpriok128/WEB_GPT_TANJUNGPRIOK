@@ -39,6 +39,7 @@ const API_BASE =
   "http://localhost:5000";
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"];
+const REPORT_FILTERS_KEY = "gpt_tanjungpriok_admin_report_filters_v1";
 
 function formatRupiah(amount) {
   return new Intl.NumberFormat("id-ID", {
@@ -180,10 +181,20 @@ function ManageStorePage() {
   const [orderStatusFilter, setOrderStatusFilter] = useState("");
   const [reviewSearch, setReviewSearch] = useState("");
   const [reviewStatusFilter, setReviewStatusFilter] = useState("");
-  const [reportFilters, setReportFilters] = useState({
-    startDate: "",
-    endDate: "",
-    status: "completed",
+  const [reportFilters, setReportFilters] = useState(() => {
+    if (typeof window === "undefined") {
+      return { startDate: "", endDate: "", status: "completed" };
+    }
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(REPORT_FILTERS_KEY) || "{}");
+      return {
+        startDate: stored.startDate || "",
+        endDate: stored.endDate || "",
+        status: stored.status || "completed",
+      };
+    } catch {
+      return { startDate: "", endDate: "", status: "completed" };
+    }
   });
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -196,6 +207,7 @@ function ManageStorePage() {
   const [feedback, setFeedback] = useState({ type: "", text: "" });
   const [activeOrderSheet, setActiveOrderSheet] = useState(null);
   const [productFieldErrors, setProductFieldErrors] = useState({});
+  const [tabHidden, setTabHidden] = useState(false);
 
   // Image upload state
   const [imageFiles, setImageFiles] = useState([]);
@@ -220,6 +232,31 @@ function ManageStorePage() {
     promo: false,
     status: true,
   });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(REPORT_FILTERS_KEY, JSON.stringify(reportFilters));
+    } catch {
+      // ignore
+    }
+  }, [reportFilters]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let lastY = window.scrollY || 0;
+    const onScroll = () => {
+      const currentY = window.scrollY || 0;
+      if (currentY > 120 && currentY > lastY) {
+        setTabHidden(true);
+      } else {
+        setTabHidden(false);
+      }
+      lastY = currentY;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const fetchProducts = async (overrides = {}) => {
     setLoadingProducts(true);
@@ -923,7 +960,7 @@ function ManageStorePage() {
       </section>
 
       {/* ── Tab Navigation ──────────────────────── */}
-      <div className="admin-tabs flex gap-2 border-b border-brand-200 dark:border-brand-700 overflow-x-auto pb-1">
+      <div className={`admin-tabs flex gap-2 border-b border-brand-200 dark:border-brand-700 overflow-x-auto pb-1 ${tabHidden ? "admin-tabs-hidden" : ""}`}>
         <button
           onClick={() => setActiveTab("produk")}
           className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
@@ -1489,8 +1526,27 @@ function ManageStorePage() {
 
           <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
             {loadingProducts && (
-              <div className="flex justify-center py-8">
-                <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={`product-skeleton-${index}`}
+                    className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-14 w-14 rounded-xl skeleton" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-2/3 rounded-full skeleton" />
+                        <div className="h-3 w-1/3 rounded-full skeleton" />
+                      </div>
+                      <div className="h-6 w-16 rounded-full skeleton" />
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <div className="h-3 rounded-full skeleton" />
+                      <div className="h-3 rounded-full skeleton" />
+                      <div className="h-3 rounded-full skeleton" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             {!loadingProducts && products.length === 0 && (
@@ -1673,8 +1729,25 @@ function ManageStorePage() {
 
           <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
             {loadingOrders && (
-              <div className="flex justify-center py-8">
-                <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={`order-skeleton-${index}`}
+                    className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="h-3 w-32 rounded-full skeleton" />
+                        <div className="h-3 w-40 rounded-full skeleton" />
+                      </div>
+                      <div className="h-6 w-20 rounded-full skeleton" />
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="h-3 rounded-full skeleton" />
+                      <div className="h-3 rounded-full skeleton" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             {!loadingOrders && orders.length === 0 && (
@@ -1896,8 +1969,25 @@ function ManageStorePage() {
 
             <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
               {loadingReviews && (
-                <div className="flex justify-center py-8">
-                  <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div
+                      key={`review-skeleton-${index}`}
+                      className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="space-y-2">
+                          <div className="h-3 w-32 rounded-full skeleton" />
+                          <div className="h-3 w-40 rounded-full skeleton" />
+                        </div>
+                        <div className="h-6 w-16 rounded-full skeleton" />
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        <div className="h-3 w-full rounded-full skeleton" />
+                        <div className="h-3 w-5/6 rounded-full skeleton" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
               {!loadingReviews && reviews.length === 0 && (
