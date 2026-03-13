@@ -505,6 +505,10 @@ function ManageStorePage() {
   const imageDropRef = useRef(null);
   const orderListRef = useRef(null);
   const orderRowMeasureRef = useRef(null);
+  const ordersRef = useRef([]);
+  const orderCodeIndexRef = useRef(new Map());
+  const orderCodeCacheRef = useRef(new Map());
+  const recentScanRef = useRef({ code: "", at: 0 });
   const qrVideoRef = useRef(null);
   const qrCanvasRef = useRef(null);
   const scanIntervalRef = useRef(null);
@@ -575,6 +579,7 @@ function ManageStorePage() {
     const page = Math.max(1, Number(overrides.page ?? orderPage) || 1);
     const limit = Math.min(50, Math.max(1, Number(overrides.limit ?? ORDER_PAGE_SIZE) || ORDER_PAGE_SIZE));
     const append = Boolean(overrides.append);
+    const preserve = Boolean(overrides.preserve);
     if (append) {
       setIsLoadingMoreOrders(true);
     } else if (!overrides.silent) {
@@ -590,22 +595,24 @@ function ManageStorePage() {
         },
       });
       const rows = Array.isArray(data?.data) ? data.data : [];
-      const meta = data?.meta || { page, totalPages: 1, total: rows.length };
-      setOrderMeta({
-        page: meta.page ?? page,
-        totalPages: meta.totalPages ?? 1,
-        total: meta.total ?? rows.length,
-      });
-      setOrderPage(page);
-      setOrders((prev) => {
-        if (!append) return rows;
-        const existing = new Set(prev.map((order) => order.id));
-        const merged = [...prev];
-        rows.forEach((order) => {
-          if (!existing.has(order.id)) merged.push(order);
+      if (!preserve) {
+        const meta = data?.meta || { page, totalPages: 1, total: rows.length };
+        setOrderMeta({
+          page: meta.page ?? page,
+          totalPages: meta.totalPages ?? 1,
+          total: meta.total ?? rows.length,
         });
-        return merged;
-      });
+        setOrderPage(page);
+        setOrders((prev) => {
+          if (!append) return rows;
+          const existing = new Set(prev.map((order) => order.id));
+          const merged = [...prev];
+          rows.forEach((order) => {
+            if (!existing.has(order.id)) merged.push(order);
+          });
+          return merged;
+        });
+      }
       return rows;
     } catch (error) {
       if (!overrides.silent) {
@@ -783,6 +790,17 @@ function ManageStorePage() {
       const next = new Set([...previous].filter((id) => available.has(id)));
       return next;
     });
+  }, [orders]);
+
+  useEffect(() => {
+    ordersRef.current = orders;
+    const map = new Map();
+    orders.forEach((order) => {
+      if (order?.orderCode) {
+        map.set(String(order.orderCode).toUpperCase(), order.id);
+      }
+    });
+    orderCodeIndexRef.current = map;
   }, [orders]);
 
   useEffect(() => {
@@ -1126,6 +1144,37 @@ function ManageStorePage() {
     }
   };
 
+  const quickShipOrder = async (orderId, orderCode) => {
+    const snapshot = ordersRef.current || [];
+    const existing = snapshot.find((order) => order.id === orderId);
+    if (existing?.status === "shipping") {
+      setScanStatus(`${orderCode} sudah shipping`);
+      return;
+    }
+    const previousStatus = existing?.status;
+    if (existing) {
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId ? { ...order, status: "shipping" } : order,
+        ),
+      );
+    }
+    try {
+      await api.patch(`/store/admin/orders/${orderId}/status`, { status: "shipping" });
+      setScanStatus(`Status ${orderCode} → shipping`);
+    } catch {
+      if (existing && previousStatus) {
+        setOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, status: previousStatus } : order,
+          ),
+        );
+      }
+      setScanError("Gagal memperbarui status order.");
+      setScanStatus("");
+    }
+  };
+
   const printOrderLabel = (order) => {
     if (!order) return;
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -1226,21 +1275,40 @@ function ManageStorePage() {
         }
 
         if (!rawValue) return;
-        hasScannedRef.current = true;
         const orderCode = extractOrderCodeFromQr(rawValue);
         if (!orderCode) {
           setScanError("QR tidak berisi kode order.");
-          hasScannedRef.current = false;
           return;
         }
         const normalized = orderCode.toUpperCase();
+        const now = Date.now();
+        if (recentScanRef.current.code === normalized && now - recentScanRef.current.at < 1400) {
+          return;
+        }
+        hasScannedRef.current = true;
+        recentScanRef.current = { code: normalized, at: now };
         setLastScannedCode(normalized);
         setLastScannedAt(new Date());
         setScanStatus(`Memproses ${normalized}...`);
         setScanError("");
         playScanBeep();
         triggerHaptic();
-        const rows = await fetchOrders({ search: normalized, silent: true });
+        const localId = orderCodeIndexRef.current.get(normalized) ||
+          orderCodeCacheRef.current.get(normalized);
+        if (localId) {
+          quickShipOrder(localId, normalized);
+          setTimeout(() => {
+            hasScannedRef.current = false;
+          }, 420);
+          return;
+        }
+
+        const rows = await fetchOrders({
+          search: normalized,
+          silent: true,
+          preserve: true,
+          limit: 1,
+        });
         const matched = rows.find((row) => String(row.orderCode || "").toUpperCase() === normalized);
         if (!matched) {
           setScanError("Order tidak ditemukan.");
@@ -1248,11 +1316,11 @@ function ManageStorePage() {
           hasScannedRef.current = false;
           return;
         }
-        await handleOrderStatusChange(matched.id, "shipping", { skipRefresh: true, silent: true });
-        setScanStatus(`Status ${normalized} → shipping`);
+        orderCodeCacheRef.current.set(normalized, matched.id);
+        quickShipOrder(matched.id, normalized);
         setTimeout(() => {
           hasScannedRef.current = false;
-        }, 1200);
+        }, 520);
       } catch (error) {
         setScanError("Gagal membaca QR. Coba ulangi.");
         hasScannedRef.current = false;
