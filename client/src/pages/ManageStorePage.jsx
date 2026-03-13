@@ -319,7 +319,8 @@ function normalizeSizePayload(text) {
     String(text || "")
       .split(",")
       .map((item) => item.trim().toUpperCase())
-      .filter(Boolean);
+      .filter(Boolean),
+  );
   return parsed.length > 0 ? parsed : [...DEFAULT_SIZES];
 }
 
