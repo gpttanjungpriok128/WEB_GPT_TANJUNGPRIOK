@@ -2968,7 +2968,8 @@ function ManageStorePage() {
                     </div>
                   </div>
                 </div>
-                ))}
+              );
+            })}
               </div>
             )}
             {!loadingOrders && orderPage < orderMeta.totalPages && (
