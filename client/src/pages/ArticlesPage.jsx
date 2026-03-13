@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import api from "../services/api";
 import PageHero from "../components/PageHero";
 import heroImage from "../img/hero-articles.jpeg";
+import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 function ArticlesPage() {
   const [articles, setArticles] = useState([]);
@@ -22,13 +22,24 @@ function ArticlesPage() {
 
   useEffect(() => {
     const fetchArticles = async () => {
-      setIsLoading(true);
+      const params = { page, limit: 6, search };
+      const cacheKey = buildCacheKey("/articles", { params });
+      const cached = getCacheSnapshot(cacheKey);
+      if (cached?.data?.data) {
+        setArticles(cached.data.data);
+        setMeta(cached.data.meta || { totalPages: 1 });
+      }
+      setIsLoading(!cached);
       try {
-        const res = await api.get("/articles", {
-          params: { page, limit: 6, search },
+        const { data } = await swrGet("/articles", { params }, {
+          ttlMs: 60 * 1000,
+          onUpdate: (payload) => {
+            setArticles(payload?.data || []);
+            setMeta(payload?.meta || { totalPages: 1 });
+          }
         });
-        setArticles(res.data.data);
-        setMeta(res.data.meta);
+        setArticles(data?.data || []);
+        setMeta(data?.meta || { totalPages: 1 });
       } catch {
         setArticles([]);
       } finally {

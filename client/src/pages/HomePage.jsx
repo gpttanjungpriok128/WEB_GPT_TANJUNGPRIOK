@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import heroImage from "../img/hero-church.png";
+import { swrGet } from "../utils/swrCache";
 
 function HomePage() {
   const { user } = useAuth();
@@ -29,10 +29,28 @@ function HomePage() {
   };
 
   useEffect(() => {
-    api
-      .get("/articles", { params: { limit: 3 } })
-      .then((res) => setFeaturedArticles(res.data.data))
-      .catch(() => setFeaturedArticles([]));
+    let isMounted = true;
+    const params = { limit: 3 };
+
+    swrGet("/articles", { params }, {
+      ttlMs: 60 * 1000,
+      onUpdate: (data) => {
+        if (!isMounted) return;
+        setFeaturedArticles(Array.isArray(data?.data) ? data.data : []);
+      }
+    })
+      .then(({ data }) => {
+        if (!isMounted) return;
+        setFeaturedArticles(Array.isArray(data?.data) ? data.data : []);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setFeaturedArticles([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

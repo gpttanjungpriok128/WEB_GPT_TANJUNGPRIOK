@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import api from "../services/api";
 import PageHero from "../components/PageHero";
 import heroImage from "../img/hero-schedules.jpeg";
+import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 function SchedulesPage() {
   const [items, setItems] = useState([]);
@@ -9,10 +9,20 @@ function SchedulesPage() {
 
   useEffect(() => {
     const fetchSchedules = async () => {
-      setIsLoading(true);
+      const cacheKey = buildCacheKey("/schedules");
+      const cached = getCacheSnapshot(cacheKey);
+      if (cached?.data) {
+        setItems(Array.isArray(cached.data) ? cached.data : []);
+      }
+      setIsLoading(!cached);
       try {
-        const res = await api.get("/schedules");
-        setItems(res.data);
+        const { data } = await swrGet("/schedules", {}, {
+          ttlMs: 5 * 60 * 1000,
+          onUpdate: (payload) => {
+            setItems(Array.isArray(payload) ? payload : []);
+          }
+        });
+        setItems(Array.isArray(data) ? data : []);
       } catch {
         setItems([]);
       } finally {

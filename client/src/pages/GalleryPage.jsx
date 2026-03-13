@@ -3,6 +3,7 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
 import heroImage from "../img/hero-gallery.jpeg";
+import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 function GalleryPage() {
   const { user } = useAuth();
@@ -42,20 +43,36 @@ function GalleryPage() {
   const PHOTO_PAGE_SIZE = 24;
 
   const fetchAlbums = async ({ page = 1, append = false } = {}) => {
+    const params = {
+      page,
+      limit: ALBUM_PAGE_SIZE,
+      search: debouncedSearch || undefined
+    };
+    const cacheKey = buildCacheKey("/galleries", { params });
+    const cached = append ? null : getCacheSnapshot(cacheKey);
+    if (cached?.data?.data && !append) {
+      setAlbums(cached.data.data);
+      setAlbumMeta(cached.data.meta || { page, totalPages: 1, total: cached.data.data.length });
+      setAlbumPage(page);
+    }
     if (append) {
       setIsLoadingMore(true);
     } else {
-      setIsLoading(true);
+      setIsLoading(!cached);
     }
     try {
-      const res = await api.get("/galleries", {
-        params: {
-          page,
-          limit: ALBUM_PAGE_SIZE,
-          search: debouncedSearch || undefined
-        }
+      const { data } = await swrGet("/galleries", { params }, {
+        ttlMs: 60 * 1000,
+        onUpdate: append
+          ? undefined
+          : (payload) => {
+            const nextAlbums = Array.isArray(payload?.data) ? payload.data : [];
+            setAlbums(nextAlbums);
+            setAlbumMeta(payload?.meta || { page, totalPages: 1, total: nextAlbums.length });
+            setAlbumPage(page);
+          }
       });
-      const nextAlbums = Array.isArray(res.data?.data) ? res.data.data : [];
+      const nextAlbums = Array.isArray(data?.data) ? data.data : [];
       setAlbums((prev) => {
         if (!append) return nextAlbums;
         const merged = [...prev, ...nextAlbums];
@@ -65,7 +82,7 @@ function GalleryPage() {
         });
         return Array.from(unique.values());
       });
-      setAlbumMeta(res.data?.meta || { page, totalPages: 1, total: nextAlbums.length });
+      setAlbumMeta(data?.meta || { page, totalPages: 1, total: nextAlbums.length });
       setAlbumPage(page);
     } catch {
       if (!append) {
@@ -134,14 +151,29 @@ function GalleryPage() {
 
   const fetchAlbumPhotos = async ({ title, page = 1, append = false }) => {
     if (!title) return;
-    setIsLoadingAlbumPhotos(true);
+    const params = { page, limit: PHOTO_PAGE_SIZE };
+    const url = `/galleries/album/${encodeURIComponent(title)}`;
+    const cacheKey = buildCacheKey(url, { params });
+    const cached = append ? null : getCacheSnapshot(cacheKey);
+    if (cached?.data?.data && !append) {
+      setAlbumPhotos(cached.data.data);
+      setAlbumPhotosMeta(cached.data.meta || { page, totalPages: 1, total: cached.data.data.length });
+    }
+    setIsLoadingAlbumPhotos(!cached);
     try {
-      const res = await api.get(`/galleries/album/${encodeURIComponent(title)}`, {
-        params: { page, limit: PHOTO_PAGE_SIZE }
+      const { data } = await swrGet(url, { params }, {
+        ttlMs: 60 * 1000,
+        onUpdate: append
+          ? undefined
+          : (payload) => {
+            const nextPhotos = Array.isArray(payload?.data) ? payload.data : [];
+            setAlbumPhotos(nextPhotos);
+            setAlbumPhotosMeta(payload?.meta || { page, totalPages: 1, total: nextPhotos.length });
+          }
       });
-      const nextPhotos = Array.isArray(res.data?.data) ? res.data.data : [];
+      const nextPhotos = Array.isArray(data?.data) ? data.data : [];
       setAlbumPhotos((prev) => (append ? [...prev, ...nextPhotos] : nextPhotos));
-      setAlbumPhotosMeta(res.data?.meta || { page, totalPages: 1, total: nextPhotos.length });
+      setAlbumPhotosMeta(data?.meta || { page, totalPages: 1, total: nextPhotos.length });
     } catch {
       if (!append) {
         setAlbumPhotos([]);

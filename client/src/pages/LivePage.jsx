@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
 import heroImage from "../img/hero-about.jpeg";
+import { buildCacheKey, getCacheSnapshot, setCacheData, swrGet } from "../utils/swrCache";
 
 function LivePage() {
   const { user } = useAuth();
@@ -14,10 +15,23 @@ function LivePage() {
 
   useEffect(() => {
     const fetchLive = async () => {
-      setIsLoading(true);
+      const cacheKey = buildCacheKey("/live-stream");
+      const cached = getCacheSnapshot(cacheKey);
+      if (cached?.data?.youtubeUrl) {
+        setUrl(cached.data.youtubeUrl);
+        setLiveStreamUrl(cached.data.youtubeUrl);
+      }
+      setIsLoading(!cached);
       try {
-        const res = await api.get("/live-stream");
-        const currentUrl = res.data?.youtubeUrl || "";
+        const { data } = await swrGet("/live-stream", {}, {
+          ttlMs: 60 * 1000,
+          onUpdate: (payload) => {
+            const nextUrl = payload?.youtubeUrl || "";
+            setUrl(nextUrl);
+            setLiveStreamUrl(nextUrl);
+          }
+        });
+        const currentUrl = data?.youtubeUrl || "";
         setUrl(currentUrl);
         setLiveStreamUrl(currentUrl);
       } catch {
@@ -67,6 +81,8 @@ function LivePage() {
       await api.put("/live-stream", { youtubeUrl: normalizedUrl });
       setLiveStreamUrl(normalizedUrl);
       setUrl(normalizedUrl);
+      const cacheKey = buildCacheKey("/live-stream");
+      setCacheData(cacheKey, { youtubeUrl: normalizedUrl }, 60 * 1000);
       setMessage({ type: "success", text: "Link live streaming berhasil diperbarui." });
     } catch {
       setMessage({ type: "error", text: "Gagal memperbarui link live streaming." });

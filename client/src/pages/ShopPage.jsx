@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import ShopHero from "../components/ShopHero";
 import worshipSmokeImage from "../img/store/made-to-worship.png";
@@ -8,6 +7,7 @@ import lightJohnImage from "../img/store/you-are-the-light.png";
 import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
 import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
 import { clampQuantity, getStockForSize, getTotalStock } from "../utils/storeStock";
+import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 
@@ -203,6 +203,7 @@ function ShopPage() {
   const [productPage, setProductPage] = useState(1);
   const [productMeta, setProductMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
 
@@ -239,14 +240,36 @@ function ShopPage() {
   }, [products]);
 
   const fetchProducts = async ({ page = 1, append = false } = {}) => {
+    const params = {
+      page,
+      limit: PRODUCTS_PER_PAGE,
+      search: debouncedSearch || undefined
+    };
+    const cacheKey = buildCacheKey("/store/products", { params });
+    const cached = append ? null : getCacheSnapshot(cacheKey);
+    if (cached?.data?.data && !append) {
+      setProducts(cached.data.data);
+      setProductMeta(cached.data.meta || { page, totalPages: 1, total: cached.data.data.length });
+      setProductPage(page);
+    }
     if (append) {
       setIsLoadingMore(true);
     } else {
-      setIsLoadingProducts(true);
+      setIsLoadingProducts(!cached);
     }
     try {
-      const { data } = await api.get("/store/products", {
-        params: { page, limit: PRODUCTS_PER_PAGE }
+      const { data } = await swrGet("/store/products", { params }, {
+        ttlMs: 30 * 1000,
+        onUpdate: append
+          ? undefined
+          : (payload) => {
+            const apiProducts = Array.isArray(payload?.data)
+              ? payload.data.filter((item) => item.isActive !== false)
+              : [];
+            setProducts(apiProducts);
+            setProductMeta(payload?.meta || { page, totalPages: 1, total: apiProducts.length });
+            setProductPage(page);
+          }
       });
       const apiProducts = Array.isArray(data?.data)
         ? data.data.filter((item) => item.isActive !== false)
@@ -267,8 +290,15 @@ function ShopPage() {
   };
 
   useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [searchQuery]);
+
+  useEffect(() => {
     fetchProducts({ page: 1, append: false });
-  }, []);
+  }, [debouncedSearch]);
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
