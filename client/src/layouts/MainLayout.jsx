@@ -118,18 +118,12 @@ function MainLayout({ children }) {
       setMobileMenuOpen(false);
     };
 
-    const closeOnScroll = () => {
-      setMobileMenuOpen(false);
-    };
-
     document.addEventListener("mousedown", closeOnOutsideClick);
     document.addEventListener("touchstart", closeOnOutsideClick);
-    window.addEventListener("scroll", closeOnScroll, { passive: true });
 
     return () => {
       document.removeEventListener("mousedown", closeOnOutsideClick);
       document.removeEventListener("touchstart", closeOnOutsideClick);
-      window.removeEventListener("scroll", closeOnScroll);
     };
   }, [mobileMenuOpen, isAdminSidebarPage]);
 
@@ -335,7 +329,7 @@ function MainLayout({ children }) {
                 mobileMenuOpen ? "max-h-[600px] opacity-100 pb-4" : "max-h-0 opacity-0"
               }`}
             >
-              <div className="space-y-1 rounded-2xl bg-brand-50/80 dark:bg-brand-900/60 p-3 backdrop-blur-sm">
+              <div className="mobile-menu-panel space-y-1 rounded-2xl bg-brand-50/80 dark:bg-brand-900/60 p-3 backdrop-blur-sm">
                 {user && (
                   <div className="mb-2 flex items-center gap-3 rounded-xl border border-brand-200/80 bg-white/70 px-3 py-2.5 dark:border-brand-700 dark:bg-brand-900/50">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-300 bg-brand-100 text-sm font-semibold text-brand-800 dark:border-brand-600 dark:bg-brand-800 dark:text-brand-200">

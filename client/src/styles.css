@@ -139,17 +139,19 @@ html {
   transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.glass-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 20px 40px rgba(14, 69, 50, 0.08),
-    0 0 0 1px rgba(20, 132, 88, 0.1);
-}
+@media (hover: hover) {
+  .glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 20px 40px rgba(14, 69, 50, 0.08),
+      0 0 0 1px rgba(20, 132, 88, 0.1);
+  }
 
-.dark .glass-card:hover {
-  box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(20, 132, 88, 0.15);
+  .dark .glass-card:hover {
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(20, 132, 88, 0.15);
+  }
 }
 
 /* ─── Dense Card (reduce blur & shadow for busy pages) ─── */
@@ -766,6 +768,13 @@ html {
   padding-right: 0.95rem;
 }
 
+.mobile-menu-panel {
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .glass-card {
   border: 1px solid color-mix(in srgb, var(--brand-border) 82%, white 18%);
   border-radius: 24px 32px 26px 34px / 28px 24px 34px 26px;
@@ -785,8 +794,10 @@ html {
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-.glass-card:hover {
-  transform: translateY(-5px) rotate(-0.15deg);
+@media (hover: hover) {
+  .glass-card:hover {
+    transform: translateY(-5px) rotate(-0.15deg);
+  }
 }
 
 .btn-primary {
@@ -1049,6 +1060,8 @@ html {
   width: min(84vw, 320px);
   height: 100%;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border-right: 1px solid color-mix(in srgb, var(--brand-border) 82%, white 18%);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(242, 255, 248, 0.9));
