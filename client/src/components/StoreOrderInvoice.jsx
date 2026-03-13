@@ -21,7 +21,14 @@ function formatDateTime(value) {
   });
 }
 
+function buildQrUrl(value, size = 140) {
+  if (!value) return "";
+  const encoded = encodeURIComponent(value);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}`;
+}
+
 function buildInvoiceHtml(order) {
+  const qrUrl = buildQrUrl(order?.orderCode || "", 140);
   const itemsHtml = Array.isArray(order?.items)
     ? order.items.map((item) => `
       <tr>
@@ -60,9 +67,10 @@ function buildInvoiceHtml(order) {
             <div class="brand">GTshirt Invoice</div>
             <div class="muted">Church streetwear order receipt</div>
           </div>
-          <div>
+          <div style="text-align: right;">
             <div><strong>Kode:</strong> ${order.orderCode}</div>
             <div><strong>Tanggal:</strong> ${formatDateTime(order.createdAt)}</div>
+            ${qrUrl ? `<img src="${qrUrl}" alt="QR ${order.orderCode}" style="margin-top:10px;width:110px;height:110px;border:1px solid #e5e7eb;border-radius:8px;" />` : ""}
           </div>
         </div>
         <div class="panel">
@@ -102,6 +110,11 @@ function StoreOrderInvoice({ order }) {
 
   if (!order) return null;
 
+  const qrValue = typeof window !== "undefined" && order.orderCode
+    ? `${window.location.origin}/track-order?orderCode=${encodeURIComponent(order.orderCode)}`
+    : order.orderCode || "";
+  const qrUrl = buildQrUrl(qrValue, 140);
+
   const handlePrintInvoice = () => {
     const printWindow = window.open("", "_blank", "width=980,height=720");
     if (!printWindow) return;
@@ -127,13 +140,23 @@ function StoreOrderInvoice({ order }) {
             Dicetak dari sistem GTshirt
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handlePrintInvoice}
-          className="btn-outline !rounded-xl !px-4 !py-2.5 text-sm"
-        >
-          Print Invoice
-        </button>
+        <div className="flex items-center gap-3">
+          {qrUrl && (
+            <div className="rounded-2xl border border-brand-200 bg-white p-2 shadow-sm dark:border-brand-700 dark:bg-brand-900/40">
+              <img src={qrUrl} alt={`QR ${order.orderCode}`} className="h-20 w-20" />
+              <p className="mt-1 text-[10px] text-brand-500 dark:text-brand-400 text-center">
+                Scan untuk verifikasi
+              </p>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handlePrintInvoice}
+            className="btn-outline !rounded-xl !px-4 !py-2.5 text-sm"
+          >
+            Print Invoice
+          </button>
+        </div>
       </div>
 
       <div className="mt-4 grid gap-3 text-sm text-brand-700 dark:text-brand-300 sm:grid-cols-2">
