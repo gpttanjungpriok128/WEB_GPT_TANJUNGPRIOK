@@ -440,8 +440,11 @@ function ManageStorePage() {
   const [savingProduct, setSavingProduct] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
   const [activeOrderSheet, setActiveOrderSheet] = useState(null);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [scanStatus, setScanStatus] = useState("");
+  const [lastScannedCode, setLastScannedCode] = useState("");
+  const [lastScannedAt, setLastScannedAt] = useState(null);
+  const [scanSession, setScanSession] = useState(0);
   const [productFieldErrors, setProductFieldErrors] = useState({});
   const [tabHidden, setTabHidden] = useState(false);
 
@@ -473,6 +476,7 @@ function ManageStorePage() {
     promo: false,
     status: true,
   });
+  const isScannerActive = activeTab === "scan";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -531,13 +535,16 @@ function ManageStorePage() {
           status: overrides.status ?? orderStatusFilter,
         },
       });
-      setOrders(Array.isArray(data?.data) ? data.data : []);
+      const rows = Array.isArray(data?.data) ? data.data : [];
+      setOrders(rows);
+      return rows;
     } catch (error) {
       setOrders([]);
       setFeedback({
         type: "error",
         text: error.response?.data?.message || "Gagal memuat data order toko.",
       });
+      return [];
     } finally {
       setLoadingOrders(false);
     }
@@ -960,7 +967,7 @@ function ManageStorePage() {
   };
 
   useEffect(() => {
-    if (!isScannerOpen) {
+    if (!isScannerActive) {
       stopScanner();
       return;
     }
@@ -1012,11 +1019,23 @@ function ManageStorePage() {
           return;
         }
         const normalized = orderCode.toUpperCase();
-        setActiveTab("pesanan");
-        setOrderSearch(normalized);
-        fetchOrders({ search: normalized });
-        setIsScannerOpen(false);
+        setLastScannedCode(normalized);
+        setLastScannedAt(new Date());
+        setScanStatus(`Memproses ${normalized}...`);
         setScanError("");
+        const rows = await fetchOrders({ search: normalized });
+        const matched = rows.find((row) => String(row.orderCode || "").toUpperCase() === normalized);
+        if (!matched) {
+          setScanError("Order tidak ditemukan.");
+          setScanStatus("");
+          hasScannedRef.current = false;
+          return;
+        }
+        await handleOrderStatusChange(matched.id, "shipping");
+        setScanStatus(`Status ${normalized} → shipping`);
+        setTimeout(() => {
+          hasScannedRef.current = false;
+        }, 1200);
       } catch (error) {
         setScanError("Gagal membaca QR. Coba ulangi.");
         hasScannedRef.current = false;
@@ -1051,7 +1070,7 @@ function ManageStorePage() {
       cancelled = true;
       stopScanner();
     };
-  }, [isScannerOpen]);
+  }, [isScannerActive, scanSession]);
 
   const toggleOrderSelection = (orderId) => {
     setSelectedOrderIds((previous) => {
@@ -1441,6 +1460,19 @@ function ManageStorePage() {
         >
           📬 Pesanan Masuk
           {activeTab === "pesanan" && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("scan")}
+          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
+            activeTab === "scan"
+              ? "text-primary"
+              : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
+          }`}
+        >
+          📷 Scan Resi
+          {activeTab === "scan" && (
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
           )}
         </button>
@@ -2215,7 +2247,7 @@ function ManageStorePage() {
             <button
               type="button"
               onClick={() => {
-                setIsScannerOpen(true);
+                setActiveTab("scan");
                 setScanError("");
               }}
               className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
@@ -2475,6 +2507,101 @@ function ManageStorePage() {
           </div>
         </article>
       </section>
+      )}
+
+      {/* ── TAB: SCAN RESI ──────────────────── */}
+      {activeTab === "scan" && (
+        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <article className="glass-card dense-card p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+              Scanner Standby
+            </p>
+            <h3 className="mt-2 text-2xl font-bold text-brand-900 dark:text-white">
+              Scan QR Resi
+            </h3>
+            <p className="mt-2 text-sm text-brand-600 dark:text-brand-300">
+              QR akan otomatis menandai pesanan sebagai <strong>shipping</strong> begitu terdeteksi.
+            </p>
+
+            <div className="mt-4 relative overflow-hidden rounded-2xl border border-brand-200 bg-black dark:border-brand-700">
+              <video
+                ref={qrVideoRef}
+                className="h-72 w-full object-cover"
+                muted
+                playsInline
+              />
+              <div className="pointer-events-none absolute inset-6 rounded-2xl border-2 border-emerald-400/70" />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+                Standby: {isScannerActive ? "Aktif" : "Nonaktif"}
+              </span>
+              {scanStatus && (
+                <span className="rounded-full border border-brand-200 bg-white/80 px-2 py-1 font-semibold text-brand-700 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+                  {scanStatus}
+                </span>
+              )}
+            </div>
+            {scanError && (
+              <p className="mt-2 text-xs font-semibold text-rose-500">
+                {scanError}
+              </p>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setScanError("");
+                  setScanStatus("");
+                  setScanSession((prev) => prev + 1);
+                }}
+                className="rounded-xl border border-brand-200 bg-white/80 px-4 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
+              >
+                Restart Scanner
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("pesanan")}
+                className="rounded-xl border border-brand-200 bg-white/80 px-4 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+              >
+                Kembali ke Pesanan
+              </button>
+            </div>
+          </article>
+
+          <article className="glass-card dense-card p-6 space-y-4">
+            <div>
+              <h4 className="text-lg font-bold text-brand-900 dark:text-white">
+                Log Scan Terakhir
+              </h4>
+              <p className="text-sm text-brand-600 dark:text-brand-400">
+                Gunakan tab ini untuk scan cepat tanpa menutup kamera.
+              </p>
+            </div>
+
+            {lastScannedCode ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200">
+                <p className="font-semibold">Order: {lastScannedCode}</p>
+                <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-200/80">
+                  Terakhir scan: {formatDateTime(lastScannedAt)}
+                </p>
+                <p className="mt-2 text-xs">
+                  Status langsung diupdate ke <strong>shipping</strong>.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-brand-200 bg-white/80 p-4 text-sm text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                Belum ada QR yang discan.
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-200">
+              Tips: pastikan cahaya cukup dan kamera fokus agar QR cepat terbaca.
+            </div>
+          </article>
+        </section>
       )}
 
       {/* ── TAB: ULASAN PRODUK ──────────────────── */}
@@ -3067,50 +3194,6 @@ function ManageStorePage() {
         </div>
       )}
 
-      {isScannerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-brand-200 bg-white/95 shadow-2xl dark:border-brand-700 dark:bg-brand-950">
-            <div className="flex items-center justify-between border-b border-brand-200 px-4 py-3 dark:border-brand-700">
-              <div>
-                <p className="text-sm font-semibold text-brand-900 dark:text-white">Scan QR Resi</p>
-                <p className="text-xs text-brand-500 dark:text-brand-400">Arahkan kamera ke QR pada resi</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsScannerOpen(false)}
-                className="rounded-xl border border-brand-200 px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-200 dark:hover:bg-brand-800/40"
-              >
-                Tutup
-              </button>
-            </div>
-            <div className="space-y-3 p-4">
-              <div className="relative overflow-hidden rounded-xl border border-brand-200 bg-black dark:border-brand-700">
-                <video
-                  ref={qrVideoRef}
-                  className="h-64 w-full object-cover"
-                  muted
-                  playsInline
-                />
-                <div className="pointer-events-none absolute inset-4 rounded-xl border-2 border-emerald-400/70" />
-              </div>
-              {scanError ? (
-                <p className="text-xs font-semibold text-rose-500">{scanError}</p>
-              ) : (
-                <p className="text-xs text-brand-500 dark:text-brand-400">
-                  Scanner akan otomatis menangkap QR dan membuka data order.
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={() => setIsScannerOpen(false)}
-                className="w-full rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white"
-              >
-                Kembali
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
