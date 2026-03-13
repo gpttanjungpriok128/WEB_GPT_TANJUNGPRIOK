@@ -195,12 +195,19 @@ function ManageStorePage() {
   const [savingProduct, setSavingProduct] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
   const [activeOrderSheet, setActiveOrderSheet] = useState(null);
+  const [productFieldErrors, setProductFieldErrors] = useState({});
 
   // Image upload state
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
   const fileInputRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const descriptionInputRef = useRef(null);
+  const basePriceInputRef = useRef(null);
+  const sizesInputRef = useRef(null);
+  const imageDropRef = useRef(null);
+  const [dragPreviewIndex, setDragPreviewIndex] = useState(null);
 
   // Shipping cost state
   const [shippingCost, setShippingCost] = useState(15000);
@@ -418,6 +425,12 @@ function ManageStorePage() {
     const newPreviews = fileArray.map((file) => URL.createObjectURL(file));
     setImageFiles((prev) => [...prev, ...fileArray]);
     setImagePreviews((prev) => [...prev, ...newPreviews]);
+    setProductFieldErrors((prev) => {
+      if (!prev.images) return prev;
+      const next = { ...prev };
+      delete next.images;
+      return next;
+    });
   };
 
   const handleFileInputChange = (event) => {
@@ -446,11 +459,57 @@ function ManageStorePage() {
     setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const reorderPreviews = (fromIndex, toIndex) => {
+    setImagePreviews((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+    setImageFiles((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  };
+
+  const handlePreviewDragStart = (index, event) => {
+    setDragPreviewIndex(index);
+    if (event?.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+    }
+  };
+
+  const handlePreviewDragOver = (event) => {
+    event.preventDefault();
+  };
+
+  const handlePreviewDrop = (index) => {
+    if (dragPreviewIndex === null || dragPreviewIndex === index) {
+      setDragPreviewIndex(null);
+      return;
+    }
+    reorderPreviews(dragPreviewIndex, index);
+    setDragPreviewIndex(null);
+  };
+
+  const handlePreviewDragEnd = () => {
+    setDragPreviewIndex(null);
+  };
+
+  const movePreview = (index, direction) => {
+    const target = index + direction;
+    if (target < 0 || target >= imagePreviews.length) return;
+    reorderPreviews(index, target);
+  };
+
   // ── Product form ─────────────────────────────
   const resetProductForm = () => {
     setEditingProductId(null);
     setProductForm(createInitialProductForm());
     clearImages();
+    setProductFieldErrors({});
   };
 
   const fillProductForm = (product) => {
@@ -482,6 +541,7 @@ function ManageStorePage() {
         ? [product.imageUrl]
         : [];
     setExistingImages(urls);
+    setProductFieldErrors({});
   };
 
   const handleProductFormChange = (field, value) => {
@@ -500,6 +560,12 @@ function ManageStorePage() {
         [field]: value,
       };
     });
+    setProductFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
 
   const handleStockBySizeChange = (size, value) => {
@@ -517,15 +583,51 @@ function ManageStorePage() {
 
   const handleSaveProduct = async (event) => {
     event.preventDefault();
-    setSavingProduct(true);
     setFeedback({ type: "", text: "" });
 
     const totalImages = existingImages.length + imageFiles.length;
+    const nextErrors = {};
+    if (!productForm.name.trim()) {
+      nextErrors.name = "Nama produk wajib diisi.";
+    }
+    if (!productForm.description.trim()) {
+      nextErrors.description = "Deskripsi produk wajib diisi.";
+    }
+    if (!productFormSizes.length) {
+      nextErrors.sizesText = "Minimal 1 ukuran harus diisi.";
+    }
+    if (Number(productForm.basePrice) < 0 || Number.isNaN(Number(productForm.basePrice))) {
+      nextErrors.basePrice = "Harga dasar tidak valid.";
+    }
     if (totalImages === 0) {
-      setFeedback({ type: "error", text: "Minimal 1 foto produk wajib diupload." });
-      setSavingProduct(false);
+      nextErrors.images = "Minimal 1 foto produk wajib diupload.";
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setProductFieldErrors(nextErrors);
+      setProductAccordion((prev) => ({
+        ...prev,
+        basic: prev.basic || Boolean(nextErrors.name || nextErrors.description),
+        stock: prev.stock || Boolean(nextErrors.basePrice || nextErrors.sizesText),
+        media: prev.media || Boolean(nextErrors.images),
+      }));
+      const fieldOrder = ["name", "description", "basePrice", "sizesText", "images"];
+      const firstKey = fieldOrder.find((key) => nextErrors[key]);
+      const scrollTarget = {
+        name: nameInputRef,
+        description: descriptionInputRef,
+        basePrice: basePriceInputRef,
+        sizesText: sizesInputRef,
+        images: imageDropRef,
+      }[firstKey];
+      if (scrollTarget?.current) {
+        scrollTarget.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        scrollTarget.current.focus?.();
+      }
+      setFeedback({ type: "error", text: nextErrors[firstKey] || "Lengkapi data produk." });
       return;
     }
+
+    setSavingProduct(true);
 
     const sizes = productFormSizes;
     const stockBySize = normalizeStockBySizeMap(productForm.stockBySize, sizes);
@@ -925,11 +1027,18 @@ function ManageStorePage() {
                       </label>
                       <input
                         required
-                        className="input-modern"
+                        ref={nameInputRef}
+                        className={`input-modern ${productFieldErrors.name ? "input-error" : ""}`}
                         value={productForm.name}
                         onChange={(event) => handleProductFormChange("name", event.target.value)}
                         placeholder="Contoh: Hope in Him Tee"
+                        aria-invalid={Boolean(productFieldErrors.name)}
                       />
+                      {productFieldErrors.name && (
+                        <p className="text-[11px] font-semibold text-rose-500">
+                          {productFieldErrors.name}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
@@ -947,11 +1056,18 @@ function ManageStorePage() {
                         Deskripsi
                       </label>
                       <textarea
-                        className="input-modern min-h-[86px] resize-y"
+                        ref={descriptionInputRef}
+                        className={`input-modern min-h-[86px] resize-y ${productFieldErrors.description ? "input-error" : ""}`}
                         value={productForm.description}
                         onChange={(event) => handleProductFormChange("description", event.target.value)}
                         placeholder="Deskripsi produk"
+                        aria-invalid={Boolean(productFieldErrors.description)}
                       />
+                      {productFieldErrors.description && (
+                        <p className="text-[11px] font-semibold text-rose-500">
+                          {productFieldErrors.description}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
@@ -995,7 +1111,9 @@ function ManageStorePage() {
 
                     {/* Drop zone */}
                     <div
-                      className="relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50/50 p-4 transition hover:border-primary hover:bg-brand-50 dark:border-brand-600 dark:bg-brand-900/30 dark:hover:border-primary"
+                      ref={imageDropRef}
+                      className={`relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50/50 p-4 transition hover:border-primary hover:bg-brand-50 dark:border-brand-600 dark:bg-brand-900/30 dark:hover:border-primary ${productFieldErrors.images ? "input-error" : ""}`}
+                      tabIndex={-1}
                       onClick={() => fileInputRef.current?.click()}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={handleDropFiles}
@@ -1015,6 +1133,11 @@ function ManageStorePage() {
                         onChange={handleFileInputChange}
                       />
                     </div>
+                    {productFieldErrors.images && (
+                      <p className="text-[11px] font-semibold text-rose-500">
+                        {productFieldErrors.images}
+                      </p>
+                    )}
 
                     {/* Existing images (saat edit) */}
                     {existingImages.length > 0 && (
@@ -1028,7 +1151,9 @@ function ManageStorePage() {
                               <img
                                 src={resolveImageUrl(src)}
                                 alt={`Existing ${index + 1}`}
-                                className="h-20 w-20 rounded-xl border border-brand-200 object-cover dark:border-brand-700"
+                                loading="lazy"
+                                decoding="async"
+                                className="h-16 w-16 rounded-xl border border-brand-200 object-cover dark:border-brand-700 sm:h-20 sm:w-20"
                               />
                               <button
                                 type="button"
@@ -1051,11 +1176,24 @@ function ManageStorePage() {
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {imagePreviews.map((src, index) => (
-                            <div key={`new-${index}`} className="group relative">
+                            <div
+                              key={`new-${index}`}
+                              className="group relative"
+                              draggable
+                              onDragStart={(event) => handlePreviewDragStart(index, event)}
+                              onDragOver={handlePreviewDragOver}
+                              onDrop={(event) => {
+                                event.preventDefault();
+                                handlePreviewDrop(index);
+                              }}
+                              onDragEnd={handlePreviewDragEnd}
+                            >
                               <img
                                 src={src}
                                 alt={`Preview ${index + 1}`}
-                                className="h-20 w-20 rounded-xl border border-brand-200 object-cover dark:border-brand-700"
+                                loading="lazy"
+                                decoding="async"
+                                className="h-16 w-16 rounded-xl border border-brand-200 object-cover dark:border-brand-700 sm:h-20 sm:w-20"
                               />
                               <button
                                 type="button"
@@ -1064,6 +1202,10 @@ function ManageStorePage() {
                               >
                                 ✕
                               </button>
+                              <div className="image-reorder-controls sm:hidden">
+                                <button type="button" onClick={() => movePreview(index, -1)}>◀</button>
+                                <button type="button" onClick={() => movePreview(index, 1)}>▶</button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1101,21 +1243,35 @@ function ManageStorePage() {
                       <input
                         type="number"
                         min="0"
-                        className="input-modern"
+                        ref={basePriceInputRef}
+                        className={`input-modern ${productFieldErrors.basePrice ? "input-error" : ""}`}
                         value={productForm.basePrice}
                         onChange={(event) => handleProductFormChange("basePrice", event.target.value)}
+                        aria-invalid={Boolean(productFieldErrors.basePrice)}
                       />
+                      {productFieldErrors.basePrice && (
+                        <p className="text-[11px] font-semibold text-rose-500">
+                          {productFieldErrors.basePrice}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1.5 md:col-span-2">
                       <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                         Ukuran (pisahkan koma)
                       </label>
                       <input
-                        className="input-modern"
+                        ref={sizesInputRef}
+                        className={`input-modern ${productFieldErrors.sizesText ? "input-error" : ""}`}
                         value={productForm.sizesText}
                         onChange={(event) => handleProductFormChange("sizesText", event.target.value)}
                         placeholder="S, M, L, XL, XXL"
+                        aria-invalid={Boolean(productFieldErrors.sizesText)}
                       />
+                      {productFieldErrors.sizesText && (
+                        <p className="text-[11px] font-semibold text-rose-500">
+                          {productFieldErrors.sizesText}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <div className="flex items-center justify-between">
@@ -1532,63 +1688,114 @@ function ManageStorePage() {
                   key={order.id}
                   className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-brand-900 dark:text-white">
-                        {order.orderCode}
-                      </p>
-                      <p className="text-xs text-brand-500 dark:text-brand-400">
-                        {order.customerName} • {order.customerPhone}
-                      </p>
-                      {order.user?.email && (
+                  <div className="sm:hidden">
+                    <details className="admin-order-details">
+                      <summary className="admin-order-summary mobile-summary flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-bold text-brand-900 dark:text-white">
+                            {order.orderCode}
+                          </p>
+                          <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                            {formatDateTime(order.createdAt)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>
+                              {mapOrderStatusLabel(order.status)}
+                            </span>
+                            <p className="mt-1 text-xs font-semibold text-primary">
+                              {formatRupiah(order.totalAmount)}
+                            </p>
+                          </div>
+                          <svg
+                            className="mobile-summary-icon h-5 w-5 text-brand-500 dark:text-brand-300"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={1.6}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
+                          </svg>
+                        </div>
+                      </summary>
+                      <div className="mt-3 space-y-2 text-xs text-brand-600 dark:text-brand-300">
+                        <p>{order.customerName} • {order.customerPhone}</p>
+                        {order.user?.email && (
+                          <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                            Akun: {order.user.email}
+                          </p>
+                        )}
+                        <p>{order.shippingMethod} • {order.paymentMethod}</p>
                         <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                          Akun: {order.user.email}
+                          Potong stok: {order.stockDeductedAt ? `Sudah (${formatDateTime(order.stockDeductedAt)})` : "Belum"}
                         </p>
-                      )}
+                        {Array.isArray(order.items) && order.items.length > 0 && (
+                          <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                            {order.items.length} item • {order.items.map((item) => `${item.productName} (${item.size} x${item.quantity})`).join(", ")}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setActiveOrderSheet(order)}
+                          className="admin-order-action"
+                        >
+                          Ubah Status
+                        </button>
+                      </div>
+                    </details>
+                  </div>
+
+                  <div className="hidden sm:block">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-brand-900 dark:text-white">
+                          {order.orderCode}
+                        </p>
+                        <p className="text-xs text-brand-500 dark:text-brand-400">
+                          {order.customerName} • {order.customerPhone}
+                        </p>
+                        {order.user?.email && (
+                          <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                            Akun: {order.user.email}
+                          </p>
+                        )}
+                      </div>
+                      <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>
+                        {mapOrderStatusLabel(order.status)}
+                      </span>
                     </div>
-                    <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>
-                      {mapOrderStatusLabel(order.status)}
-                    </span>
-                  </div>
 
-                  <div className="mt-2 text-xs text-brand-600 dark:text-brand-300">
-                    {formatDateTime(order.createdAt)} • {order.shippingMethod} • {order.paymentMethod}
-                  </div>
-                  <div className="mt-1 text-xs font-semibold text-primary">
-                    Total: {formatRupiah(order.totalAmount)}
-                  </div>
-                  <div className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">
-                    Potong stok: {order.stockDeductedAt ? `Sudah (${formatDateTime(order.stockDeductedAt)})` : "Belum"}
-                  </div>
-                  {Array.isArray(order.items) && order.items.length > 0 && (
-                    <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                      {order.items.length} item • {order.items.map((item) => `${item.productName} (${item.size} x${item.quantity})`).join(", ")}
-                    </p>
-                  )}
+                    <div className="mt-2 text-xs text-brand-600 dark:text-brand-300">
+                      {formatDateTime(order.createdAt)} • {order.shippingMethod} • {order.paymentMethod}
+                    </div>
+                    <div className="mt-1 text-xs font-semibold text-primary">
+                      Total: {formatRupiah(order.totalAmount)}
+                    </div>
+                    <div className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">
+                      Potong stok: {order.stockDeductedAt ? `Sudah (${formatDateTime(order.stockDeductedAt)})` : "Belum"}
+                    </div>
+                    {Array.isArray(order.items) && order.items.length > 0 && (
+                      <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                        {order.items.length} item • {order.items.map((item) => `${item.productName} (${item.size} x${item.quantity})`).join(", ")}
+                      </p>
+                    )}
 
-                  <div className="mt-3 hidden sm:block">
-                    <select
-                      className="input-modern !py-2 text-xs"
-                      value={order.status}
-                      onChange={(event) =>
-                        handleOrderStatusChange(order.id, event.target.value)
-                      }
-                    >
-                      {ORDER_STATUS_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="mt-3 sm:hidden">
-                    <button
-                      type="button"
-                      onClick={() => setActiveOrderSheet(order)}
-                      className="admin-order-action"
-                    >
-                      Ubah Status
-                    </button>
+                    <div className="mt-3">
+                      <select
+                        className="input-modern !py-2 text-xs"
+                        value={order.status}
+                        onChange={(event) =>
+                          handleOrderStatusChange(order.id, event.target.value)
+                        }
+                      >
+                        {ORDER_STATUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1740,7 +1947,7 @@ function ManageStorePage() {
                       </p>
                     )}
 
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="admin-review-actions mt-4 flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => handleReviewStatusToggle(review.id, !review.isApproved)}
@@ -1794,9 +2001,81 @@ function ManageStorePage() {
 
       {/* ── TAB: LAPORAN PEMASUKAN ──────────────────── */}
       {activeTab === "laporan" && (
-        <section className="grid gap-6">
+        <section className="grid gap-6 pb-24 sm:pb-0">
           <article className="glass-card dense-card p-6">
-            <div className="admin-filter-card flex flex-wrap items-end gap-3">
+            <div className="sm:hidden">
+              <details className="admin-report-filter rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/45">
+                <summary className="mobile-summary flex cursor-pointer items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-brand-900 dark:text-white">
+                    Filter Laporan
+                  </span>
+                  <svg
+                    className="mobile-summary-icon h-5 w-5 text-brand-500 dark:text-brand-300"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.6}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
+                  </svg>
+                </summary>
+                <div className="mt-3 grid gap-3">
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                      Mulai
+                    </span>
+                    <input
+                      type="date"
+                      className="input-modern"
+                      value={reportFilters.startDate}
+                      onChange={(event) =>
+                        setReportFilters((prev) => ({ ...prev, startDate: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                      Sampai
+                    </span>
+                    <input
+                      type="date"
+                      className="input-modern"
+                      value={reportFilters.endDate}
+                      onChange={(event) =>
+                        setReportFilters((prev) => ({ ...prev, endDate: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                      Status
+                    </span>
+                    <select
+                      className="input-modern"
+                      value={reportFilters.status}
+                      onChange={(event) =>
+                        setReportFilters((prev) => ({ ...prev, status: event.target.value }))
+                      }
+                    >
+                      {REPORT_STATUS_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => fetchRevenueReport()}
+                    className="btn-primary !px-6 !py-2.5"
+                  >
+                    Terapkan
+                  </button>
+                </div>
+              </details>
+            </div>
+
+            <div className="admin-filter-card hidden sm:flex flex-wrap items-end gap-3">
               <div className="min-w-[180px] space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                   Mulai
@@ -2007,6 +2286,27 @@ function ManageStorePage() {
                   </div>
                 </>
               )}
+            </div>
+
+            <div className="admin-report-sticky sm:hidden">
+              <div className="admin-report-surface">
+                <button
+                  type="button"
+                  onClick={handleExportReport}
+                  disabled={!reportRows.length}
+                  className="admin-report-btn"
+                >
+                  Export
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSyncReportSheet}
+                  disabled={syncingSheet}
+                  className="admin-report-btn"
+                >
+                  {syncingSheet ? "Syncing..." : "Sync"}
+                </button>
+              </div>
             </div>
           </article>
         </section>

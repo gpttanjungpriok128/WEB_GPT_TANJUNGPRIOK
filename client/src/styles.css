@@ -1730,6 +1730,14 @@ html {
     border-radius: 999px;
   }
 
+  .admin-review-actions {
+    flex-direction: row;
+  }
+
+  .admin-review-actions button {
+    flex: 1;
+  }
+
   .admin-filter-card {
     border-radius: 1.25rem;
     border: 1px solid rgba(213, 245, 227, 0.7);
@@ -1839,6 +1847,26 @@ html {
   color: #d1fae5;
 }
 
+.admin-order-details {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(213, 245, 227, 0.7);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.75rem;
+}
+
+.dark .admin-order-details {
+  border-color: rgba(31, 47, 39, 0.85);
+  background: rgba(7, 10, 9, 0.85);
+}
+
+.admin-order-summary {
+  list-style: none;
+}
+
+.admin-order-summary::-webkit-details-marker {
+  display: none;
+}
+
 .admin-sheet-backdrop {
   position: fixed;
   inset: 0;
@@ -1940,6 +1968,85 @@ html {
 }
 
 .dark .admin-sheet-option {
+  border-color: rgba(45, 80, 65, 0.7);
+  background: rgba(10, 22, 17, 0.8);
+  color: #d1fae5;
+}
+
+/* ─── Image Reorder Controls ─── */
+.image-reorder-controls {
+  position: absolute;
+  left: 50%;
+  bottom: -0.45rem;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.35rem;
+}
+
+.image-reorder-controls button {
+  height: 26px;
+  width: 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 132, 88, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 0.65rem;
+  color: #0f5132;
+  box-shadow: 0 6px 12px rgba(14, 69, 50, 0.12);
+}
+
+.dark .image-reorder-controls button {
+  border-color: rgba(45, 80, 65, 0.6);
+  background: rgba(7, 10, 9, 0.9);
+  color: #d1fae5;
+}
+
+/* ─── Admin Report Sticky Bar ─── */
+.admin-report-sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0.75rem;
+  z-index: 60;
+  padding: 0 1rem;
+  padding-bottom: env(safe-area-inset-bottom);
+  pointer-events: none;
+}
+
+.admin-report-surface {
+  pointer-events: auto;
+  display: flex;
+  gap: 0.75rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(213, 245, 227, 0.7);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.75rem;
+  box-shadow: 0 16px 34px rgba(14, 69, 50, 0.16);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+}
+
+.dark .admin-report-surface {
+  border-color: rgba(31, 47, 39, 0.9);
+  background: rgba(7, 10, 9, 0.92);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.45);
+}
+
+.admin-report-btn {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(20, 132, 88, 0.3);
+  background: rgba(20, 132, 88, 0.12);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f5132;
+}
+
+.admin-report-btn:disabled {
+  opacity: 0.6;
+}
+
+.dark .admin-report-btn {
   border-color: rgba(45, 80, 65, 0.7);
   background: rgba(10, 22, 17, 0.8);
   color: #d1fae5;
