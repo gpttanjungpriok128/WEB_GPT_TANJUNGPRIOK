@@ -2288,28 +2288,28 @@ function ManageStorePage() {
               )}
             </div>
 
-            <div className="admin-report-sticky sm:hidden">
-              <div className="admin-report-surface">
-                <button
-                  type="button"
-                  onClick={handleExportReport}
-                  disabled={!reportRows.length}
-                  className="admin-report-btn"
-                >
-                  Export
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSyncReportSheet}
-                  disabled={syncingSheet}
-                  className="admin-report-btn"
-                >
-                  {syncingSheet ? "Syncing..." : "Sync"}
-                </button>
-              </div>
-            </div>
           </article>
         </section>
+        <div className="admin-report-sticky sm:hidden">
+          <div className="admin-report-surface">
+            <button
+              type="button"
+              onClick={handleExportReport}
+              disabled={!reportRows.length}
+              className="admin-report-btn"
+            >
+              Export
+            </button>
+            <button
+              type="button"
+              onClick={handleSyncReportSheet}
+              disabled={syncingSheet}
+              className="admin-report-btn"
+            >
+              {syncingSheet ? "Syncing..." : "Sync"}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ── TAB: PENGATURAN ONGKIR ──────────────────── */}
