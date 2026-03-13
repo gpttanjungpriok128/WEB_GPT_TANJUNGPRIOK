@@ -2091,7 +2091,8 @@ function ManageStorePage() {
 
       {/* ── TAB: LAPORAN PEMASUKAN ──────────────────── */}
       {activeTab === "laporan" && (
-        <section className="grid gap-6 pb-24 sm:pb-0">
+        <>
+          <section className="grid gap-6 pb-24 sm:pb-0">
           <article className="glass-card dense-card p-6">
             <div className="sm:hidden">
               <details className="admin-report-filter rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/45">
@@ -2379,27 +2380,28 @@ function ManageStorePage() {
             </div>
 
           </article>
-        </section>
-        <div className="admin-report-sticky sm:hidden">
-          <div className="admin-report-surface">
-            <button
-              type="button"
-              onClick={handleExportReport}
-              disabled={!reportRows.length}
-              className="admin-report-btn"
-            >
-              Export
-            </button>
-            <button
-              type="button"
-              onClick={handleSyncReportSheet}
-              disabled={syncingSheet}
-              className="admin-report-btn"
-            >
-              {syncingSheet ? "Syncing..." : "Sync"}
-            </button>
+          </section>
+          <div className="admin-report-sticky sm:hidden">
+            <div className="admin-report-surface">
+              <button
+                type="button"
+                onClick={handleExportReport}
+                disabled={!reportRows.length}
+                className="admin-report-btn"
+              >
+                Export
+              </button>
+              <button
+                type="button"
+                onClick={handleSyncReportSheet}
+                disabled={syncingSheet}
+                className="admin-report-btn"
+              >
+                {syncingSheet ? "Syncing..." : "Sync"}
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* ── TAB: PENGATURAN ONGKIR ──────────────────── */}
