@@ -182,6 +182,7 @@ const SORT_LABELS = {
   stock: "Stok Terbanyak",
   name: "Nama A-Z",
 };
+const PRODUCTS_PER_PAGE = 16;
 
 function getDefaultSize(product) {
   const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
@@ -198,6 +199,9 @@ function ShopPage() {
   const [cartItems, setCartItems] = useState([]);
   const [isCartHydrated, setIsCartHydrated] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [productPage, setProductPage] = useState(1);
+  const [productMeta, setProductMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [searchQuery, setSearchQuery] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
@@ -234,24 +238,36 @@ function ShopPage() {
     });
   }, [products]);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
+  const fetchProducts = async ({ page = 1, append = false } = {}) => {
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
       setIsLoadingProducts(true);
-      try {
-        const { data } = await api.get("/store/products");
-        const apiProducts = Array.isArray(data?.data)
-          ? data.data.filter((item) => item.isActive !== false)
-          : [];
+    }
+    try {
+      const { data } = await api.get("/store/products", {
+        params: { page, limit: PRODUCTS_PER_PAGE }
+      });
+      const apiProducts = Array.isArray(data?.data)
+        ? data.data.filter((item) => item.isActive !== false)
+        : [];
 
-        setProducts(apiProducts);
-      } catch {
+      setProducts((prev) => (append ? [...prev, ...apiProducts] : apiProducts));
+      setProductMeta(data?.meta || { page, totalPages: 1, total: apiProducts.length });
+      setProductPage(page);
+    } catch {
+      if (!append) {
         setProducts([]);
-      } finally {
-        setIsLoadingProducts(false);
+        setProductMeta({ page: 1, totalPages: 1, total: 0 });
       }
-    };
+    } finally {
+      setIsLoadingProducts(false);
+      setIsLoadingMore(false);
+    }
+  };
 
-    fetchProducts();
+  useEffect(() => {
+    fetchProducts({ page: 1, append: false });
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -301,6 +317,7 @@ function ShopPage() {
     () => products.reduce((sum, product) => sum + getTotalStock(product), 0),
     [products],
   );
+  const hasMoreProducts = productPage < productMeta.totalPages;
 
   const subtotal = useMemo(
     () =>
@@ -810,6 +827,18 @@ function ShopPage() {
               );
             })}
           </div>
+          {!isLoadingProducts && filteredProducts.length > 0 && hasMoreProducts && (
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() => fetchProducts({ page: productPage + 1, append: true })}
+                disabled={isLoadingMore}
+                className="btn-outline !px-6 !py-2.5 text-sm disabled:opacity-60"
+              >
+                {isLoadingMore ? "Memuat..." : "Muat Produk Lainnya"}
+              </button>
+            </div>
+          )}
         )}
       </section>
 

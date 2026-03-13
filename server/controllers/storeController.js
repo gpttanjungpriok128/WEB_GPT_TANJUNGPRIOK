@@ -698,10 +698,27 @@ function buildWhatsappMessage(order, items) {
 
 async function getPublicProducts(req, res, next) {
   try {
-    const [products, settings] = await Promise.all([
-      StoreProduct.findAll({
-        where: { isActive: true },
-        order: [['createdAt', 'DESC']]
+    const page = Math.max(1, toInteger(req.query.page, 1));
+    const limit = Math.min(60, Math.max(1, toInteger(req.query.limit, 24)));
+    const offset = (page - 1) * limit;
+    const search = String(req.query.search || '').trim();
+
+    const where = { isActive: true };
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } },
+        { color: { [Op.iLike]: `%${search}%` } },
+        { verse: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const [{ rows: products, count }, settings] = await Promise.all([
+      StoreProduct.findAndCountAll({
+        where,
+        order: [['createdAt', 'DESC']],
+        limit,
+        offset
       }),
       getOrCreateStoreSettings()
     ]);
@@ -719,7 +736,10 @@ async function getPublicProducts(req, res, next) {
     return res.status(200).json({
       data: serializedProducts,
       meta: {
-        total: serializedProducts.length,
+        page,
+        limit,
+        total: count,
+        totalPages: Math.max(1, Math.ceil(count / limit)),
         shippingCost: Number(settings.shippingCost) || DEFAULT_SHIPPING_COST
       }
     });

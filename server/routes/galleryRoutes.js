@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   getGalleries,
+  getGalleryAlbumPhotos,
   createGallery,
   updateGallery,
   deleteGallery
@@ -12,6 +13,7 @@ const { uploadImage } = require('../middleware/uploadMiddleware');
 const router = express.Router();
 
 router.get('/', cacheResponse({ ttlMs: 60 * 1000 }), getGalleries);
+router.get('/album/:title', cacheResponse({ ttlMs: 60 * 1000 }), getGalleryAlbumPhotos);
 router.post(
   '/',
   authenticate,

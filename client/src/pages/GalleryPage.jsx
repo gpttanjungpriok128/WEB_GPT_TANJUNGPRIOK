@@ -6,12 +6,19 @@ import heroImage from "../img/hero-gallery.jpeg";
 
 function GalleryPage() {
   const { user } = useAuth();
-  const [items, setItems] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const [albumMeta, setAlbumMeta] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [albumPage, setAlbumPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedAlbumTitle, setSelectedAlbumTitle] = useState(null);
   const [selectedPhotoId, setSelectedPhotoId] = useState(null);
+  const [albumPhotos, setAlbumPhotos] = useState([]);
+  const [albumPhotosMeta, setAlbumPhotosMeta] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [isLoadingAlbumPhotos, setIsLoadingAlbumPhotos] = useState(false);
 
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadTargetType, setUploadTargetType] = useState("existing");
@@ -31,56 +38,75 @@ function GalleryPage() {
   const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
   const canUpload = ["admin", "multimedia"].includes(user?.role);
   const isAdmin = user?.role === "admin";
+  const ALBUM_PAGE_SIZE = 12;
+  const PHOTO_PAGE_SIZE = 24;
 
-  const fetchGallery = async () => {
-    setIsLoading(true);
+  const fetchAlbums = async ({ page = 1, append = false } = {}) => {
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
     try {
-      const res = await api.get("/galleries");
-      setItems(Array.isArray(res.data) ? res.data : []);
+      const res = await api.get("/galleries", {
+        params: {
+          page,
+          limit: ALBUM_PAGE_SIZE,
+          search: debouncedSearch || undefined
+        }
+      });
+      const nextAlbums = Array.isArray(res.data?.data) ? res.data.data : [];
+      setAlbums((prev) => {
+        if (!append) return nextAlbums;
+        const merged = [...prev, ...nextAlbums];
+        const unique = new Map();
+        merged.forEach((album) => {
+          unique.set(album.title, album);
+        });
+        return Array.from(unique.values());
+      });
+      setAlbumMeta(res.data?.meta || { page, totalPages: 1, total: nextAlbums.length });
+      setAlbumPage(page);
     } catch {
-      setItems([]);
+      if (!append) {
+        setAlbums([]);
+        setAlbumMeta({ page: 1, totalPages: 1, total: 0 });
+      }
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
-  useEffect(() => { fetchGallery(); }, []);
-
-  const groupedAlbums = useMemo(() => {
-    const map = new Map();
-    items.forEach((item) => {
-      const title = String(item.title || "Tanpa Judul").trim() || "Tanpa Judul";
-      if (!map.has(title)) map.set(title, []);
-      map.get(title).push(item);
-    });
-    return Array.from(map.entries())
-      .map(([title, photos]) => {
-        const sortedPhotos = [...photos].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        return { title, photos: sortedPhotos, total: sortedPhotos.length, cover: sortedPhotos[0], updatedAt: sortedPhotos[0]?.createdAt };
-      })
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  }, [items]);
-
-  const filteredAlbums = useMemo(() => {
-    const keyword = searchQuery.trim().toLowerCase();
-    if (!keyword) return groupedAlbums;
-    return groupedAlbums.filter((album) => album.title.toLowerCase().includes(keyword));
-  }, [groupedAlbums, searchQuery]);
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [searchQuery]);
 
   useEffect(() => {
-    if (groupedAlbums.length === 0) {
+    fetchAlbums({ page: 1, append: false });
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    if (albums.length === 0) {
       setUploadTargetType("new");
       setUploadExistingTitle("");
       return;
     }
     if (uploadTargetType === "existing" && !uploadExistingTitle) {
-      setUploadExistingTitle(groupedAlbums[0].title);
+      setUploadExistingTitle(albums[0].title);
     }
-  }, [groupedAlbums, uploadTargetType, uploadExistingTitle]);
+  }, [albums, uploadTargetType, uploadExistingTitle]);
 
   const activeAlbum = useMemo(
-    () => groupedAlbums.find((album) => album.title === selectedAlbumTitle) || null,
-    [groupedAlbums, selectedAlbumTitle],
+    () => {
+      const summary = albums.find((album) => album.title === selectedAlbumTitle) || null;
+      if (!summary) return null;
+      return { ...summary, photos: albumPhotos };
+    },
+    [albums, selectedAlbumTitle, albumPhotos],
   );
 
   const activePhoto = useMemo(() => {
@@ -101,8 +127,48 @@ function GalleryPage() {
     return new Date(value).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
   };
 
-  const openAlbum = (album) => { setSelectedAlbumTitle(album.title); setSelectedPhotoId(album.photos[0]?.id || null); setIsEditing(false); setEditImage(null); setActionMessage({ type: "", text: "" }); };
-  const closeAlbum = () => { setSelectedAlbumTitle(null); setSelectedPhotoId(null); setIsEditing(false); setEditImage(null); setActionMessage({ type: "", text: "" }); };
+  const totalPhotosShown = useMemo(
+    () => albums.reduce((sum, album) => sum + (Number(album.total) || 0), 0),
+    [albums],
+  );
+
+  const fetchAlbumPhotos = async ({ title, page = 1, append = false }) => {
+    if (!title) return;
+    setIsLoadingAlbumPhotos(true);
+    try {
+      const res = await api.get(`/galleries/album/${encodeURIComponent(title)}`, {
+        params: { page, limit: PHOTO_PAGE_SIZE }
+      });
+      const nextPhotos = Array.isArray(res.data?.data) ? res.data.data : [];
+      setAlbumPhotos((prev) => (append ? [...prev, ...nextPhotos] : nextPhotos));
+      setAlbumPhotosMeta(res.data?.meta || { page, totalPages: 1, total: nextPhotos.length });
+    } catch {
+      if (!append) {
+        setAlbumPhotos([]);
+        setAlbumPhotosMeta({ page: 1, totalPages: 1, total: 0 });
+      }
+    } finally {
+      setIsLoadingAlbumPhotos(false);
+    }
+  };
+
+  const openAlbum = (album) => {
+    setSelectedAlbumTitle(album.title);
+    setSelectedPhotoId(null);
+    setIsEditing(false);
+    setEditImage(null);
+    setActionMessage({ type: "", text: "" });
+    fetchAlbumPhotos({ title: album.title, page: 1, append: false });
+  };
+  const closeAlbum = () => {
+    setSelectedAlbumTitle(null);
+    setSelectedPhotoId(null);
+    setIsEditing(false);
+    setEditImage(null);
+    setActionMessage({ type: "", text: "" });
+    setAlbumPhotos([]);
+    setAlbumPhotosMeta({ page: 1, totalPages: 1, total: 0 });
+  };
 
   const uploadGallery = async (event) => {
     event.preventDefault();
@@ -123,7 +189,10 @@ function GalleryPage() {
       setUploadFiles([]);
       setUploadInputKey((v) => v + 1);
       setUploadMessage({ type: "success", text: `${uploadFiles.length} foto berhasil diupload ke album "${effectiveTitle}".` });
-      fetchGallery();
+      fetchAlbums({ page: 1, append: false });
+      if (selectedAlbumTitle && selectedAlbumTitle === effectiveTitle) {
+        fetchAlbumPhotos({ title: effectiveTitle, page: 1, append: false });
+      }
     } catch (error) {
       setUploadMessage({ type: "error", text: error.response?.data?.message || "Gagal upload foto galeri." });
     } finally {
@@ -146,7 +215,8 @@ function GalleryPage() {
       if (editImage) formData.append("image", editImage);
       const res = await api.put(`/galleries/${activePhoto.id}`, formData, { headers: { "Content-Type": "multipart/form-data" } });
       const updated = res.data;
-      setItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      fetchAlbums({ page: 1, append: false });
+      fetchAlbumPhotos({ title: updated.title, page: 1, append: false });
       setSelectedAlbumTitle(updated.title);
       setSelectedPhotoId(updated.id);
       setIsEditing(false);
@@ -170,7 +240,10 @@ function GalleryPage() {
     setActionMessage({ type: "", text: "" });
     try {
       await api.delete(`/galleries/${activePhoto.id}`);
-      setItems((prev) => prev.filter((item) => item.id !== activePhoto.id));
+      fetchAlbums({ page: 1, append: false });
+      if (selectedAlbumTitle) {
+        fetchAlbumPhotos({ title: selectedAlbumTitle, page: 1, append: false });
+      }
       setSelectedPhotoId(nextPhoto ? nextPhoto.id : null);
       setActionMessage({ type: "success", text: "Foto berhasil dihapus." });
     } catch (error) {
@@ -200,9 +273,9 @@ function GalleryPage() {
       {/* Stats */}
       <section className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: "Album", value: groupedAlbums.length },
-          { label: "Total Foto", value: items.length },
-          { label: "Album Ditampilkan", value: filteredAlbums.length },
+          { label: "Total Album", value: albumMeta.total },
+          { label: "Foto Ditampilkan", value: totalPhotosShown },
+          { label: "Album Ditampilkan", value: albums.length },
         ].map((stat, i) => (
           <div key={i} className="glass-card p-5">
             <p className="text-xs uppercase text-brand-500 dark:text-brand-400 font-medium tracking-wider">{stat.label}</p>
@@ -222,7 +295,7 @@ function GalleryPage() {
                   key={type}
                   type="button"
                   onClick={() => setUploadTargetType(type)}
-                  disabled={type === "existing" && groupedAlbums.length === 0}
+                  disabled={type === "existing" && albums.length === 0}
                   className={`rounded-xl px-5 py-2 text-sm font-medium transition-all ${
                     uploadTargetType === type
                       ? "bg-primary text-white shadow-sm"
@@ -233,7 +306,7 @@ function GalleryPage() {
                 </button>
               ))}
             </div>
-            {groupedAlbums.length === 0 && (
+            {albums.length === 0 && (
               <p className="text-sm text-brand-600 dark:text-brand-400">Belum ada album existing. Silakan buat album baru terlebih dahulu.</p>
             )}
             {uploadTargetType === "existing" ? (
@@ -244,7 +317,7 @@ function GalleryPage() {
                 required
               >
                 <option value="">Pilih album</option>
-                {groupedAlbums.map((album) => (
+                {albums.map((album) => (
                   <option key={album.title} value={album.title}>{album.title} ({album.total} foto)</option>
                 ))}
               </select>
@@ -285,9 +358,9 @@ function GalleryPage() {
       )}
 
       {/* Album Grid */}
-      {!isLoading && filteredAlbums.length > 0 && (
+      {!isLoading && albums.length > 0 && (
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {filteredAlbums.map((album) => (
+          {albums.map((album) => (
             <button
               key={album.title}
               type="button"
@@ -320,8 +393,21 @@ function GalleryPage() {
         </div>
       )}
 
+      {!isLoading && albums.length > 0 && albumPage < albumMeta.totalPages && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => fetchAlbums({ page: albumPage + 1, append: true })}
+            disabled={isLoadingMore}
+            className="btn-outline !px-6 !py-2.5 text-sm disabled:opacity-60"
+          >
+            {isLoadingMore ? "Memuat..." : "Muat Album Lainnya"}
+          </button>
+        </div>
+      )}
+
       {/* No Albums */}
-      {!isLoading && filteredAlbums.length === 0 && (
+      {!isLoading && albums.length === 0 && (
         <div className="glass-card py-14 text-center">
           <div className="mb-3 text-5xl">📸</div>
           <p className="text-brand-600 dark:text-brand-400">Album galeri belum tersedia.</p>
@@ -329,7 +415,7 @@ function GalleryPage() {
       )}
 
       {/* Album Modal */}
-      {activeAlbum && activePhoto && (
+      {activeAlbum && (
         <div className="modal-overlay" onClick={closeAlbum}>
           <div className="modal-content mx-4 flex h-full max-h-[92vh] w-full max-w-6xl flex-col rounded-2xl bg-white dark:bg-brand-950 border border-brand-200 dark:border-brand-700 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-brand-200 dark:border-brand-700 p-4">
@@ -344,19 +430,25 @@ function GalleryPage() {
 
             <div className="grid flex-1 gap-4 overflow-hidden p-4 lg:grid-cols-3">
               <div className="space-y-4 lg:col-span-2 overflow-y-auto">
-                <div className="aspect-video overflow-hidden rounded-xl bg-black">
-                  <img
-                    src={`${serverUrl}${activePhoto.image}`}
-                    alt={activePhoto.title}
-                    loading="eager"
-                    decoding="async"
-                    className="h-full w-full object-contain"
-                  />
+                <div className="aspect-video overflow-hidden rounded-xl bg-black flex items-center justify-center">
+                  {isLoadingAlbumPhotos ? (
+                    <div className="h-10 w-10 rounded-full border-[3px] border-white/40 border-t-white animate-spin" />
+                  ) : activePhoto ? (
+                    <img
+                      src={`${serverUrl}${activePhoto.image}`}
+                      alt={activePhoto.title}
+                      loading="eager"
+                      decoding="async"
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <p className="text-sm text-white/70">Belum ada foto.</p>
+                  )}
                 </div>
                 <div className="glass-card p-4">
                   <p className="text-xs uppercase text-brand-500 dark:text-brand-400 font-medium tracking-wider">Judul Foto</p>
-                  <p className="mt-1 font-semibold text-brand-800 dark:text-white">{activePhoto.title}</p>
-                  <p className="mt-1 text-sm text-brand-600 dark:text-brand-400">Uploaded: {formatDate(activePhoto.createdAt)}</p>
+                  <p className="mt-1 font-semibold text-brand-800 dark:text-white">{activePhoto?.title || "-"}</p>
+                  <p className="mt-1 text-sm text-brand-600 dark:text-brand-400">Uploaded: {formatDate(activePhoto?.createdAt)}</p>
                 </div>
 
                 {isAdmin && (
@@ -388,28 +480,48 @@ function GalleryPage() {
 
               <div className="overflow-y-auto rounded-xl border border-brand-200 dark:border-brand-700 p-3">
                 <p className="mb-3 text-sm font-semibold text-brand-600 dark:text-brand-400">Daftar Foto Album</p>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-2">
-                  {activeAlbum.photos.map((photo) => (
+                {isLoadingAlbumPhotos ? (
+                  <div className="flex justify-center py-6">
+                    <div className="h-8 w-8 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
+                  </div>
+                ) : activeAlbum.photos.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-2">
+                    {activeAlbum.photos.map((photo) => (
+                      <button
+                        key={photo.id}
+                        type="button"
+                        onClick={() => { setSelectedPhotoId(photo.id); setIsEditing(false); setEditImage(null); setActionMessage({ type: "", text: "" }); }}
+                        className={`overflow-hidden rounded-xl border-2 transition-all ${
+                          photo.id === activePhoto?.id
+                            ? "border-primary ring-2 ring-primary/20 shadow-glow"
+                            : "border-brand-200 dark:border-brand-700 hover:border-primary/50"
+                        }`}
+                      >
+                        <img
+                          src={`${serverUrl}${photo.image}`}
+                          alt={photo.title}
+                          loading="lazy"
+                          decoding="async"
+                          className="aspect-square h-full w-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-brand-500 dark:text-brand-400">Belum ada foto di album ini.</p>
+                )}
+
+                {!isLoadingAlbumPhotos && activeAlbum.photos.length > 0 && albumPhotosMeta.page < albumPhotosMeta.totalPages && (
+                  <div className="mt-4 flex justify-center">
                     <button
-                      key={photo.id}
                       type="button"
-                      onClick={() => { setSelectedPhotoId(photo.id); setIsEditing(false); setEditImage(null); setActionMessage({ type: "", text: "" }); }}
-                      className={`overflow-hidden rounded-xl border-2 transition-all ${
-                        photo.id === activePhoto.id
-                          ? "border-primary ring-2 ring-primary/20 shadow-glow"
-                          : "border-brand-200 dark:border-brand-700 hover:border-primary/50"
-                      }`}
+                      onClick={() => fetchAlbumPhotos({ title: activeAlbum.title, page: albumPhotosMeta.page + 1, append: true })}
+                      className="btn-outline !px-4 !py-2 text-xs"
                     >
-                      <img
-                        src={`${serverUrl}${photo.image}`}
-                        alt={photo.title}
-                        loading="lazy"
-                        decoding="async"
-                        className="aspect-square h-full w-full object-cover"
-                      />
+                      Muat Foto Lainnya
                     </button>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
