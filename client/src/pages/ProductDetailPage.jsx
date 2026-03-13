@@ -28,7 +28,7 @@ const FALLBACK_PRODUCTS = [
     verse: "Mazmur 95:1",
     description:
       "Desain minimalist streetwear dengan nuansa worship modern. Nyaman untuk ibadah, youth service, dan kegiatan komunitas.",
-    sizes: ["S", "M", "L", "XL", "XXL"],
+    sizes: ["S", "M", "L", "XL"],
     imageUrl: worshipSmokeImage,
     imageUrls: [worshipSmokeImage],
     stock: 20,
@@ -49,7 +49,7 @@ const FALLBACK_PRODUCTS = [
     verse: "Yohanes 8:12",
     description:
       "Visual clean dan kuat dengan statement LIGHT. Cocok untuk look casual harian dengan pesan iman yang jelas.",
-    sizes: ["S", "M", "L", "XL", "XXL"],
+    sizes: ["S", "M", "L", "XL"],
     imageUrl: lightJohnImage,
     imageUrls: [lightJohnImage],
     stock: 20,
@@ -70,7 +70,7 @@ const FALLBACK_PRODUCTS = [
     verse: "Mazmur 42:11",
     description:
       "Potongan basic oversize dengan artwork belakang bertema HOPE. Karakter streetwear simple dan tetap rohani.",
-    sizes: ["S", "M", "L", "XL", "XXL"],
+    sizes: ["S", "M", "L", "XL"],
     imageUrl: hopePsalmImage,
     imageUrls: [hopePsalmImage],
     stock: 20,
@@ -111,6 +111,20 @@ const renderStars = (value, className = "text-base") => {
   ));
 };
 
+const normalizeSizeLabel = (value) =>
+  String(value || "")
+    .toUpperCase()
+    .replace(/\s+/g, "");
+
+const isAboveXL = (value) => {
+  const normalized = normalizeSizeLabel(value);
+  if (!normalized) return false;
+  if (["XXL", "XXXL", "XXXXL"].includes(normalized)) return true;
+  const match = normalized.match(/^(\d+)XL$/);
+  if (match) return Number(match[1]) >= 2;
+  return false;
+};
+
 function getImageWithFallback(product, fallbackProducts) {
   if (!product) return worshipSmokeImage;
 
@@ -135,7 +149,9 @@ function getImageWithFallback(product, fallbackProducts) {
 }
 
 function getDefaultSize(product) {
-  const sizes = Array.isArray(product?.sizes) ? product.sizes : [];
+  const sizes = Array.isArray(product?.sizes)
+    ? product.sizes.filter((size) => normalizeSizeLabel(size) !== "XXL")
+    : [];
   if (!sizes.length) return "M";
 
   const firstAvailable = sizes.find((size) => getStockForSize(product, size) > 0);
@@ -406,9 +422,12 @@ function ProductDetailPage() {
   }
 
   const effectivePrice = Number(product.finalPrice ?? product.basePrice ?? 0);
-  const sizes = Array.isArray(product.sizes) && product.sizes.length > 0
+  const rawSizes = Array.isArray(product.sizes) && product.sizes.length > 0
     ? product.sizes
     : ["S", "M", "L", "XL"];
+  const filteredSizes = rawSizes.filter((size) => normalizeSizeLabel(size) !== "XXL");
+  const sizes = filteredSizes.length > 0 ? filteredSizes : ["S", "M", "L", "XL"];
+  const hasPreorderSizes = sizes.some(isAboveXL);
   const totalStock = getTotalStock(product);
   const selectedSizeStock = getStockForSize(product, selectedSize);
   const ratingAverage = Number(
@@ -870,6 +889,11 @@ function ProductDetailPage() {
                 );
               })}
             </div>
+            {hasPreorderSizes && (
+              <p className="text-xs text-amber-600 dark:text-amber-300">
+                Ukuran di atas XL tersedia preorder.
+              </p>
+            )}
           </div>
 
           {/* Quantity Selection */}

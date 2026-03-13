@@ -38,7 +38,7 @@ const API_BASE =
   import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") ||
   "http://localhost:5000";
 
-const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"];
+const DEFAULT_SIZES = ["S", "M", "L", "XL"];
 const REPORT_FILTERS_KEY = "gpt_tanjungpriok_admin_report_filters_v1";
 
 function formatRupiah(amount) {
@@ -1303,7 +1303,7 @@ function ManageStorePage() {
                         className={`input-modern ${productFieldErrors.sizesText ? "input-error" : ""}`}
                         value={productForm.sizesText}
                         onChange={(event) => handleProductFormChange("sizesText", event.target.value)}
-                        placeholder="S, M, L, XL, XXL"
+                        placeholder="S, M, L, XL"
                         aria-invalid={Boolean(productFieldErrors.sizesText)}
                       />
                       {productFieldErrors.sizesText && (

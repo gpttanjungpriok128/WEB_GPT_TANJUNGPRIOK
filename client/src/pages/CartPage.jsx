@@ -22,6 +22,20 @@ const formatRupiah = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
+const normalizeSizeLabel = (value) =>
+  String(value || "")
+    .toUpperCase()
+    .replace(/\s+/g, "");
+
+const isAboveXL = (value) => {
+  const normalized = normalizeSizeLabel(value);
+  if (!normalized) return false;
+  if (["XXL", "XXXL", "XXXXL"].includes(normalized)) return true;
+  const match = normalized.match(/^(\d+)XL$/);
+  if (match) return Number(match[1]) >= 2;
+  return false;
+};
+
 function normalizeCartItem(item = {}) {
   const normalizedImage = normalizeStoreImagePath(item.image);
   const normalizedImageUrls = Array.isArray(item.imageUrls)
@@ -445,6 +459,11 @@ function CartPage() {
                       <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
                         Size <span className="font-semibold">{item.size}</span> · {item.color}
                       </p>
+                      {isAboveXL(item.size) && (
+                        <p className="mt-1 text-[11px] font-semibold text-amber-600 dark:text-amber-300">
+                          Ukuran di atas XL preorder.
+                        </p>
+                      )}
                       <p className="mt-2 text-sm font-bold text-primary">
                         {formatRupiah(item.price)}
                       </p>

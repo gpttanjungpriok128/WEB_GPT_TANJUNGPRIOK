@@ -25,7 +25,7 @@ const FALLBACK_PRODUCTS = [
     verse: "Mazmur 95:1",
     description:
       "Desain minimalist streetwear dengan nuansa worship modern. Nyaman untuk ibadah, youth service, dan kegiatan komunitas.",
-    sizes: ["S", "M", "L", "XL", "XXL"],
+    sizes: ["S", "M", "L", "XL"],
     imageUrl: worshipSmokeImage,
     stock: 20,
     isActive: true,
@@ -45,7 +45,7 @@ const FALLBACK_PRODUCTS = [
     verse: "Yohanes 8:12",
     description:
       "Visual clean dan kuat dengan statement LIGHT. Cocok untuk look casual harian dengan pesan iman yang jelas.",
-    sizes: ["S", "M", "L", "XL", "XXL"],
+    sizes: ["S", "M", "L", "XL"],
     imageUrl: lightJohnImage,
     stock: 20,
     isActive: true,
@@ -65,7 +65,7 @@ const FALLBACK_PRODUCTS = [
     verse: "Mazmur 42:11",
     description:
       "Potongan basic oversize dengan artwork belakang bertema HOPE. Karakter streetwear simple dan tetap rohani.",
-    sizes: ["S", "M", "L", "XL", "XXL"],
+    sizes: ["S", "M", "L", "XL"],
     imageUrl: hopePsalmImage,
     stock: 20,
     isActive: true,
