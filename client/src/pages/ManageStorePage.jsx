@@ -89,6 +89,184 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function buildPrintLabelMarkup(order, { logoUrl } = {}) {
+  if (!order) return "";
+  const items = Array.isArray(order.items) ? order.items : [];
+  const totalItems = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+  const itemRows = items.length > 0
+    ? items.map((item) => `
+        <tr>
+          <td>${escapeHtml(item.productName || "-")}</td>
+          <td class="muted">(${escapeHtml(item.size || "-")} x${Number(item.quantity) || 0})</td>
+        </tr>
+      `).join("")
+    : `<tr><td colspan="2" class="muted">Tidak ada item.</td></tr>`;
+  const qrValue = order.orderCode ? encodeURIComponent(order.orderCode) : "";
+  const qrUrl = qrValue
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${qrValue}`
+    : "";
+
+  return `
+    <div class="label">
+      <div class="header">
+        <div class="brand">
+          ${logoUrl ? `<img src="${logoUrl}" alt="GTshirt" class="logo" />` : ""}
+          <div>
+            <div class="brand-name">GTshirtwear</div>
+            <div class="muted">Resi Pengiriman</div>
+          </div>
+        </div>
+        ${qrUrl ? `<img src="${qrUrl}" alt="QR ${escapeHtml(order.orderCode)}" class="qr" />` : ""}
+      </div>
+      <div class="muted">Tanggal: ${escapeHtml(formatDateTime(order.createdAt))}</div>
+
+      <div class="section">
+        <div class="label-title">Penerima</div>
+        <div class="value">${escapeHtml(order.customerName || "-")}</div>
+        <div class="muted">WA: ${escapeHtml(order.customerPhone || "-")}</div>
+        <div class="muted">Alamat: ${escapeHtml(order.customerAddress || "-")}</div>
+      </div>
+
+      <div class="section">
+        <div class="label-title">Pengiriman</div>
+        <div class="value">${escapeHtml(order.shippingMethod || "-")}</div>
+        <div class="muted">Pembayaran: ${escapeHtml(order.paymentMethod || "-")}</div>
+      </div>
+
+      <div class="section">
+        <div class="label-title">Item</div>
+        <table>
+          ${itemRows}
+        </table>
+      </div>
+
+      ${order.notes ? `
+        <div class="section">
+          <div class="label-title">Catatan</div>
+          <div class="muted">${escapeHtml(order.notes)}</div>
+        </div>
+      ` : ""}
+
+      <div class="footer">
+        <div>Total Item: ${totalItems}</div>
+        <div>${escapeHtml(formatRupiah(order.totalAmount))}</div>
+      </div>
+      <div class="order-code">Resi: ${escapeHtml(order.orderCode || "-")}</div>
+    </div>
+  `;
+}
+
+function buildPrintDocument(markup) {
+  return `
+    <!doctype html>
+    <html lang="id">
+      <head>
+        <meta charset="utf-8" />
+        <title>Resi Pesanan</title>
+        <style>
+          @page { size: 100mm 150mm; margin: 8mm; }
+          * { box-sizing: border-box; }
+          body {
+            font-family: "Arial", sans-serif;
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+          }
+          .label {
+            border: 2px dashed #0f766e;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 12mm;
+          }
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+          }
+          .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .logo {
+            width: 42px;
+            height: 42px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+          }
+          .brand-name {
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: 0.04em;
+            color: #0f766e;
+          }
+          .qr {
+            width: 84px;
+            height: 84px;
+          }
+          .section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+          }
+          .label-title {
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+          }
+          .value {
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 4px;
+          }
+          .muted {
+            color: #64748b;
+            font-size: 11px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+          }
+          td {
+            padding: 4px 0;
+            font-size: 12px;
+            vertical-align: top;
+          }
+          .footer {
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 700;
+          }
+          .order-code {
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f766e;
+          }
+          .page-break {
+            page-break-after: always;
+          }
+          .page-break:last-child {
+            page-break-after: auto;
+          }
+        </style>
+      </head>
+      <body>
+        ${markup}
+      </body>
+    </html>
+  `;
+}
+
 function statusBadge(status) {
   const map = {
     new: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -199,6 +377,7 @@ function ManageStorePage() {
   const [editingProductId, setEditingProductId] = useState(null);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
   const [reviews, setReviews] = useState([]);
   const [reportRows, setReportRows] = useState([]);
   const [reportMeta, setReportMeta] = useState(null);
@@ -438,6 +617,15 @@ function ManageStorePage() {
   }, []);
 
   useEffect(() => {
+    setSelectedOrderIds((previous) => {
+      if (previous.size === 0) return previous;
+      const available = new Set(orders.map((order) => order.id));
+      const next = new Set([...previous].filter((id) => available.has(id)));
+      return next;
+    });
+  }, [orders]);
+
+  useEffect(() => {
     if (activeTab === "laporan") {
       fetchRevenueReport();
     }
@@ -459,6 +647,11 @@ function ManageStorePage() {
       { label: "Average Order", value: formatRupiah(metrics.averageOrderValue ?? 0) },
     ];
   }, [analytics]);
+
+  const selectedOrders = useMemo(
+    () => orders.filter((order) => selectedOrderIds.has(order.id)),
+    [orders, selectedOrderIds],
+  );
 
   const productFormSizes = useMemo(
     () => normalizeSizePayload(productForm.sizesText),
@@ -653,139 +846,8 @@ function ManageStorePage() {
     }));
   };
 
-  const printOrderLabel = (order) => {
-    if (typeof window === "undefined" || !order) return;
-    const items = Array.isArray(order.items) ? order.items : [];
-    const totalItems = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-    const itemRows = items.length > 0
-      ? items.map((item) => `
-          <tr>
-            <td>${escapeHtml(item.productName || "-")}</td>
-            <td class="muted">(${escapeHtml(item.size || "-")} x${Number(item.quantity) || 0})</td>
-          </tr>
-        `).join("")
-      : `<tr><td colspan="2" class="muted">Tidak ada item.</td></tr>`;
-
-    const printableHtml = `
-      <!doctype html>
-      <html lang="id">
-        <head>
-          <meta charset="utf-8" />
-          <title>Resi ${escapeHtml(order.orderCode)}</title>
-          <style>
-            @page { size: 100mm 150mm; margin: 8mm; }
-            * { box-sizing: border-box; }
-            body {
-              font-family: "Arial", sans-serif;
-              color: #0f172a;
-              margin: 0;
-              padding: 0;
-            }
-            .label {
-              border: 2px dashed #0f766e;
-              border-radius: 14px;
-              padding: 14px;
-            }
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 10px;
-            }
-            .brand {
-              font-weight: 800;
-              font-size: 16px;
-              letter-spacing: 0.04em;
-              color: #0f766e;
-            }
-            .order-code {
-              font-size: 14px;
-              font-weight: 700;
-            }
-            .section {
-              margin-top: 10px;
-              padding-top: 10px;
-              border-top: 1px solid #e2e8f0;
-            }
-            .label-title {
-              font-size: 11px;
-              letter-spacing: 0.18em;
-              font-weight: 700;
-              color: #64748b;
-              text-transform: uppercase;
-            }
-            .value {
-              font-size: 13px;
-              font-weight: 600;
-              margin-top: 4px;
-            }
-            .muted {
-              color: #64748b;
-              font-size: 11px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 6px;
-            }
-            td {
-              padding: 4px 0;
-              font-size: 12px;
-              vertical-align: top;
-            }
-            .footer {
-              margin-top: 10px;
-              display: flex;
-              justify-content: space-between;
-              font-size: 12px;
-              font-weight: 700;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="label">
-            <div class="header">
-              <div class="brand">GTshirtwear</div>
-              <div class="order-code">Resi: ${escapeHtml(order.orderCode)}</div>
-            </div>
-            <div class="muted">Tanggal: ${escapeHtml(formatDateTime(order.createdAt))}</div>
-
-            <div class="section">
-              <div class="label-title">Penerima</div>
-              <div class="value">${escapeHtml(order.customerName || "-")}</div>
-              <div class="muted">WA: ${escapeHtml(order.customerPhone || "-")}</div>
-              <div class="muted">Alamat: ${escapeHtml(order.customerAddress || "-")}</div>
-            </div>
-
-            <div class="section">
-              <div class="label-title">Pengiriman</div>
-              <div class="value">${escapeHtml(order.shippingMethod || "-")}</div>
-              <div class="muted">Pembayaran: ${escapeHtml(order.paymentMethod || "-")}</div>
-            </div>
-
-            <div class="section">
-              <div class="label-title">Item</div>
-              <table>
-                ${itemRows}
-              </table>
-            </div>
-
-            ${order.notes ? `
-              <div class="section">
-                <div class="label-title">Catatan</div>
-                <div class="muted">${escapeHtml(order.notes)}</div>
-              </div>
-            ` : ""}
-
-            <div class="footer">
-              <div>Total Item: ${totalItems}</div>
-              <div>${escapeHtml(formatRupiah(order.totalAmount))}</div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+  const openPrintWindow = (html) => {
+    if (typeof window === "undefined") return;
     const popup = window.open("", "_blank", "width=720,height=900");
     if (!popup) {
       setFeedback({
@@ -795,12 +857,56 @@ function ManageStorePage() {
       return;
     }
     popup.document.open();
-    popup.document.write(printableHtml);
+    popup.document.write(html);
     popup.document.close();
     popup.onload = () => {
       popup.focus();
-      popup.print();
+      setTimeout(() => popup.print(), 300);
     };
+  };
+
+  const printOrderLabel = (order) => {
+    if (!order) return;
+    const markup = buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo });
+    openPrintWindow(buildPrintDocument(markup));
+  };
+
+  const printOrderLabels = (orderList) => {
+    const safeOrders = Array.isArray(orderList)
+      ? orderList.filter(Boolean)
+      : [];
+    if (safeOrders.length === 0) {
+      setFeedback({
+        type: "error",
+        text: "Pilih minimal 1 order untuk dicetak.",
+      });
+      return;
+    }
+    const markup = safeOrders.map((order, index) => {
+      const block = buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo });
+      return `${block}${index < safeOrders.length - 1 ? '<div class="page-break"></div>' : ""}`;
+    }).join("");
+    openPrintWindow(buildPrintDocument(markup));
+  };
+
+  const toggleOrderSelection = (orderId) => {
+    setSelectedOrderIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(orderId)) {
+        next.delete(orderId);
+      } else {
+        next.add(orderId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllOrders = () => {
+    setSelectedOrderIds(new Set(orders.map((order) => order.id)));
+  };
+
+  const clearSelectedOrders = () => {
+    setSelectedOrderIds(new Set());
   };
 
   const handleSaveProduct = async (event) => {
@@ -1934,6 +2040,31 @@ function ManageStorePage() {
             </button>
           </div>
 
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={selectAllOrders}
+              className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
+            >
+              Pilih Semua
+            </button>
+            <button
+              type="button"
+              onClick={clearSelectedOrders}
+              className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+            >
+              Bersihkan
+            </button>
+            <button
+              type="button"
+              onClick={() => printOrderLabels(selectedOrders)}
+              disabled={selectedOrders.length === 0}
+              className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+            >
+              Print Resi Terpilih ({selectedOrders.length})
+            </button>
+          </div>
+
           <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
             {loadingOrders && (
               <div className="space-y-3">
@@ -1971,13 +2102,26 @@ function ManageStorePage() {
                   <div className="sm:hidden">
                     <details className="admin-order-details">
                       <summary className="admin-order-summary mobile-summary flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-bold text-brand-900 dark:text-white">
-                            {order.orderCode}
-                          </p>
-                          <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                            {formatDateTime(order.createdAt)}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <label
+                            className="flex items-center"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedOrderIds.has(order.id)}
+                              onChange={() => toggleOrderSelection(order.id)}
+                              className="h-4 w-4 rounded border-brand-300 text-primary"
+                            />
+                          </label>
+                          <div>
+                            <p className="text-sm font-bold text-brand-900 dark:text-white">
+                              {order.orderCode}
+                            </p>
+                            <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                              {formatDateTime(order.createdAt)}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-right">
@@ -2035,18 +2179,28 @@ function ManageStorePage() {
 
                   <div className="hidden sm:block">
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-bold text-brand-900 dark:text-white">
-                          {order.orderCode}
-                        </p>
-                        <p className="text-xs text-brand-500 dark:text-brand-400">
-                          {order.customerName} • {order.customerPhone}
-                        </p>
-                        {order.user?.email && (
-                          <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                            Akun: {order.user.email}
+                      <div className="flex items-start gap-3">
+                        <label className="flex items-start pt-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedOrderIds.has(order.id)}
+                            onChange={() => toggleOrderSelection(order.id)}
+                            className="h-4 w-4 rounded border-brand-300 text-primary"
+                          />
+                        </label>
+                        <div>
+                          <p className="text-sm font-bold text-brand-900 dark:text-white">
+                            {order.orderCode}
                           </p>
-                        )}
+                          <p className="text-xs text-brand-500 dark:text-brand-400">
+                            {order.customerName} • {order.customerPhone}
+                          </p>
+                          {order.user?.email && (
+                            <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                              Akun: {order.user.email}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>
                         {mapOrderStatusLabel(order.status)}
