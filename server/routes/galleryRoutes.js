@@ -6,11 +6,12 @@ const {
   deleteGallery
 } = require('../controllers/galleryController');
 const { authenticate, authorizeRoles } = require('../middleware/authMiddleware');
+const { cacheResponse } = require('../middleware/cacheMiddleware');
 const { uploadImage } = require('../middleware/uploadMiddleware');
 
 const router = express.Router();
 
-router.get('/', getGalleries);
+router.get('/', cacheResponse({ ttlMs: 60 * 1000 }), getGalleries);
 router.post(
   '/',
   authenticate,

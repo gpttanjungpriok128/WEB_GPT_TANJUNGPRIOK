@@ -24,6 +24,7 @@ const {
   getAdminAnalytics
 } = require('../controllers/storeController');
 const { authenticate, optionalAuthenticate, authorizeRoles } = require('../middleware/authMiddleware');
+const { cacheResponse } = require('../middleware/cacheMiddleware');
 const { uploadImage } = require('../middleware/uploadMiddleware');
 const { validate } = require('../middleware/validationMiddleware');
 const {
@@ -38,9 +39,9 @@ const {
 
 const router = express.Router();
 
-router.get('/products', getPublicProducts);
-router.get('/products/:slug', getPublicProductBySlug);
-router.get('/products/:slug/reviews', getProductReviews);
+router.get('/products', cacheResponse({ ttlMs: 30 * 1000 }), getPublicProducts);
+router.get('/products/:slug', cacheResponse({ ttlMs: 30 * 1000 }), getPublicProductBySlug);
+router.get('/products/:slug/reviews', cacheResponse({ ttlMs: 30 * 1000 }), getProductReviews);
 router.post(
   '/products/:slug/reviews',
   optionalAuthenticate,
