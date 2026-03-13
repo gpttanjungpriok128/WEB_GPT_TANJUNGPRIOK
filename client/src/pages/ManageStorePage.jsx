@@ -477,12 +477,17 @@ function ManageStorePage() {
   const [lastScannedCode, setLastScannedCode] = useState("");
   const [lastScannedAt, setLastScannedAt] = useState(null);
   const [scanSession, setScanSession] = useState(0);
+  const [bulkStatus, setBulkStatus] = useState("");
   const [orderPage, setOrderPage] = useState(1);
   const [orderMeta, setOrderMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [isLoadingMoreOrders, setIsLoadingMoreOrders] = useState(false);
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewMeta, setReviewMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState(false);
+  const [orderScrollTop, setOrderScrollTop] = useState(0);
+  const [orderViewportHeight, setOrderViewportHeight] = useState(560);
+  const [orderRowHeight, setOrderRowHeight] = useState(190);
+  const [lastAnalyticsAt, setLastAnalyticsAt] = useState(0);
   const [productFieldErrors, setProductFieldErrors] = useState({});
   const [tabHidden, setTabHidden] = useState(false);
 
@@ -496,6 +501,8 @@ function ManageStorePage() {
   const basePriceInputRef = useRef(null);
   const sizesInputRef = useRef(null);
   const imageDropRef = useRef(null);
+  const orderListRef = useRef(null);
+  const orderRowMeasureRef = useRef(null);
   const qrVideoRef = useRef(null);
   const qrCanvasRef = useRef(null);
   const scanIntervalRef = useRef(null);
@@ -715,11 +722,17 @@ function ManageStorePage() {
     }
   };
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (options = {}) => {
+    const now = Date.now();
+    const ttlMs = 60 * 1000;
+    if (!options.force && analytics && now - lastAnalyticsAt < ttlMs) {
+      return;
+    }
     setLoadingAnalytics(true);
     try {
       const { data } = await api.get("/store/admin/analytics");
       setAnalytics(data || null);
+      setLastAnalyticsAt(Date.now());
     } catch (error) {
       setAnalytics(null);
       setFeedback({
@@ -803,6 +816,29 @@ function ManageStorePage() {
   }, [activeTab]);
 
   useEffect(() => {
+    if (activeTab !== "pesanan") return;
+    const target = orderListRef.current;
+    if (!target) return;
+    const updateHeight = () => {
+      const nextHeight = target.clientHeight || 560;
+      setOrderViewportHeight(nextHeight);
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "pesanan") return;
+    if (!orderRowMeasureRef.current) return;
+    const rect = orderRowMeasureRef.current.getBoundingClientRect();
+    if (rect.height && Math.abs(rect.height - orderRowHeight) > 6) {
+      setOrderRowHeight(rect.height);
+    }
+  }, [activeTab, orders.length, orderPage]);
+
+  useEffect(() => {
     if (!location?.search) return;
     const params = new URLSearchParams(location.search);
     const rawCode = params.get("order") || params.get("orderCode") || params.get("code");
@@ -835,6 +871,28 @@ function ManageStorePage() {
     () => orders.filter((order) => selectedOrderIds.has(order.id)),
     [orders, selectedOrderIds],
   );
+  const useVirtualOrders = orders.length > 60;
+  const orderOverscan = 4;
+  const virtualStartIndex = useMemo(() => {
+    if (!useVirtualOrders) return 0;
+    return Math.max(0, Math.floor(orderScrollTop / orderRowHeight) - orderOverscan);
+  }, [useVirtualOrders, orderScrollTop, orderRowHeight]);
+  const virtualVisibleCount = useMemo(() => {
+    if (!useVirtualOrders) return orders.length;
+    return Math.ceil(orderViewportHeight / orderRowHeight) + orderOverscan * 2;
+  }, [useVirtualOrders, orderViewportHeight, orderRowHeight]);
+  const virtualEndIndex = useMemo(() => {
+    if (!useVirtualOrders) return orders.length;
+    return Math.min(orders.length, virtualStartIndex + virtualVisibleCount);
+  }, [useVirtualOrders, orders.length, virtualStartIndex, virtualVisibleCount]);
+  const visibleOrders = useMemo(() => {
+    if (!useVirtualOrders) return orders;
+    return orders.slice(virtualStartIndex, virtualEndIndex);
+  }, [useVirtualOrders, orders, virtualStartIndex, virtualEndIndex]);
+  const orderPaddingTop = useVirtualOrders ? virtualStartIndex * orderRowHeight : 0;
+  const orderPaddingBottom = useVirtualOrders
+    ? Math.max(0, orders.length - virtualEndIndex) * orderRowHeight
+    : 0;
 
   const productFormSizes = useMemo(
     () => normalizeSizePayload(productForm.sizesText),
@@ -1415,13 +1473,58 @@ function ManageStorePage() {
       await api.post("/store/admin/orders/reset");
       setFeedback({ type: "success", text: "Semua pesanan berhasil dihapus." });
       setOrderPage(1);
-      await Promise.all([fetchOrders({ page: 1 }), fetchAnalytics()]);
+      await Promise.all([fetchOrders({ page: 1 }), fetchAnalytics({ force: true })]);
     } catch (error) {
       setFeedback({
         type: "error",
         text: error.response?.data?.message || "Gagal menghapus semua pesanan.",
       });
     }
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (!bulkStatus) {
+      setFeedback({ type: "error", text: "Pilih status terlebih dahulu." });
+      return;
+    }
+    if (selectedOrders.length === 0) {
+      setFeedback({ type: "error", text: "Pilih minimal 1 order." });
+      return;
+    }
+    const confirmed = window.confirm(
+      `Ubah status ${selectedOrders.length} order menjadi "${mapOrderStatusLabel(bulkStatus)}"?`,
+    );
+    if (!confirmed) return;
+
+    const previousOrders = orders;
+    const ids = new Set(selectedOrders.map((order) => order.id));
+    setOrders((prev) =>
+      prev.map((order) =>
+        ids.has(order.id) ? { ...order, status: bulkStatus } : order,
+      ),
+    );
+
+    const results = await Promise.allSettled(
+      selectedOrders.map((order) =>
+        api.patch(`/store/admin/orders/${order.id}/status`, { status: bulkStatus }),
+      ),
+    );
+    const failed = results.filter((res) => res.status === "rejected").length;
+    if (failed > 0) {
+      setOrders(previousOrders);
+      setFeedback({
+        type: "error",
+        text: `${failed} order gagal diperbarui. Coba ulangi.`,
+      });
+      return;
+    }
+    setFeedback({
+      type: "success",
+      text: "Status order terpilih berhasil diperbarui.",
+    });
+    setSelectedOrderIds(new Set());
+    setBulkStatus("");
+    fetchAnalytics();
   };
 
   const handleReviewStatusToggle = async (reviewId, nextApproved) => {
@@ -2413,6 +2516,26 @@ function ManageStorePage() {
             >
               Bersihkan
             </button>
+            <select
+              className="input-modern !py-2 text-xs"
+              value={bulkStatus}
+              onChange={(event) => setBulkStatus(event.target.value)}
+            >
+              <option value="">Pilih Status</option>
+              {ORDER_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={handleBulkStatusUpdate}
+              disabled={!bulkStatus || selectedOrders.length === 0}
+              className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+            >
+              Update Status ({selectedOrders.length})
+            </button>
             <button
               type="button"
               onClick={() => printOrderLabels(selectedOrders)}
@@ -2423,7 +2546,11 @@ function ManageStorePage() {
             </button>
           </div>
 
-          <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
+          <div
+            ref={orderListRef}
+            onScroll={(event) => setOrderScrollTop(event.currentTarget.scrollTop)}
+            className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1"
+          >
             {loadingOrders && (
               <div className="space-y-3">
                 {Array.from({ length: 4 }).map((_, index) => (
@@ -2451,12 +2578,14 @@ function ManageStorePage() {
                 Belum ada order masuk.
               </div>
             )}
-            {!loadingOrders &&
-              orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
-                >
+            {!loadingOrders && (
+              <div style={{ paddingTop: orderPaddingTop, paddingBottom: orderPaddingBottom }}>
+                {visibleOrders.map((order, index) => (
+                  <div
+                    key={order.id}
+                    ref={useVirtualOrders && index === 0 ? orderRowMeasureRef : null}
+                    className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
+                  >
                   <div className="sm:hidden">
                     <details className="admin-order-details">
                       <summary className="admin-order-summary mobile-summary flex items-center justify-between gap-3">
@@ -2606,7 +2735,9 @@ function ManageStorePage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                ))}
+              </div>
+            )}
             {!loadingOrders && orderPage < orderMeta.totalPages && (
               <div className="flex justify-center">
                 <button
