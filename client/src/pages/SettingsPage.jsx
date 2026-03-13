@@ -50,7 +50,7 @@ function SettingsPage() {
   }
 
   return (
-    <div className="page-stack space-y-10">
+    <div className="page-stack space-y-8 sm:space-y-10">
       <section className="space-y-4">
         <h1 className="text-4xl md:text-5xl font-extrabold text-brand-900 dark:text-white">
           Pengaturan <span className="gradient-text">Website</span>

@@ -80,7 +80,7 @@ function MyOrdersPage() {
         image={heroImage}
       />
 
-      <div className="page-stack space-y-5">
+      <div className="page-stack space-y-4 sm:space-y-5">
         <section className="rounded-2xl border border-brand-200 bg-white/85 p-4 dark:border-brand-700 dark:bg-brand-900/50">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>

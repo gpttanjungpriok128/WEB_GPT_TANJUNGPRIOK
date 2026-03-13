@@ -415,7 +415,7 @@ function ShopPage() {
   // Cart page is now a separate route at /cart
 
   return (
-    <div className="page-stack space-y-8">
+    <div className="page-stack space-y-6 sm:space-y-8">
       <ShopHero />
 
       <section className="grid gap-6">

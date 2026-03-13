@@ -12,6 +12,7 @@ function BrandLogo() {
         <img
           src={logoImage}
           alt="GPT Tanjung Priok"
+          decoding="async"
           className="h-full w-full object-cover"
           onError={() => setHasError(true)}
         />

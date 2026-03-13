@@ -45,7 +45,7 @@ function DashboardPage() {
   };
 
   return (
-    <div className="page-stack space-y-10">
+    <div className="page-stack space-y-8 sm:space-y-10">
       {/* Welcome Banner */}
       <section className="admin-hero organic-banner relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 via-primary to-brand-600 p-8 md:p-10 text-white">
         <div className="absolute inset-0 pointer-events-none">

@@ -88,7 +88,7 @@ function TrackOrderPage() {
         image={heroImage}
       />
 
-      <div className="page-stack grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="page-stack grid gap-5 sm:gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <section className="space-y-5">
           <article className="glass-card p-5 sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">

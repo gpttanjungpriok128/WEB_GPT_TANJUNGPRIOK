@@ -63,7 +63,7 @@ function ArticleDetailPage() {
   };
 
   return (
-    <div className="page-stack space-y-6">
+    <div className="page-stack space-y-5 sm:space-y-6">
       <section className="article-detail-shell">
         <div className="mb-3 md:mb-4">
           <Link
@@ -107,6 +107,8 @@ function ArticleDetailPage() {
                 <img
                   src={resolveImageUrl(article.image)}
                   alt={article.title}
+                  loading="eager"
+                  decoding="async"
                   className="h-full w-full object-cover"
                   onError={(event) => {
                     event.currentTarget.style.display = "none";

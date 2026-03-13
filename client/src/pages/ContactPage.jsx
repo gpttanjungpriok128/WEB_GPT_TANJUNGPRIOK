@@ -73,7 +73,7 @@ function ContactPage() {
   ];
 
   return (
-    <div className="page-stack space-y-12">
+    <div className="page-stack space-y-8 sm:space-y-12">
       {/* Hero */}
       <PageHero
         image={heroImage}

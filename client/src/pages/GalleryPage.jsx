@@ -189,7 +189,7 @@ function GalleryPage() {
   ) : null;
 
   return (
-    <div className="page-stack space-y-8">
+    <div className="page-stack space-y-6 sm:space-y-8">
       <PageHero
         image={heroImage}
         title="Galeri"
@@ -298,6 +298,8 @@ function GalleryPage() {
                 <img
                   src={`${serverUrl}${album.cover.image}`}
                   alt={album.title}
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -343,7 +345,13 @@ function GalleryPage() {
             <div className="grid flex-1 gap-4 overflow-hidden p-4 lg:grid-cols-3">
               <div className="space-y-4 lg:col-span-2 overflow-y-auto">
                 <div className="aspect-video overflow-hidden rounded-xl bg-black">
-                  <img src={`${serverUrl}${activePhoto.image}`} alt={activePhoto.title} className="h-full w-full object-contain" />
+                  <img
+                    src={`${serverUrl}${activePhoto.image}`}
+                    alt={activePhoto.title}
+                    loading="eager"
+                    decoding="async"
+                    className="h-full w-full object-contain"
+                  />
                 </div>
                 <div className="glass-card p-4">
                   <p className="text-xs uppercase text-brand-500 dark:text-brand-400 font-medium tracking-wider">Judul Foto</p>
@@ -392,7 +400,13 @@ function GalleryPage() {
                           : "border-brand-200 dark:border-brand-700 hover:border-primary/50"
                       }`}
                     >
-                      <img src={`${serverUrl}${photo.image}`} alt={photo.title} className="aspect-square h-full w-full object-cover" />
+                      <img
+                        src={`${serverUrl}${photo.image}`}
+                        alt={photo.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="aspect-square h-full w-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>

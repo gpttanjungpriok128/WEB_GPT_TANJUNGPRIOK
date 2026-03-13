@@ -76,7 +76,7 @@ function LivePage() {
   };
 
   return (
-    <div className="page-stack space-y-10">
+    <div className="page-stack space-y-8 sm:space-y-10">
       {/* Hero */}
       <PageHero
         image={heroImage}

@@ -903,7 +903,7 @@ function ManageStorePage() {
   };
 
   return (
-    <div className="page-stack admin-shell space-y-6">
+    <div className="page-stack admin-shell space-y-5 sm:space-y-6">
       <section className="glass-card dense-card overflow-hidden p-0">
         <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
           <div className="p-6 md:p-8">
@@ -922,6 +922,8 @@ function ManageStorePage() {
             <img
               src={gtshirtLogo}
               alt="GTshirt"
+              loading="lazy"
+              decoding="async"
               className="h-full w-full rounded-2xl object-cover"
             />
           </div>

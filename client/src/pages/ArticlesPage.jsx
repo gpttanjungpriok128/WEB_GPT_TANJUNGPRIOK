@@ -66,7 +66,7 @@ function ArticlesPage() {
   };
 
   return (
-    <div className="page-stack space-y-8">
+    <div className="page-stack space-y-6 sm:space-y-8">
       {/* Hero */}
       <PageHero
         image={heroImage}
@@ -109,6 +109,8 @@ function ArticlesPage() {
                   <img
                     src={resolveImageUrl(article.image)}
                     alt={article.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     onError={(event) => {
                       event.currentTarget.style.display = "none";

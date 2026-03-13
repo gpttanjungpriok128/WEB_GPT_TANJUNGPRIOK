@@ -209,7 +209,7 @@ function CongregationDataPage() {
   }
 
   return (
-    <div className="page-stack admin-shell space-y-6">
+    <div className="page-stack admin-shell space-y-5 sm:space-y-6">
       <section className="glass-card p-8">
         <h1 className="text-3xl font-bold text-brand-900 dark:text-white">Pendataan Jemaat</h1>
         <p className="mt-2 text-sm text-brand-600 dark:text-brand-400">

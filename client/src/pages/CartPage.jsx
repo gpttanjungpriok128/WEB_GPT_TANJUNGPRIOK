@@ -302,7 +302,7 @@ function CartPage() {
     return (
       <div>
         <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" image={cartHeroImage} tone="dense" />
-        <div className="page-stack space-y-6">
+        <div className="page-stack space-y-5 sm:space-y-6">
           <div className="rounded-2xl border border-brand-200 bg-brand-50 p-8 sm:p-12 text-center dark:border-brand-700 dark:bg-brand-900/30">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm dark:bg-brand-900 dark:text-brand-300">
               <svg
@@ -343,7 +343,7 @@ function CartPage() {
     <div className="pb-24 sm:pb-0">
       <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" image={cartHeroImage} tone="dense" />
 
-      <div className="page-stack grid gap-6 lg:grid-cols-[1fr_380px]">
+      <div className="page-stack grid gap-5 sm:gap-6 lg:grid-cols-[1fr_380px]">
         {/* ── Left: Cart Items ──────────────────── */}
         <section className="space-y-4">
           {/* Header */}

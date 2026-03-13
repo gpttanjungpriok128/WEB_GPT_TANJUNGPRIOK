@@ -7,7 +7,7 @@ function AboutPage() {
   const { user } = useAuth();
 
   return (
-    <div className="page-stack space-y-14">
+    <div className="page-stack space-y-10 sm:space-y-12 lg:space-y-14">
       {/* Hero */}
       <PageHero
         image={heroImage}

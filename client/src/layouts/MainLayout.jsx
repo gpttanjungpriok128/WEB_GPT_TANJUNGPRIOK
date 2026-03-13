@@ -405,7 +405,7 @@ function MainLayout({ children }) {
       )}
 
       {/* Main Content */}
-      <main ref={mainRef} className="organic-main container-custom py-10 flex-1">
+      <main ref={mainRef} className="organic-main container-custom py-8 sm:py-10 lg:py-12 flex-1">
         {isAdminSidebarPage ? (
           <>
             <div className="admin-mobile-top lg:hidden">

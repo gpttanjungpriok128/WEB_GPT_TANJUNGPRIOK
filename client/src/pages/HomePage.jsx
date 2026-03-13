@@ -36,7 +36,7 @@ function HomePage() {
   }, []);
 
   return (
-    <div className="page-stack space-y-16">
+    <div className="page-stack space-y-10 sm:space-y-14 lg:space-y-16">
       {/* Hero Section */}
       <section className="cinematic-hero relative rounded-3xl text-white shadow-xl overflow-hidden">
         {/* Background Image */}
@@ -45,6 +45,9 @@ function HomePage() {
             src={heroImage}
             alt=""
             className="hero-bg-media h-full w-full object-cover"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-brand-900/90 via-brand-800/75 to-brand-900/50" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
@@ -64,7 +67,7 @@ function HomePage() {
 
         <div className="relative z-10">
           {/* Text Content */}
-          <div className="px-6 py-20 md:px-14 md:py-28 lg:py-32 max-w-2xl">
+          <div className="px-5 py-16 sm:px-6 sm:py-20 md:px-12 md:py-24 lg:px-14 lg:py-32 max-w-2xl">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-white/70 animate-text-reveal">
               Selamat Datang di
             </p>
@@ -184,6 +187,8 @@ function HomePage() {
                     <img
                       src={resolveImageUrl(article.image)}
                       alt={article.title}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(event) => {
                         event.currentTarget.style.display = "none";

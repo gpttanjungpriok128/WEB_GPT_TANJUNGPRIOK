@@ -42,7 +42,7 @@ function RegisterPage() {
   };
 
   return (
-    <div className="page-stack auth-shell min-h-[calc(100vh-280px)] flex items-center justify-center py-12">
+    <div className="page-stack auth-shell min-h-[calc(100vh-280px)] flex items-center justify-center py-8 sm:py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="text-5xl mb-4">📝</div>

@@ -392,7 +392,7 @@ function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="page-stack space-y-6">
+      <div className="page-stack space-y-5 sm:space-y-6">
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center dark:border-rose-900/70 dark:bg-rose-900/20">
           <p className="text-rose-700 dark:text-rose-300">
             Produk tidak ditemukan
@@ -640,7 +640,7 @@ function ProductDetailPage() {
   );
 
   return (
-    <div className="page-stack space-y-8 pb-24 sm:pb-8">
+    <div className="page-stack space-y-6 sm:space-y-8 pb-24 sm:pb-8">
       {/* ── Breadcrumb ──────────────────────── */}
       <nav className="flex flex-wrap items-center justify-between gap-3 text-sm text-brand-600 dark:text-brand-400">
         <div className="flex min-w-0 items-center gap-2">
