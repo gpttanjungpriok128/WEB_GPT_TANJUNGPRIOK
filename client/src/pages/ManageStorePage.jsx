@@ -1188,13 +1188,18 @@ function ManageStorePage() {
           const width = qrVideoRef.current.videoWidth || 640;
           const height = qrVideoRef.current.videoHeight || 480;
           if (!width || !height) return;
-          if (canvas.width !== width) canvas.width = width;
-          if (canvas.height !== height) canvas.height = height;
+          const size = Math.min(width, height);
+          const cropSize = Math.min(size, 520);
+          const targetSize = Math.min(420, cropSize);
+          const sx = Math.floor((width - cropSize) / 2);
+          const sy = Math.floor((height - cropSize) / 2);
+          if (canvas.width !== targetSize) canvas.width = targetSize;
+          if (canvas.height !== targetSize) canvas.height = targetSize;
           const ctx = canvas.getContext("2d", { willReadFrequently: true });
           if (!ctx) return;
-          ctx.drawImage(qrVideoRef.current, 0, 0, width, height);
-          const imageData = ctx.getImageData(0, 0, width, height);
-          const code = jsQR(imageData.data, width, height, { inversionAttempts: "attemptBoth" });
+          ctx.drawImage(qrVideoRef.current, sx, sy, cropSize, cropSize, 0, 0, targetSize, targetSize);
+          const imageData = ctx.getImageData(0, 0, targetSize, targetSize);
+          const code = jsQR(imageData.data, targetSize, targetSize, { inversionAttempts: "attemptBoth" });
           rawValue = code?.data || "";
         }
 
@@ -1248,7 +1253,7 @@ function ManageStorePage() {
           await qrVideoRef.current.play();
         }
         hasScannedRef.current = false;
-        scanIntervalRef.current = window.setInterval(scanFrame, 550);
+        scanIntervalRef.current = window.setInterval(scanFrame, 360);
       } catch (error) {
         setScanError("Gagal mengakses kamera. Pastikan izin kamera aktif.");
       }
