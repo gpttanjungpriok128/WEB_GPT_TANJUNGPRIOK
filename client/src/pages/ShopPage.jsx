@@ -710,8 +710,9 @@ function ShopPage() {
             )}
           </div>
         ) : (
-          <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-            {filteredProducts.map((product) => {
+          <>
+            <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+              {filteredProducts.map((product) => {
               const effectivePrice = Number(
                 product.finalPrice ?? product.basePrice ?? 0,
               );
@@ -825,20 +826,21 @@ function ShopPage() {
                   </div>
                 </Link>
               );
-            })}
-          </div>
-          {!isLoadingProducts && filteredProducts.length > 0 && hasMoreProducts && (
-            <div className="mt-6 flex justify-center">
-              <button
-                type="button"
-                onClick={() => fetchProducts({ page: productPage + 1, append: true })}
-                disabled={isLoadingMore}
-                className="btn-outline !px-6 !py-2.5 text-sm disabled:opacity-60"
-              >
-                {isLoadingMore ? "Memuat..." : "Muat Produk Lainnya"}
-              </button>
+              })}
             </div>
-          )}
+            {!isLoadingProducts && filteredProducts.length > 0 && hasMoreProducts && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => fetchProducts({ page: productPage + 1, append: true })}
+                  disabled={isLoadingMore}
+                  className="btn-outline !px-6 !py-2.5 text-sm disabled:opacity-60"
+                >
+                  {isLoadingMore ? "Memuat..." : "Muat Produk Lainnya"}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 
