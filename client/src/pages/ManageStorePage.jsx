@@ -80,6 +80,15 @@ function formatDateTime(value) {
   });
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function statusBadge(status) {
   const map = {
     new: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -642,6 +651,156 @@ function ManageStorePage() {
         [normalizedSize]: Math.max(0, Number(value) || 0),
       },
     }));
+  };
+
+  const printOrderLabel = (order) => {
+    if (typeof window === "undefined" || !order) return;
+    const items = Array.isArray(order.items) ? order.items : [];
+    const totalItems = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    const itemRows = items.length > 0
+      ? items.map((item) => `
+          <tr>
+            <td>${escapeHtml(item.productName || "-")}</td>
+            <td class="muted">(${escapeHtml(item.size || "-")} x${Number(item.quantity) || 0})</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2" class="muted">Tidak ada item.</td></tr>`;
+
+    const printableHtml = `
+      <!doctype html>
+      <html lang="id">
+        <head>
+          <meta charset="utf-8" />
+          <title>Resi ${escapeHtml(order.orderCode)}</title>
+          <style>
+            @page { size: 100mm 150mm; margin: 8mm; }
+            * { box-sizing: border-box; }
+            body {
+              font-family: "Arial", sans-serif;
+              color: #0f172a;
+              margin: 0;
+              padding: 0;
+            }
+            .label {
+              border: 2px dashed #0f766e;
+              border-radius: 14px;
+              padding: 14px;
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 10px;
+            }
+            .brand {
+              font-weight: 800;
+              font-size: 16px;
+              letter-spacing: 0.04em;
+              color: #0f766e;
+            }
+            .order-code {
+              font-size: 14px;
+              font-weight: 700;
+            }
+            .section {
+              margin-top: 10px;
+              padding-top: 10px;
+              border-top: 1px solid #e2e8f0;
+            }
+            .label-title {
+              font-size: 11px;
+              letter-spacing: 0.18em;
+              font-weight: 700;
+              color: #64748b;
+              text-transform: uppercase;
+            }
+            .value {
+              font-size: 13px;
+              font-weight: 600;
+              margin-top: 4px;
+            }
+            .muted {
+              color: #64748b;
+              font-size: 11px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 6px;
+            }
+            td {
+              padding: 4px 0;
+              font-size: 12px;
+              vertical-align: top;
+            }
+            .footer {
+              margin-top: 10px;
+              display: flex;
+              justify-content: space-between;
+              font-size: 12px;
+              font-weight: 700;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="label">
+            <div class="header">
+              <div class="brand">GTshirtwear</div>
+              <div class="order-code">Resi: ${escapeHtml(order.orderCode)}</div>
+            </div>
+            <div class="muted">Tanggal: ${escapeHtml(formatDateTime(order.createdAt))}</div>
+
+            <div class="section">
+              <div class="label-title">Penerima</div>
+              <div class="value">${escapeHtml(order.customerName || "-")}</div>
+              <div class="muted">WA: ${escapeHtml(order.customerPhone || "-")}</div>
+              <div class="muted">Alamat: ${escapeHtml(order.customerAddress || "-")}</div>
+            </div>
+
+            <div class="section">
+              <div class="label-title">Pengiriman</div>
+              <div class="value">${escapeHtml(order.shippingMethod || "-")}</div>
+              <div class="muted">Pembayaran: ${escapeHtml(order.paymentMethod || "-")}</div>
+            </div>
+
+            <div class="section">
+              <div class="label-title">Item</div>
+              <table>
+                ${itemRows}
+              </table>
+            </div>
+
+            ${order.notes ? `
+              <div class="section">
+                <div class="label-title">Catatan</div>
+                <div class="muted">${escapeHtml(order.notes)}</div>
+              </div>
+            ` : ""}
+
+            <div class="footer">
+              <div>Total Item: ${totalItems}</div>
+              <div>${escapeHtml(formatRupiah(order.totalAmount))}</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const popup = window.open("", "_blank", "width=720,height=900");
+    if (!popup) {
+      setFeedback({
+        type: "error",
+        text: "Popup diblokir browser. Izinkan popup untuk mencetak resi.",
+      });
+      return;
+    }
+    popup.document.open();
+    popup.document.write(printableHtml);
+    popup.document.close();
+    popup.onload = () => {
+      popup.focus();
+      popup.print();
+    };
   };
 
   const handleSaveProduct = async (event) => {
@@ -1863,6 +2022,13 @@ function ManageStorePage() {
                         >
                           Ubah Status
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => printOrderLabel(order)}
+                          className="admin-order-action"
+                        >
+                          Print Resi
+                        </button>
                       </div>
                     </details>
                   </div>
@@ -1903,19 +2069,28 @@ function ManageStorePage() {
                     )}
 
                     <div className="mt-3">
-                      <select
-                        className="input-modern !py-2 text-xs"
-                        value={order.status}
-                        onChange={(event) =>
-                          handleOrderStatusChange(order.id, event.target.value)
-                        }
-                      >
-                        {ORDER_STATUS_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          className="input-modern !py-2 text-xs"
+                          value={order.status}
+                          onChange={(event) =>
+                            handleOrderStatusChange(order.id, event.target.value)
+                          }
+                        >
+                          {ORDER_STATUS_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => printOrderLabel(order)}
+                          className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200 dark:hover:bg-brand-800/40"
+                        >
+                          Print Resi
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2537,6 +2712,13 @@ function ManageStorePage() {
                   {activeOrderSheet.items.length} item • {activeOrderSheet.items.map((item) => `${item.productName} (${item.size} x${item.quantity})`).join(", ")}
                 </p>
               )}
+              <button
+                type="button"
+                onClick={() => printOrderLabel(activeOrderSheet)}
+                className="mt-3 w-full rounded-xl border border-brand-200 bg-white/80 px-4 py-2.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200 dark:hover:bg-brand-800/40"
+              >
+                Print Resi
+              </button>
               <div className="admin-sheet-options">
                 {ORDER_STATUS_OPTIONS.map((option) => (
                   <button
