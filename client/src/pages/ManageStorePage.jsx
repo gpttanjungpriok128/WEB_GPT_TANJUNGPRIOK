@@ -194,6 +194,7 @@ function ManageStorePage() {
   const [sheetSyncInfo, setSheetSyncInfo] = useState(null);
   const [savingProduct, setSavingProduct] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
+  const [activeOrderSheet, setActiveOrderSheet] = useState(null);
 
   // Image upload state
   const [imageFiles, setImageFiles] = useState([]);
@@ -896,7 +897,7 @@ function ManageStorePage() {
               {editingProductId ? "Edit Produk GTshirt" : "Tambah Produk GTshirt"}
             </h2>
 
-            <form onSubmit={handleSaveProduct} className="mt-4 space-y-4">
+            <form onSubmit={handleSaveProduct} className="mt-4 space-y-4 pb-24 sm:pb-0">
               <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
                 <button
                   type="button"
@@ -1255,7 +1256,7 @@ function ManageStorePage() {
                       Produk aktif ditampilkan di katalog
                     </label>
 
-                    <div className="flex flex-wrap gap-3">
+                    <div className="admin-action-desktop flex flex-wrap gap-3">
                       <button type="submit" disabled={savingProduct} className="btn-primary !px-6 !py-2.5 disabled:opacity-60">
                         {savingProduct
                           ? "Menyimpan..."
@@ -1271,6 +1272,23 @@ function ManageStorePage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="admin-sticky-actions sm:hidden">
+                <div className="admin-sticky-surface">
+                  <button type="submit" disabled={savingProduct} className="btn-primary min-h-[44px] flex-1 !px-4 !py-3 disabled:opacity-60">
+                    {savingProduct
+                      ? "Menyimpan..."
+                      : editingProductId
+                        ? "Update Produk"
+                        : "Tambah Produk"}
+                  </button>
+                  {editingProductId && (
+                    <button type="button" onClick={resetProductForm} className="btn-outline min-h-[44px] !px-4 !py-3">
+                      Batal
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
         </article>
@@ -1548,7 +1566,7 @@ function ManageStorePage() {
                     </p>
                   )}
 
-                  <div className="mt-3">
+                  <div className="mt-3 hidden sm:block">
                     <select
                       className="input-modern !py-2 text-xs"
                       value={order.status}
@@ -1562,6 +1580,15 @@ function ManageStorePage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div className="mt-3 sm:hidden">
+                    <button
+                      type="button"
+                      onClick={() => setActiveOrderSheet(order)}
+                      className="admin-order-action"
+                    >
+                      Ubah Status
+                    </button>
                   </div>
                 </div>
               ))}
@@ -2033,6 +2060,61 @@ function ManageStorePage() {
             </ul>
           </div>
         </section>
+      )}
+
+      {activeOrderSheet && (
+        <div className="admin-sheet-backdrop sm:hidden" onClick={() => setActiveOrderSheet(null)} role="presentation">
+          <div className="admin-sheet" onClick={(event) => event.stopPropagation()}>
+            <div className="admin-sheet-handle" />
+            <div className="admin-sheet-header">
+              <div>
+                <p className="text-sm font-semibold text-brand-900 dark:text-white">
+                  {activeOrderSheet.orderCode}
+                </p>
+                <p className="text-xs text-brand-500 dark:text-brand-400">
+                  {activeOrderSheet.customerName} • {activeOrderSheet.customerPhone}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveOrderSheet(null)}
+                className="admin-sheet-close"
+              >
+                Tutup
+              </button>
+            </div>
+            <div className="admin-sheet-body">
+              <div className="admin-sheet-meta">
+                <span>{formatDateTime(activeOrderSheet.createdAt)}</span>
+                <span>{activeOrderSheet.shippingMethod}</span>
+                <span>{activeOrderSheet.paymentMethod}</span>
+                <span className="font-semibold text-brand-900 dark:text-white">
+                  {formatRupiah(activeOrderSheet.totalAmount)}
+                </span>
+              </div>
+              {Array.isArray(activeOrderSheet.items) && activeOrderSheet.items.length > 0 && (
+                <p className="mt-2 text-xs text-brand-500 dark:text-brand-400">
+                  {activeOrderSheet.items.length} item • {activeOrderSheet.items.map((item) => `${item.productName} (${item.size} x${item.quantity})`).join(", ")}
+                </p>
+              )}
+              <div className="admin-sheet-options">
+                {ORDER_STATUS_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      handleOrderStatusChange(activeOrderSheet.id, option.value);
+                      setActiveOrderSheet(null);
+                    }}
+                    className={`admin-sheet-option ${activeOrderSheet.status === option.value ? "is-active" : ""}`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

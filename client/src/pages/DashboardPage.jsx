@@ -71,7 +71,7 @@ function DashboardPage() {
               <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
             </div>
           ) : stats ? (
-            <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <section className="admin-stats-grid grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {Object.entries(stats).map(([key, value]) => (
                 <div key={key} className="glass-card p-6">
                   <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">
