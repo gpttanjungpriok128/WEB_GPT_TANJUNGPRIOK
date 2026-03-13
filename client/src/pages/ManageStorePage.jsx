@@ -525,7 +525,9 @@ function ManageStorePage() {
   };
 
   const fetchOrders = async (overrides = {}) => {
-    setLoadingOrders(true);
+    if (!overrides.silent) {
+      setLoadingOrders(true);
+    }
     try {
       const { data } = await api.get("/store/admin/orders", {
         params: {
@@ -536,17 +538,23 @@ function ManageStorePage() {
         },
       });
       const rows = Array.isArray(data?.data) ? data.data : [];
-      setOrders(rows);
+      if (!overrides.append) {
+        setOrders(rows);
+      }
       return rows;
     } catch (error) {
-      setOrders([]);
-      setFeedback({
-        type: "error",
-        text: error.response?.data?.message || "Gagal memuat data order toko.",
-      });
+      if (!overrides.silent) {
+        setOrders([]);
+        setFeedback({
+          type: "error",
+          text: error.response?.data?.message || "Gagal memuat data order toko.",
+        });
+      }
       return [];
     } finally {
-      setLoadingOrders(false);
+      if (!overrides.silent) {
+        setLoadingOrders(false);
+      }
     }
   };
 
@@ -1023,7 +1031,7 @@ function ManageStorePage() {
         setLastScannedAt(new Date());
         setScanStatus(`Memproses ${normalized}...`);
         setScanError("");
-        const rows = await fetchOrders({ search: normalized });
+        const rows = await fetchOrders({ search: normalized, silent: true });
         const matched = rows.find((row) => String(row.orderCode || "").toUpperCase() === normalized);
         if (!matched) {
           setScanError("Order tidak ditemukan.");
@@ -1031,7 +1039,7 @@ function ManageStorePage() {
           hasScannedRef.current = false;
           return;
         }
-        await handleOrderStatusChange(matched.id, "shipping");
+        await handleOrderStatusChange(matched.id, "shipping", { skipRefresh: true, silent: true });
         setScanStatus(`Status ${normalized} → shipping`);
         setTimeout(() => {
           hasScannedRef.current = false;
@@ -1245,16 +1253,32 @@ function ManageStorePage() {
     }
   };
 
-  const handleOrderStatusChange = async (orderId, status) => {
+  const handleOrderStatusChange = async (orderId, status, options = {}) => {
+    const previousOrders = orders;
+    const shouldRefresh = !options.skipRefresh;
+    const shouldNotify = !options.silent;
+
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, status } : order,
+      ),
+    );
     try {
       await api.patch(`/store/admin/orders/${orderId}/status`, { status });
-      await Promise.all([fetchOrders(), fetchAnalytics()]);
-      setFeedback({ type: "success", text: "Status order berhasil diperbarui." });
+      if (shouldRefresh) {
+        await Promise.all([fetchOrders(), fetchAnalytics()]);
+      }
+      if (shouldNotify) {
+        setFeedback({ type: "success", text: "Status order berhasil diperbarui." });
+      }
     } catch (error) {
-      setFeedback({
-        type: "error",
-        text: error.response?.data?.message || "Gagal memperbarui status order.",
-      });
+      setOrders(previousOrders);
+      if (shouldNotify) {
+        setFeedback({
+          type: "error",
+          text: error.response?.data?.message || "Gagal memperbarui status order.",
+        });
+      }
     }
   };
 
