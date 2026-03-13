@@ -16,7 +16,16 @@ const DEFAULT_SHIPPING_COST = 15000;
 const STORE_WHATSAPP_NUMBER = String(
   process.env.STORE_WHATSAPP_NUMBER || '6282118223784' // Format: +62 821-1822-3784
 ).replace(/\D/g, '');
-const ORDER_STATUSES = ['new', 'confirmed', 'packed', 'shipping', 'completed', 'cancelled'];
+const ORDER_STATUSES = [
+  'new',
+  'confirmed',
+  'packed',
+  'ready_pickup',
+  'shipping',
+  'picked_up',
+  'completed',
+  'cancelled'
+];
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 
 function getUploadedFiles(req) {
@@ -1674,7 +1683,7 @@ async function getAdminAnalytics(req, res, next) {
       }),
       StoreOrder.count(),
       StoreOrder.count({ where: { status: 'new' } }),
-      StoreOrder.count({ where: { status: 'completed' } }),
+      StoreOrder.count({ where: { status: { [Op.in]: ['completed', 'picked_up'] } } }),
       StoreOrder.count({ where: { status: 'cancelled' } }),
       StoreOrder.findAll({
         attributes: ['status', [fn('SUM', col('totalAmount')), 'total']],

@@ -137,7 +137,8 @@ function TrackOrderPage() {
             )}
 
             <div className="mt-5 rounded-2xl border border-brand-200 bg-brand-50/70 p-4 text-sm text-brand-600 dark:border-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
-              Status order akan bergerak dari `Order Masuk` ke `Dikonfirmasi`, lalu `Dikemas`, dan terakhir `Selesai`.
+              Status order bergerak dari `Order Masuk` → `Dikonfirmasi` → `Dikemas`.
+              Untuk kurir lanjut ke `Dalam Pengiriman` → `Selesai`, sedangkan ambil di gereja lanjut ke `Siap Diambil` → `Sudah Diambil`.
             </div>
 
             <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
@@ -195,7 +196,7 @@ function TrackOrderPage() {
                 </div>
 
                 <div className="mt-6">
-                  <StoreOrderProgress status={order.status} />
+                  <StoreOrderProgress status={order.status} shippingMethod={order.shippingMethod} />
                 </div>
               </article>
 

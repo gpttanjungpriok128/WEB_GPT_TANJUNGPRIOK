@@ -9,13 +9,17 @@ const ORDER_STATUS_OPTIONS = [
   { value: "new", label: "Baru" },
   { value: "confirmed", label: "Dikonfirmasi" },
   { value: "packed", label: "Dikemas" },
+  { value: "ready_pickup", label: "Siap Diambil" },
   { value: "shipping", label: "Dalam Pengiriman" },
+  { value: "picked_up", label: "Sudah Diambil" },
   { value: "completed", label: "Selesai" },
   { value: "cancelled", label: "Dibatalkan" },
 ];
 
 const REPORT_STATUS_OPTIONS = [
   { value: "all", label: "Semua Status" },
+  { value: "picked_up", label: "Sudah Diambil" },
+  { value: "ready_pickup", label: "Siap Diambil" },
   { value: "completed", label: "Selesai" },
   { value: "shipping", label: "Dalam Pengiriman" },
   { value: "packed", label: "Dikemas" },
@@ -48,13 +52,17 @@ const STATUS_RANK = {
   new: 0,
   confirmed: 1,
   packed: 2,
+  ready_pickup: 3,
   shipping: 3,
+  picked_up: 4,
   completed: 4,
   cancelled: 5,
 };
 const SCAN_STATUS_LABELS = {
-  packed: "siap diambil",
+  packed: "dikemas",
+  ready_pickup: "siap diambil",
   shipping: "shipping",
+  picked_up: "sudah diambil",
   completed: "selesai",
   cancelled: "dibatalkan",
 };
@@ -149,7 +157,12 @@ function buildOrderQrValue(orderCode, mode, baseUrl = "") {
 function isPickupShippingMethod(value) {
   const normalized = String(value || "").trim().toLowerCase();
   if (!normalized) return false;
-  return normalized.includes("ambil") || normalized.includes("pickup") || normalized.includes("pick up");
+  return (
+    normalized.includes("ambil") ||
+    normalized.includes("pickup") ||
+    normalized.includes("pick up") ||
+    normalized.includes("pick-up")
+  );
 }
 
 function resolveScanStatusLabel(status) {
@@ -378,7 +391,9 @@ function statusBadge(status) {
     new: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
     confirmed: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
     packed: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
+    ready_pickup: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
     shipping: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    picked_up: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
     completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
     cancelled: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
   };
@@ -1196,11 +1211,12 @@ function ManageStorePage() {
   };
 
   const resolveScanTargetStatus = (order, mode) => {
-    if (mode === "invoice") return "completed";
+    const isPickup = isPickupShippingMethod(order?.shippingMethod);
+    if (mode === "invoice") return isPickup ? "picked_up" : "completed";
     if (mode === "resi") {
-      return isPickupShippingMethod(order?.shippingMethod) ? "packed" : "shipping";
+      return isPickup ? "ready_pickup" : "shipping";
     }
-    return "shipping";
+    return isPickup ? "ready_pickup" : "shipping";
   };
 
   const updateOrderStatusFromScan = async (orderId, orderCode, nextStatus) => {
@@ -1640,6 +1656,25 @@ function ManageStorePage() {
         });
       }
     }
+  };
+
+  const getQuickActionForOrder = (order) => {
+    if (!order) return null;
+    if (order.status === "new") {
+      return { label: "Konfirmasi Pesanan", nextStatus: "confirmed" };
+    }
+    if (order.status === "confirmed") {
+      return { label: "Dikemas", nextStatus: "packed" };
+    }
+    return null;
+  };
+
+  const handleQuickOrderAction = async (order, action) => {
+    if (!order || !action) return;
+    await handleOrderStatusChange(order.id, action.nextStatus, {
+      skipRefresh: true,
+      silent: true,
+    });
   };
 
   const handleClearOrders = async () => {
@@ -2446,7 +2481,7 @@ function ManageStorePage() {
                   <option key={option.value || "all"} value={option.value}>
                     {option.label}
                   </option>
-                ))}
+                )})
               </select>
             </div>
             <button
@@ -2758,12 +2793,14 @@ function ManageStorePage() {
             )}
             {!loadingOrders && (
               <div style={{ paddingTop: orderPaddingTop, paddingBottom: orderPaddingBottom }}>
-                {visibleOrders.map((order, index) => (
-                  <div
-                    key={order.id}
-                    ref={useVirtualOrders && index === 0 ? orderRowMeasureRef : null}
-                    className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
-                  >
+                {visibleOrders.map((order, index) => {
+                  const quickAction = getQuickActionForOrder(order);
+                  return (
+                    <div
+                      key={order.id}
+                      ref={useVirtualOrders && index === 0 ? orderRowMeasureRef : null}
+                      className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
+                    >
                   <div className="sm:hidden">
                     <details className="admin-order-details">
                       <summary className="admin-order-summary mobile-summary flex items-center justify-between gap-3">
@@ -2823,6 +2860,15 @@ function ManageStorePage() {
                           <p className="text-[11px] text-brand-500 dark:text-brand-400">
                             {order.items.length} item • {order.items.map((item) => `${item.productName} (${item.size} x${item.quantity})`).join(", ")}
                           </p>
+                        )}
+                        {quickAction && (
+                          <button
+                            type="button"
+                            onClick={() => handleQuickOrderAction(order, quickAction)}
+                            className="btn-primary !w-full !py-2 !text-xs"
+                          >
+                            {quickAction.label}
+                          </button>
                         )}
                         <button
                           type="button"
@@ -2889,6 +2935,15 @@ function ManageStorePage() {
 
                     <div className="mt-3">
                       <div className="flex flex-wrap items-center gap-2">
+                        {quickAction && (
+                          <button
+                            type="button"
+                            onClick={() => handleQuickOrderAction(order, quickAction)}
+                            className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90"
+                          >
+                            {quickAction.label}
+                          </button>
+                        )}
                         <select
                           className="input-modern !py-2 text-xs"
                           value={order.status}
@@ -2993,8 +3048,8 @@ function ManageStorePage() {
               Scan QR Resi / Invoice
             </h3>
             <p className="mt-2 text-sm text-brand-600 dark:text-brand-300">
-              QR resi menandai pesanan sebagai <strong>siap diambil</strong> atau <strong>shipping</strong>.
-              QR invoice menandai pesanan sebagai <strong>selesai</strong>.
+              QR resi menandai pesanan menjadi <strong>siap diambil</strong> (ambil di gereja) atau <strong>shipping</strong> (kurir).
+              QR invoice menandai pesanan menjadi <strong>sudah diambil</strong> / <strong>selesai</strong>.
             </p>
 
             <div className="mt-4 relative overflow-hidden rounded-2xl border border-brand-200 bg-black dark:border-brand-700">

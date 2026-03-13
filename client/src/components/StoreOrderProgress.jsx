@@ -1,7 +1,7 @@
 import { buildOrderProgress, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
 
-function StoreOrderProgress({ status = "new" }) {
-  const steps = buildOrderProgress(status);
+function StoreOrderProgress({ status = "new", shippingMethod = "" }) {
+  const steps = buildOrderProgress(status, shippingMethod);
   const isCancelled = status === "cancelled";
 
   return (
@@ -15,7 +15,7 @@ function StoreOrderProgress({ status = "new" }) {
         </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-5">
         {steps.map((step, index) => {
           const isDone = step.state === "done";
           const isCurrent = step.state === "current";

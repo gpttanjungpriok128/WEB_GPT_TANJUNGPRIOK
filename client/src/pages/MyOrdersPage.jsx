@@ -206,7 +206,7 @@ function MyOrdersPage() {
                 )}
 
                 <div className="mt-4">
-                  <StoreOrderProgress status={order.status} />
+                  <StoreOrderProgress status={order.status} shippingMethod={order.shippingMethod} />
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
