@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import * as XLSX from "xlsx";
 import api from "../services/api";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
@@ -89,7 +90,23 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function buildPrintLabelMarkup(order, { logoUrl } = {}) {
+function extractOrderCodeFromQr(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    return (
+      url.searchParams.get("orderCode") ||
+      url.searchParams.get("code") ||
+      url.searchParams.get("order") ||
+      ""
+    ).trim();
+  } catch {
+    return raw;
+  }
+}
+
+function buildPrintLabelMarkup(order, { logoUrl, qrValue } = {}) {
   if (!order) return "";
   const items = Array.isArray(order.items) ? order.items : [];
   const totalItems = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
@@ -101,9 +118,10 @@ function buildPrintLabelMarkup(order, { logoUrl } = {}) {
         </tr>
       `).join("")
     : `<tr><td colspan="2" class="muted">Tidak ada item.</td></tr>`;
-  const qrValue = order.orderCode ? encodeURIComponent(order.orderCode) : "";
-  const qrUrl = qrValue
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${qrValue}`
+  const resolvedQrValue = qrValue || order.orderCode || "";
+  const encodedQrValue = resolvedQrValue ? encodeURIComponent(resolvedQrValue) : "";
+  const qrUrl = encodedQrValue
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodedQrValue}`
     : "";
 
   return `
@@ -377,6 +395,7 @@ function resolveImageUrl(src) {
 
 function ManageStorePage() {
   // ── Tab Navigation State ───────────────────
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("produk");
 
   // ── Product State ──────────────────────────
@@ -420,6 +439,8 @@ function ManageStorePage() {
   const [savingProduct, setSavingProduct] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
   const [activeOrderSheet, setActiveOrderSheet] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scanError, setScanError] = useState("");
   const [productFieldErrors, setProductFieldErrors] = useState({});
   const [tabHidden, setTabHidden] = useState(false);
 
@@ -433,6 +454,10 @@ function ManageStorePage() {
   const basePriceInputRef = useRef(null);
   const sizesInputRef = useRef(null);
   const imageDropRef = useRef(null);
+  const qrVideoRef = useRef(null);
+  const scanIntervalRef = useRef(null);
+  const scanStreamRef = useRef(null);
+  const hasScannedRef = useRef(false);
   const [dragPreviewIndex, setDragPreviewIndex] = useState(null);
 
   // Shipping cost state
@@ -637,6 +662,18 @@ function ManageStorePage() {
       fetchRevenueReport();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!location?.search) return;
+    const params = new URLSearchParams(location.search);
+    const rawCode = params.get("order") || params.get("orderCode") || params.get("code");
+    if (!rawCode) return;
+    const normalized = rawCode.trim().toUpperCase();
+    if (!normalized) return;
+    setActiveTab("pesanan");
+    setOrderSearch(normalized);
+    fetchOrders({ search: normalized });
+  }, [location.search]);
 
   const metricCards = useMemo(() => {
     const metrics = analytics?.metrics;
@@ -874,7 +911,11 @@ function ManageStorePage() {
 
   const printOrderLabel = (order) => {
     if (!order) return;
-    const markup = buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo });
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const qrValue = baseUrl && order.orderCode
+      ? `${baseUrl}/track-order?orderCode=${encodeURIComponent(order.orderCode)}`
+      : order.orderCode;
+    const markup = buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo, qrValue });
     openPrintWindow(buildPrintDocument(markup, { layout: "thermal" }));
   };
 
@@ -890,10 +931,99 @@ function ManageStorePage() {
       return;
     }
     const markup = safeOrders
-      .map((order) => buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo }))
+      .map((order) => {
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+        const qrValue = baseUrl && order.orderCode
+          ? `${baseUrl}/track-order?orderCode=${encodeURIComponent(order.orderCode)}`
+          : order.orderCode;
+        return buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo, qrValue });
+      })
       .join("");
     openPrintWindow(buildPrintDocument(markup, { layout: "a4" }));
   };
+
+  const stopScanner = () => {
+    if (scanIntervalRef.current) {
+      window.clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    if (scanStreamRef.current) {
+      scanStreamRef.current.getTracks().forEach((track) => track.stop());
+      scanStreamRef.current = null;
+    }
+    if (qrVideoRef.current) {
+      qrVideoRef.current.srcObject = null;
+    }
+    hasScannedRef.current = false;
+  };
+
+  useEffect(() => {
+    if (!isScannerOpen) {
+      stopScanner();
+      return;
+    }
+    if (typeof window === "undefined") return;
+    if (!("BarcodeDetector" in window)) {
+      setScanError("Scanner QR belum didukung di browser ini.");
+      return;
+    }
+
+    let cancelled = false;
+    const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+
+    const startScanner = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        scanStreamRef.current = stream;
+        if (qrVideoRef.current) {
+          qrVideoRef.current.srcObject = stream;
+          await qrVideoRef.current.play();
+        }
+        hasScannedRef.current = false;
+        scanIntervalRef.current = window.setInterval(async () => {
+          if (!qrVideoRef.current || hasScannedRef.current) return;
+          if (qrVideoRef.current.readyState < 2) return;
+          try {
+            const results = await detector.detect(qrVideoRef.current);
+            if (!results || results.length === 0) return;
+            hasScannedRef.current = true;
+            const rawValue = results[0].rawValue || "";
+            const orderCode = extractOrderCodeFromQr(rawValue);
+            if (!orderCode) {
+              setScanError("QR tidak berisi kode order.");
+              hasScannedRef.current = false;
+              return;
+            }
+            const normalized = orderCode.toUpperCase();
+            setActiveTab("pesanan");
+            setOrderSearch(normalized);
+            fetchOrders({ search: normalized });
+            setIsScannerOpen(false);
+            setScanError("");
+          } catch (error) {
+            setScanError("Gagal membaca QR. Coba ulangi.");
+            hasScannedRef.current = false;
+          }
+        }, 600);
+      } catch (error) {
+        setScanError("Gagal mengakses kamera. Pastikan izin kamera aktif.");
+      }
+    };
+
+    startScanner();
+
+    return () => {
+      cancelled = true;
+      stopScanner();
+    };
+  }, [isScannerOpen]);
 
   const toggleOrderSelection = (orderId) => {
     setSelectedOrderIds((previous) => {
@@ -2056,6 +2186,16 @@ function ManageStorePage() {
             </button>
             <button
               type="button"
+              onClick={() => {
+                setIsScannerOpen(true);
+                setScanError("");
+              }}
+              className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
+            >
+              Scan QR
+            </button>
+            <button
+              type="button"
               onClick={clearSelectedOrders}
               className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
             >
@@ -2894,6 +3034,51 @@ function ManageStorePage() {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-brand-200 bg-white/95 shadow-2xl dark:border-brand-700 dark:bg-brand-950">
+            <div className="flex items-center justify-between border-b border-brand-200 px-4 py-3 dark:border-brand-700">
+              <div>
+                <p className="text-sm font-semibold text-brand-900 dark:text-white">Scan QR Resi</p>
+                <p className="text-xs text-brand-500 dark:text-brand-400">Arahkan kamera ke QR pada resi</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(false)}
+                className="rounded-xl border border-brand-200 px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-200 dark:hover:bg-brand-800/40"
+              >
+                Tutup
+              </button>
+            </div>
+            <div className="space-y-3 p-4">
+              <div className="relative overflow-hidden rounded-xl border border-brand-200 bg-black dark:border-brand-700">
+                <video
+                  ref={qrVideoRef}
+                  className="h-64 w-full object-cover"
+                  muted
+                  playsInline
+                />
+                <div className="pointer-events-none absolute inset-4 rounded-xl border-2 border-emerald-400/70" />
+              </div>
+              {scanError ? (
+                <p className="text-xs font-semibold text-rose-500">{scanError}</p>
+              ) : (
+                <p className="text-xs text-brand-500 dark:text-brand-400">
+                  Scanner akan otomatis menangkap QR dan membuka data order.
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(false)}
+                className="w-full rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white"
+              >
+                Kembali
+              </button>
             </div>
           </div>
         </div>

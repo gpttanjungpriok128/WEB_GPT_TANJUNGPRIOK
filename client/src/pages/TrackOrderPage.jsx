@@ -24,8 +24,13 @@ function formatDateTime(value) {
 
 function TrackOrderPage() {
   const [searchParams] = useSearchParams();
+  const initialOrderCode =
+    searchParams.get("orderCode") ||
+    searchParams.get("code") ||
+    searchParams.get("order") ||
+    "";
   const [form, setForm] = useState({
-    orderCode: searchParams.get("orderCode") || "",
+    orderCode: initialOrderCode,
     phone: "",
   });
   const [order, setOrder] = useState(null);
