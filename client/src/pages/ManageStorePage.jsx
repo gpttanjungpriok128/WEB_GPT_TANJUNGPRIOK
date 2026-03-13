@@ -1254,7 +1254,7 @@ function ManageStorePage() {
       await api.patch(`/store/admin/orders/${orderId}/status`, { status: targetStatus });
       setScanStatus(`Status ${orderCode} → ${targetLabel}`);
       return targetStatus;
-    } catch {
+    } catch (error) {
       if (existing && previousStatus) {
         setOrders((prev) =>
           prev.map((order) =>
@@ -1262,7 +1262,11 @@ function ManageStorePage() {
           ),
         );
       }
-      setScanError("Gagal memperbarui status order.");
+      const serverMessage = error?.response?.data?.message;
+      const hint = serverMessage && /status order tidak valid|enum/i.test(serverMessage)
+        ? " Backend belum migrasi status pickup."
+        : "";
+      setScanError(serverMessage ? `${serverMessage}${hint}` : "Gagal memperbarui status order.");
       setScanStatus("");
       return previousStatus || targetStatus;
     }
