@@ -42,6 +42,8 @@ const API_BASE =
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL"];
 const REPORT_FILTERS_KEY = "gpt_tanjungpriok_admin_report_filters_v1";
+const ORDER_PAGE_SIZE = 12;
+const REVIEW_PAGE_SIZE = 12;
 
 const normalizeSizeLabel = (value) =>
   String(value || "")
@@ -445,6 +447,12 @@ function ManageStorePage() {
   const [lastScannedCode, setLastScannedCode] = useState("");
   const [lastScannedAt, setLastScannedAt] = useState(null);
   const [scanSession, setScanSession] = useState(0);
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderMeta, setOrderMeta] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [isLoadingMoreOrders, setIsLoadingMoreOrders] = useState(false);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewMeta, setReviewMeta] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState(false);
   const [productFieldErrors, setProductFieldErrors] = useState({});
   const [tabHidden, setTabHidden] = useState(false);
 
@@ -525,22 +533,40 @@ function ManageStorePage() {
   };
 
   const fetchOrders = async (overrides = {}) => {
-    if (!overrides.silent) {
+    const page = Math.max(1, Number(overrides.page ?? orderPage) || 1);
+    const limit = Math.min(50, Math.max(1, Number(overrides.limit ?? ORDER_PAGE_SIZE) || ORDER_PAGE_SIZE));
+    const append = Boolean(overrides.append);
+    if (append) {
+      setIsLoadingMoreOrders(true);
+    } else if (!overrides.silent) {
       setLoadingOrders(true);
     }
     try {
       const { data } = await api.get("/store/admin/orders", {
         params: {
-          page: 1,
-          limit: 20,
+          page,
+          limit,
           search: overrides.search ?? orderSearch,
           status: overrides.status ?? orderStatusFilter,
         },
       });
       const rows = Array.isArray(data?.data) ? data.data : [];
-      if (!overrides.append) {
-        setOrders(rows);
-      }
+      const meta = data?.meta || { page, totalPages: 1, total: rows.length };
+      setOrderMeta({
+        page: meta.page ?? page,
+        totalPages: meta.totalPages ?? 1,
+        total: meta.total ?? rows.length,
+      });
+      setOrderPage(page);
+      setOrders((prev) => {
+        if (!append) return rows;
+        const existing = new Set(prev.map((order) => order.id));
+        const merged = [...prev];
+        rows.forEach((order) => {
+          if (!existing.has(order.id)) merged.push(order);
+        });
+        return merged;
+      });
       return rows;
     } catch (error) {
       if (!overrides.silent) {
@@ -552,24 +578,49 @@ function ManageStorePage() {
       }
       return [];
     } finally {
-      if (!overrides.silent) {
+      if (append) {
+        setIsLoadingMoreOrders(false);
+      } else if (!overrides.silent) {
         setLoadingOrders(false);
       }
     }
   };
 
   const fetchReviews = async (overrides = {}) => {
-    setLoadingReviews(true);
+    const page = Math.max(1, Number(overrides.page ?? reviewPage) || 1);
+    const limit = Math.min(50, Math.max(1, Number(overrides.limit ?? REVIEW_PAGE_SIZE) || REVIEW_PAGE_SIZE));
+    const append = Boolean(overrides.append);
+    if (append) {
+      setIsLoadingMoreReviews(true);
+    } else {
+      setLoadingReviews(true);
+    }
     try {
       const { data } = await api.get("/store/admin/reviews", {
         params: {
-          page: 1,
-          limit: 20,
+          page,
+          limit,
           search: overrides.search ?? reviewSearch,
           status: overrides.status ?? reviewStatusFilter,
         },
       });
-      setReviews(Array.isArray(data?.data) ? data.data : []);
+      const rows = Array.isArray(data?.data) ? data.data : [];
+      const meta = data?.meta || { page, totalPages: 1, total: rows.length };
+      setReviewMeta({
+        page: meta.page ?? page,
+        totalPages: meta.totalPages ?? 1,
+        total: meta.total ?? rows.length,
+      });
+      setReviewPage(page);
+      setReviews((prev) => {
+        if (!append) return rows;
+        const existing = new Set(prev.map((review) => review.id));
+        const merged = [...prev];
+        rows.forEach((review) => {
+          if (!existing.has(review.id)) merged.push(review);
+        });
+        return merged;
+      });
     } catch (error) {
       setReviews([]);
       setFeedback({
@@ -577,7 +628,11 @@ function ManageStorePage() {
         text: error.response?.data?.message || "Gagal memuat ulasan produk.",
       });
     } finally {
-      setLoadingReviews(false);
+      if (append) {
+        setIsLoadingMoreReviews(false);
+      } else {
+        setLoadingReviews(false);
+      }
     }
   };
 
@@ -658,12 +713,23 @@ function ManageStorePage() {
   };
 
   useEffect(() => {
-    fetchProducts();
-    fetchOrders();
-    fetchReviews();
     fetchAnalytics();
-    fetchShippingSettings();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "produk") {
+      fetchProducts();
+    }
+    if (activeTab === "pesanan") {
+      fetchOrders({ page: 1 });
+    }
+    if (activeTab === "ulasan") {
+      fetchReviews({ page: 1 });
+    }
+    if (activeTab === "ongkir") {
+      fetchShippingSettings();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     setSelectedOrderIds((previous) => {
@@ -673,6 +739,32 @@ function ManageStorePage() {
       return next;
     });
   }, [orders]);
+
+  useEffect(() => {
+    if (activeTab !== "produk") return;
+    const timeout = window.setTimeout(() => {
+      fetchProducts({ search: productSearch, active: productActiveFilter });
+    }, 400);
+    return () => window.clearTimeout(timeout);
+  }, [activeTab, productSearch, productActiveFilter]);
+
+  useEffect(() => {
+    if (activeTab !== "pesanan") return;
+    const timeout = window.setTimeout(() => {
+      setOrderPage(1);
+      fetchOrders({ page: 1, search: orderSearch, status: orderStatusFilter });
+    }, 400);
+    return () => window.clearTimeout(timeout);
+  }, [activeTab, orderSearch, orderStatusFilter]);
+
+  useEffect(() => {
+    if (activeTab !== "ulasan") return;
+    const timeout = window.setTimeout(() => {
+      setReviewPage(1);
+      fetchReviews({ page: 1, search: reviewSearch, status: reviewStatusFilter });
+    }, 400);
+    return () => window.clearTimeout(timeout);
+  }, [activeTab, reviewSearch, reviewStatusFilter]);
 
   useEffect(() => {
     if (activeTab === "laporan") {
@@ -1290,7 +1382,8 @@ function ManageStorePage() {
     try {
       await api.post("/store/admin/orders/reset");
       setFeedback({ type: "success", text: "Semua pesanan berhasil dihapus." });
-      await Promise.all([fetchOrders(), fetchAnalytics()]);
+      setOrderPage(1);
+      await Promise.all([fetchOrders({ page: 1 }), fetchAnalytics()]);
     } catch (error) {
       setFeedback({
         type: "error",
@@ -2246,7 +2339,10 @@ function ManageStorePage() {
             </div>
             <button
               type="button"
-              onClick={() => fetchOrders()}
+              onClick={() => {
+                setOrderPage(1);
+                fetchOrders({ page: 1 });
+              }}
               className="btn-primary !px-6 !py-2.5"
             >
               Terapkan
@@ -2479,6 +2575,18 @@ function ManageStorePage() {
                   </div>
                 </div>
               ))}
+            {!loadingOrders && orderPage < orderMeta.totalPages && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => fetchOrders({ page: orderPage + 1, append: true })}
+                  disabled={isLoadingMoreOrders}
+                  className="btn-outline !px-4 !py-2 text-xs disabled:opacity-60"
+                >
+                  {isLoadingMoreOrders ? "Memuat..." : "Muat Order Lainnya"}
+                </button>
+              </div>
+            )}
           </div>
         </article>
 
@@ -2662,7 +2770,10 @@ function ManageStorePage() {
               </div>
               <button
                 type="button"
-                onClick={() => fetchReviews()}
+                onClick={() => {
+                  setReviewPage(1);
+                  fetchReviews({ page: 1 });
+                }}
                 className="btn-primary !px-6 !py-2.5"
               >
                 Terapkan
@@ -2757,6 +2868,18 @@ function ManageStorePage() {
                     </div>
                   </div>
                 ))}
+              {!loadingReviews && reviewPage < reviewMeta.totalPages && (
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => fetchReviews({ page: reviewPage + 1, append: true })}
+                    disabled={isLoadingMoreReviews}
+                    className="btn-outline !px-4 !py-2 text-xs disabled:opacity-60"
+                  >
+                    {isLoadingMoreReviews ? "Memuat..." : "Muat Ulasan Lainnya"}
+                  </button>
+                </div>
+              )}
             </div>
           </article>
 
