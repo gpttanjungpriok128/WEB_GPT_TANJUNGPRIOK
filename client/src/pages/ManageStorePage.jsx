@@ -164,8 +164,12 @@ function buildPrintDocument(markup) {
         <meta charset="utf-8" />
         <title>Resi Pesanan</title>
         <style>
-          @page { size: 100mm 150mm; margin: 8mm; }
+          @page { size: 100mm 150mm; margin: 0; }
           * { box-sizing: border-box; }
+          html, body {
+            width: 100mm;
+            min-height: 150mm;
+          }
           body {
             font-family: "Arial", sans-serif;
             color: #0f172a;
@@ -174,10 +178,11 @@ function buildPrintDocument(markup) {
             background: #fff;
           }
           .label {
-            border: 2px dashed #0f766e;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 12mm;
+            width: 100mm;
+            min-height: 150mm;
+            padding: 8mm;
+            border: 0;
+            margin: 0;
           }
           .header {
             display: flex;
