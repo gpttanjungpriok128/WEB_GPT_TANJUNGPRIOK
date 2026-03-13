@@ -156,7 +156,8 @@ function buildPrintLabelMarkup(order, { logoUrl } = {}) {
   `;
 }
 
-function buildPrintDocument(markup) {
+function buildPrintDocument(markup, { layout = "thermal" } = {}) {
+  const isA4 = layout === "a4";
   return `
     <!doctype html>
     <html lang="id">
@@ -164,11 +165,11 @@ function buildPrintDocument(markup) {
         <meta charset="utf-8" />
         <title>Resi Pesanan</title>
         <style>
-          @page { size: 100mm 150mm; margin: 0; }
+          @page { size: ${isA4 ? "A4" : "100mm 150mm"}; margin: ${isA4 ? "8mm" : "0"}; }
           * { box-sizing: border-box; }
           html, body {
-            width: 100mm;
-            min-height: 150mm;
+            width: ${isA4 ? "210mm" : "100mm"};
+            min-height: ${isA4 ? "297mm" : "150mm"};
           }
           body {
             font-family: "Arial", sans-serif;
@@ -177,12 +178,18 @@ function buildPrintDocument(markup) {
             padding: 0;
             background: #fff;
           }
+          .sheet {
+            ${isA4 ? "display: grid; grid-template-columns: repeat(2, 1fr); gap: 6mm; align-content: start;" : ""}
+          }
           .label {
-            width: 100mm;
-            min-height: 150mm;
-            padding: 8mm;
-            border: 0;
+            width: ${isA4 ? "94mm" : "100mm"};
+            min-height: ${isA4 ? "137mm" : "150mm"};
+            padding: ${isA4 ? "6mm" : "8mm"};
+            border: ${isA4 ? "1px dashed #0f766e" : "0"};
+            border-radius: ${isA4 ? "10px" : "0"};
             margin: 0;
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
           .header {
             display: flex;
@@ -257,16 +264,10 @@ function buildPrintDocument(markup) {
             font-weight: 700;
             color: #0f766e;
           }
-          .page-break {
-            page-break-after: always;
-          }
-          .page-break:last-child {
-            page-break-after: auto;
-          }
         </style>
       </head>
       <body>
-        ${markup}
+        ${isA4 ? `<div class="sheet">${markup}</div>` : markup}
       </body>
     </html>
   `;
@@ -874,7 +875,7 @@ function ManageStorePage() {
   const printOrderLabel = (order) => {
     if (!order) return;
     const markup = buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo });
-    openPrintWindow(buildPrintDocument(markup));
+    openPrintWindow(buildPrintDocument(markup, { layout: "thermal" }));
   };
 
   const printOrderLabels = (orderList) => {
@@ -888,11 +889,10 @@ function ManageStorePage() {
       });
       return;
     }
-    const markup = safeOrders.map((order, index) => {
-      const block = buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo });
-      return `${block}${index < safeOrders.length - 1 ? '<div class="page-break"></div>' : ""}`;
-    }).join("");
-    openPrintWindow(buildPrintDocument(markup));
+    const markup = safeOrders
+      .map((order) => buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo }))
+      .join("");
+    openPrintWindow(buildPrintDocument(markup, { layout: "a4" }));
   };
 
   const toggleOrderSelection = (orderId) => {
