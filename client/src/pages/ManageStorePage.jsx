@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import * as XLSX from "xlsx";
 import api from "../services/api";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
+import jsQR from "jsqr";
 
 const ORDER_STATUS_OPTIONS = [
   { value: "new", label: "Baru" },
@@ -455,6 +456,7 @@ function ManageStorePage() {
   const sizesInputRef = useRef(null);
   const imageDropRef = useRef(null);
   const qrVideoRef = useRef(null);
+  const qrCanvasRef = useRef(null);
   const scanIntervalRef = useRef(null);
   const scanStreamRef = useRef(null);
   const hasScannedRef = useRef(false);
@@ -963,13 +965,63 @@ function ManageStorePage() {
       return;
     }
     if (typeof window === "undefined") return;
-    if (!("BarcodeDetector" in window)) {
-      setScanError("Scanner QR belum didukung di browser ini.");
+
+    let cancelled = false;
+    const hasMedia = Boolean(navigator.mediaDevices?.getUserMedia);
+    if (!hasMedia) {
+      setScanError("Browser tidak mendukung akses kamera.");
       return;
     }
 
-    let cancelled = false;
-    const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+    const useNativeDetector = "BarcodeDetector" in window;
+    const detector = useNativeDetector
+      ? new window.BarcodeDetector({ formats: ["qr_code"] })
+      : null;
+
+    const scanFrame = async () => {
+      if (!qrVideoRef.current || hasScannedRef.current) return;
+      if (qrVideoRef.current.readyState < 2) return;
+      try {
+        let rawValue = "";
+
+        if (useNativeDetector && detector) {
+          const results = await detector.detect(qrVideoRef.current);
+          rawValue = results?.[0]?.rawValue || "";
+        } else {
+          const canvas = qrCanvasRef.current || document.createElement("canvas");
+          qrCanvasRef.current = canvas;
+          const width = qrVideoRef.current.videoWidth || 640;
+          const height = qrVideoRef.current.videoHeight || 480;
+          if (!width || !height) return;
+          if (canvas.width !== width) canvas.width = width;
+          if (canvas.height !== height) canvas.height = height;
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          if (!ctx) return;
+          ctx.drawImage(qrVideoRef.current, 0, 0, width, height);
+          const imageData = ctx.getImageData(0, 0, width, height);
+          const code = jsQR(imageData.data, width, height, { inversionAttempts: "attemptBoth" });
+          rawValue = code?.data || "";
+        }
+
+        if (!rawValue) return;
+        hasScannedRef.current = true;
+        const orderCode = extractOrderCodeFromQr(rawValue);
+        if (!orderCode) {
+          setScanError("QR tidak berisi kode order.");
+          hasScannedRef.current = false;
+          return;
+        }
+        const normalized = orderCode.toUpperCase();
+        setActiveTab("pesanan");
+        setOrderSearch(normalized);
+        fetchOrders({ search: normalized });
+        setIsScannerOpen(false);
+        setScanError("");
+      } catch (error) {
+        setScanError("Gagal membaca QR. Coba ulangi.");
+        hasScannedRef.current = false;
+      }
+    };
 
     const startScanner = async () => {
       try {
@@ -987,31 +1039,7 @@ function ManageStorePage() {
           await qrVideoRef.current.play();
         }
         hasScannedRef.current = false;
-        scanIntervalRef.current = window.setInterval(async () => {
-          if (!qrVideoRef.current || hasScannedRef.current) return;
-          if (qrVideoRef.current.readyState < 2) return;
-          try {
-            const results = await detector.detect(qrVideoRef.current);
-            if (!results || results.length === 0) return;
-            hasScannedRef.current = true;
-            const rawValue = results[0].rawValue || "";
-            const orderCode = extractOrderCodeFromQr(rawValue);
-            if (!orderCode) {
-              setScanError("QR tidak berisi kode order.");
-              hasScannedRef.current = false;
-              return;
-            }
-            const normalized = orderCode.toUpperCase();
-            setActiveTab("pesanan");
-            setOrderSearch(normalized);
-            fetchOrders({ search: normalized });
-            setIsScannerOpen(false);
-            setScanError("");
-          } catch (error) {
-            setScanError("Gagal membaca QR. Coba ulangi.");
-            hasScannedRef.current = false;
-          }
-        }, 600);
+        scanIntervalRef.current = window.setInterval(scanFrame, 550);
       } catch (error) {
         setScanError("Gagal mengakses kamera. Pastikan izin kamera aktif.");
       }
