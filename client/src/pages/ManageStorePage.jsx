@@ -2481,7 +2481,7 @@ function ManageStorePage() {
                   <option key={option.value || "all"} value={option.value}>
                     {option.label}
                   </option>
-                )})
+                ))}
               </select>
             </div>
             <button
