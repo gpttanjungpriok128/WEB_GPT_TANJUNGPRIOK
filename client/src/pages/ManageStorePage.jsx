@@ -44,6 +44,20 @@ const DEFAULT_SIZES = ["S", "M", "L", "XL"];
 const REPORT_FILTERS_KEY = "gpt_tanjungpriok_admin_report_filters_v1";
 const ORDER_PAGE_SIZE = 12;
 const REVIEW_PAGE_SIZE = 12;
+const STATUS_RANK = {
+  new: 0,
+  confirmed: 1,
+  packed: 2,
+  shipping: 3,
+  completed: 4,
+  cancelled: 5,
+};
+const SCAN_STATUS_LABELS = {
+  packed: "siap diambil",
+  shipping: "shipping",
+  completed: "selesai",
+  cancelled: "dibatalkan",
+};
 
 const normalizeSizeLabel = (value) =>
   String(value || "")
@@ -93,24 +107,59 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function extractOrderCodeFromQr(value) {
+function normalizeQrMode(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return "";
+  if (["resi", "label", "shipping"].includes(normalized)) return "resi";
+  if (["invoice", "inv", "pickup", "verify"].includes(normalized)) return "invoice";
+  return normalized;
+}
+
+function parseOrderQrPayload(value) {
   const raw = String(value || "").trim();
-  if (!raw) return "";
+  if (!raw) return { orderCode: "", mode: "", raw: "" };
   try {
     const url = new URL(raw);
-    return (
+    const orderCode = (
       url.searchParams.get("orderCode") ||
       url.searchParams.get("code") ||
       url.searchParams.get("order") ||
       ""
     ).trim();
+    const mode = normalizeQrMode(
+      url.searchParams.get("mode") ||
+      url.searchParams.get("qr") ||
+      url.searchParams.get("type") ||
+      "",
+    );
+    return { orderCode, mode, raw };
   } catch {
-    return raw;
+    return { orderCode: raw, mode: "", raw };
   }
+}
+
+function buildOrderQrValue(orderCode, mode, baseUrl = "") {
+  if (!orderCode) return "";
+  if (!baseUrl) return orderCode;
+  const params = new URLSearchParams({ orderCode });
+  if (mode) params.set("mode", mode);
+  return `${baseUrl}/track-order?${params.toString()}`;
+}
+
+function isPickupShippingMethod(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return false;
+  return normalized.includes("ambil") || normalized.includes("pickup") || normalized.includes("pick up");
+}
+
+function resolveScanStatusLabel(status) {
+  return SCAN_STATUS_LABELS[status] || status;
 }
 
 function buildPrintLabelMarkup(order, { logoUrl, qrValue } = {}) {
   if (!order) return "";
+  const isPickup = isPickupShippingMethod(order.shippingMethod);
+  const deliveryLabel = isPickup ? "Resi Ambil di Gereja" : "Resi Pengiriman";
   const items = Array.isArray(order.items) ? order.items : [];
   const totalItems = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
   const itemRows = items.length > 0
@@ -134,7 +183,7 @@ function buildPrintLabelMarkup(order, { logoUrl, qrValue } = {}) {
           ${logoUrl ? `<img src="${logoUrl}" alt="GTshirt" class="logo" />` : ""}
           <div>
             <div class="brand-name">GTshirtwear</div>
-            <div class="muted">Resi Pengiriman</div>
+            <div class="muted">${deliveryLabel}</div>
           </div>
         </div>
         ${qrUrl ? `<img src="${qrUrl}" alt="QR ${escapeHtml(order.orderCode)}" class="qr" />` : ""}
@@ -476,6 +525,8 @@ function ManageStorePage() {
   const [scanStatus, setScanStatus] = useState("");
   const [lastScannedCode, setLastScannedCode] = useState("");
   const [lastScannedAt, setLastScannedAt] = useState(null);
+  const [lastScannedStatus, setLastScannedStatus] = useState("");
+  const [lastScannedMode, setLastScannedMode] = useState("");
   const [scanSession, setScanSession] = useState(0);
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
@@ -1144,24 +1195,49 @@ function ManageStorePage() {
     }
   };
 
-  const quickShipOrder = async (orderId, orderCode) => {
+  const resolveScanTargetStatus = (order, mode) => {
+    if (mode === "invoice") return "completed";
+    if (mode === "resi") {
+      return isPickupShippingMethod(order?.shippingMethod) ? "packed" : "shipping";
+    }
+    return "shipping";
+  };
+
+  const updateOrderStatusFromScan = async (orderId, orderCode, nextStatus) => {
     const snapshot = ordersRef.current || [];
     const existing = snapshot.find((order) => order.id === orderId);
-    if (existing?.status === "shipping") {
-      setScanStatus(`${orderCode} sudah shipping`);
-      return;
+    const targetStatus = nextStatus || "shipping";
+    const targetLabel = resolveScanStatusLabel(targetStatus);
+
+    if (existing?.status === "cancelled") {
+      setScanStatus(`${orderCode} dibatalkan`);
+      return existing.status;
     }
+    if (existing?.status === targetStatus) {
+      setScanStatus(`${orderCode} sudah ${targetLabel}`);
+      return existing.status;
+    }
+    if (
+      existing?.status &&
+      STATUS_RANK[existing.status] > STATUS_RANK[targetStatus]
+    ) {
+      setScanStatus(`${orderCode} sudah ${resolveScanStatusLabel(existing.status)}`);
+      return existing.status;
+    }
+
     const previousStatus = existing?.status;
     if (existing) {
       setOrders((prev) =>
         prev.map((order) =>
-          order.id === orderId ? { ...order, status: "shipping" } : order,
+          order.id === orderId ? { ...order, status: targetStatus } : order,
         ),
       );
     }
+
     try {
-      await api.patch(`/store/admin/orders/${orderId}/status`, { status: "shipping" });
-      setScanStatus(`Status ${orderCode} → shipping`);
+      await api.patch(`/store/admin/orders/${orderId}/status`, { status: targetStatus });
+      setScanStatus(`Status ${orderCode} → ${targetLabel}`);
+      return targetStatus;
     } catch {
       if (existing && previousStatus) {
         setOrders((prev) =>
@@ -1172,15 +1248,14 @@ function ManageStorePage() {
       }
       setScanError("Gagal memperbarui status order.");
       setScanStatus("");
+      return previousStatus || targetStatus;
     }
   };
 
   const printOrderLabel = (order) => {
     if (!order) return;
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const qrValue = baseUrl && order.orderCode
-      ? `${baseUrl}/track-order?orderCode=${encodeURIComponent(order.orderCode)}`
-      : order.orderCode;
+    const qrValue = buildOrderQrValue(order.orderCode, "resi", baseUrl);
     const markup = buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo, qrValue });
     openPrintWindow(buildPrintDocument(markup, { layout: "thermal" }));
   };
@@ -1199,9 +1274,7 @@ function ManageStorePage() {
     const markup = safeOrders
       .map((order) => {
         const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-        const qrValue = baseUrl && order.orderCode
-          ? `${baseUrl}/track-order?orderCode=${encodeURIComponent(order.orderCode)}`
-          : order.orderCode;
+        const qrValue = buildOrderQrValue(order.orderCode, "resi", baseUrl);
         return buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo, qrValue });
       })
       .join("");
@@ -1275,12 +1348,13 @@ function ManageStorePage() {
         }
 
         if (!rawValue) return;
-        const orderCode = extractOrderCodeFromQr(rawValue);
+        const { orderCode, mode } = parseOrderQrPayload(rawValue);
         if (!orderCode) {
           setScanError("QR tidak berisi kode order.");
           return;
         }
         const normalized = orderCode.toUpperCase();
+        const scanMode = normalizeQrMode(mode) || "resi";
         const now = Date.now();
         if (recentScanRef.current.code === normalized && now - recentScanRef.current.at < 1400) {
           return;
@@ -1289,6 +1363,7 @@ function ManageStorePage() {
         recentScanRef.current = { code: normalized, at: now };
         setLastScannedCode(normalized);
         setLastScannedAt(new Date());
+        setLastScannedMode(scanMode);
         setScanStatus(`Memproses ${normalized}...`);
         setScanError("");
         playScanBeep();
@@ -1296,7 +1371,10 @@ function ManageStorePage() {
         const localId = orderCodeIndexRef.current.get(normalized) ||
           orderCodeCacheRef.current.get(normalized);
         if (localId) {
-          quickShipOrder(localId, normalized);
+          const localOrder = (ordersRef.current || []).find((order) => order.id === localId);
+          const targetStatus = resolveScanTargetStatus(localOrder, scanMode);
+          const updatedStatus = await updateOrderStatusFromScan(localId, normalized, targetStatus);
+          setLastScannedStatus(resolveScanStatusLabel(updatedStatus));
           setTimeout(() => {
             hasScannedRef.current = false;
           }, 420);
@@ -1317,7 +1395,9 @@ function ManageStorePage() {
           return;
         }
         orderCodeCacheRef.current.set(normalized, matched.id);
-        quickShipOrder(matched.id, normalized);
+        const targetStatus = resolveScanTargetStatus(matched, scanMode);
+        const updatedStatus = await updateOrderStatusFromScan(matched.id, normalized, targetStatus);
+        setLastScannedStatus(resolveScanStatusLabel(updatedStatus));
         setTimeout(() => {
           hasScannedRef.current = false;
         }, 520);
@@ -2910,10 +2990,11 @@ function ManageStorePage() {
               Scanner Standby
             </p>
             <h3 className="mt-2 text-2xl font-bold text-brand-900 dark:text-white">
-              Scan QR Resi
+              Scan QR Resi / Invoice
             </h3>
             <p className="mt-2 text-sm text-brand-600 dark:text-brand-300">
-              QR akan otomatis menandai pesanan sebagai <strong>shipping</strong> begitu terdeteksi.
+              QR resi menandai pesanan sebagai <strong>siap diambil</strong> atau <strong>shipping</strong>.
+              QR invoice menandai pesanan sebagai <strong>selesai</strong>.
             </p>
 
             <div className="mt-4 relative overflow-hidden rounded-2xl border border-brand-200 bg-black dark:border-brand-700">
@@ -2989,7 +3070,10 @@ function ManageStorePage() {
                   Terakhir scan: {formatDateTime(lastScannedAt)}
                 </p>
                 <p className="mt-2 text-xs">
-                  Status langsung diupdate ke <strong>shipping</strong>.
+                  QR: <strong>{lastScannedMode === "invoice" ? "Invoice" : "Resi"}</strong>
+                </p>
+                <p className="mt-1 text-xs">
+                  Status → <strong>{lastScannedStatus || "tersimpan"}</strong>
                 </p>
               </div>
             ) : (

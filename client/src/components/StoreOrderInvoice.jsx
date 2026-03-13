@@ -27,8 +27,8 @@ function buildQrUrl(value, size = 140) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}`;
 }
 
-function buildInvoiceHtml(order) {
-  const qrUrl = buildQrUrl(order?.orderCode || "", 140);
+function buildInvoiceHtml(order, qrValue) {
+  const qrUrl = buildQrUrl(qrValue || order?.orderCode || "", 140);
   const itemsHtml = Array.isArray(order?.items)
     ? order.items.map((item) => `
       <tr>
@@ -70,7 +70,12 @@ function buildInvoiceHtml(order) {
           <div style="text-align: right;">
             <div><strong>Kode:</strong> ${order.orderCode}</div>
             <div><strong>Tanggal:</strong> ${formatDateTime(order.createdAt)}</div>
-            ${qrUrl ? `<img src="${qrUrl}" alt="QR ${order.orderCode}" style="margin-top:10px;width:110px;height:110px;border:1px solid #e5e7eb;border-radius:8px;" />` : ""}
+            ${qrUrl ? `
+              <div style="margin-top:10px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                <img src="${qrUrl}" alt="QR ${order.orderCode}" style="width:110px;height:110px;border:1px solid #e5e7eb;border-radius:8px;" />
+                <div style="font-size:10px;color:#6b7280;">Scan saat pengambilan</div>
+              </div>
+            ` : ""}
           </div>
         </div>
         <div class="panel">
@@ -111,7 +116,7 @@ function StoreOrderInvoice({ order }) {
   if (!order) return null;
 
   const qrValue = typeof window !== "undefined" && order.orderCode
-    ? `${window.location.origin}/track-order?orderCode=${encodeURIComponent(order.orderCode)}`
+    ? `${window.location.origin}/track-order?orderCode=${encodeURIComponent(order.orderCode)}&mode=invoice`
     : order.orderCode || "";
   const qrUrl = buildQrUrl(qrValue, 140);
 
@@ -120,7 +125,7 @@ function StoreOrderInvoice({ order }) {
     if (!printWindow) return;
 
     printWindow.document.open();
-    printWindow.document.write(buildInvoiceHtml(order));
+    printWindow.document.write(buildInvoiceHtml(order, qrValue));
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
@@ -145,7 +150,7 @@ function StoreOrderInvoice({ order }) {
             <div className="rounded-2xl border border-brand-200 bg-white p-2 shadow-sm dark:border-brand-700 dark:bg-brand-900/40">
               <img src={qrUrl} alt={`QR ${order.orderCode}`} className="h-20 w-20" />
               <p className="mt-1 text-[10px] text-brand-500 dark:text-brand-400 text-center">
-                Scan untuk verifikasi
+                Scan saat pengambilan
               </p>
             </div>
           )}

@@ -62,6 +62,41 @@ function normalizeProductImages(product) {
   return [];
 }
 
+function normalizeBaseUrl(value) {
+  return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function getPublicAppUrl(req) {
+  const envUrl = normalizeBaseUrl(
+    process.env.PUBLIC_APP_URL
+      || process.env.APP_PUBLIC_URL
+      || process.env.FRONTEND_URL
+      || ''
+  );
+  if (envUrl) return envUrl;
+  const origin = normalizeBaseUrl(req?.get?.('origin'));
+  if (origin) return origin;
+  const referer = req?.get?.('referer');
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      const refOrigin = normalizeBaseUrl(url.origin);
+      if (refOrigin) return refOrigin;
+    } catch {
+      // ignore
+    }
+  }
+  const host = req?.get?.('x-forwarded-host') || req?.get?.('host');
+  if (!host) return '';
+  const proto = req?.get?.('x-forwarded-proto') || req?.protocol || 'https';
+  return normalizeBaseUrl(`${proto}://${host}`);
+}
+
+function buildInvoiceLink(appUrl, orderCode) {
+  if (!appUrl || !orderCode) return '';
+  return `${appUrl}/track-order?orderCode=${encodeURIComponent(orderCode)}&mode=invoice`;
+}
+
 async function removeImageFile(publicPath) {
   if (!publicPath) return;
 
@@ -669,14 +704,15 @@ async function generateOrderCode(transaction) {
   return `${prefix}${String(sequence).padStart(4, '0')}`;
 }
 
-function buildWhatsappMessage(order, items) {
+function buildWhatsappMessage(order, items, options = {}) {
+  const invoiceUrl = options.invoiceUrl || '';
   const itemLines = items
     .map((item, index) => (
       `${index + 1}. ${item.productName} | Size ${item.size} | Qty ${item.quantity} | ${formatRupiah(item.lineTotal)}`
     ))
     .join('\n');
 
-  return [
+  const lines = [
     'Shalom GTshirt, saya ingin konfirmasi pesanan:',
     `Kode Pesanan: ${order.orderCode}`,
     '',
@@ -685,6 +721,7 @@ function buildWhatsappMessage(order, items) {
     `Subtotal: ${formatRupiah(order.subtotal)}`,
     `Ongkir: ${formatRupiah(order.shippingCost)}`,
     `Total: ${formatRupiah(order.totalAmount)}`,
+    ...(invoiceUrl ? ['', `Invoice: ${invoiceUrl}`] : []),
     '',
     'Data Pemesan:',
     `Nama: ${order.customerName}`,
@@ -693,7 +730,9 @@ function buildWhatsappMessage(order, items) {
     `Pengiriman: ${order.shippingMethod}`,
     `Pembayaran: ${order.paymentMethod}`,
     `Catatan: ${order.notes || '-'}`
-  ].join('\n');
+  ];
+
+  return lines.join('\n');
 }
 
 async function getPublicProducts(req, res, next) {
@@ -1011,7 +1050,9 @@ async function createOrder(req, res, next) {
       { transaction }
     );
 
-    const whatsappMessage = buildWhatsappMessage(order, orderItems);
+    const appUrl = getPublicAppUrl(req);
+    const invoiceUrl = buildInvoiceLink(appUrl, order.orderCode);
+    const whatsappMessage = buildWhatsappMessage(order, orderItems, { invoiceUrl });
     await order.update({ whatsappMessage }, { transaction });
 
     await transaction.commit();
