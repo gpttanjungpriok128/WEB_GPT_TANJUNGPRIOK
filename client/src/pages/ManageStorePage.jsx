@@ -294,6 +294,36 @@ function buildPrintDocument(markup, { layout = "thermal" } = {}) {
   `;
 }
 
+function playScanBeep() {
+  if (typeof window === "undefined") return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.value = 0.15;
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.12);
+    oscillator.onended = () => {
+      ctx.close();
+    };
+  } catch {
+    // ignore
+  }
+}
+
+function triggerHaptic() {
+  if (typeof window === "undefined") return;
+  if (navigator?.vibrate) {
+    navigator.vibrate(20);
+  }
+}
+
 function statusBadge(status) {
   const map = {
     new: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -1123,6 +1153,8 @@ function ManageStorePage() {
         setLastScannedAt(new Date());
         setScanStatus(`Memproses ${normalized}...`);
         setScanError("");
+        playScanBeep();
+        triggerHaptic();
         const rows = await fetchOrders({ search: normalized, silent: true });
         const matched = rows.find((row) => String(row.orderCode || "").toUpperCase() === normalized);
         if (!matched) {
