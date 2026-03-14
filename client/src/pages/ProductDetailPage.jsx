@@ -745,7 +745,7 @@ function ProductDetailPage() {
         <div className="space-y-4">
           {/* Main Image */}
           <div
-            className="image-swipe relative overflow-hidden rounded-2xl bg-white dark:bg-brand-900/50 aspect-square border border-brand-100 dark:border-brand-800"
+            className="image-swipe relative overflow-hidden rounded-2xl bg-white dark:bg-brand-900/50 aspect-[4/5] sm:aspect-square border border-brand-100 dark:border-brand-800"
             onTouchStart={handleSwipeStart}
             onTouchMove={handleSwipeMove}
             onTouchEnd={handleSwipeEnd}
