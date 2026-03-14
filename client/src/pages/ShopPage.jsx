@@ -183,6 +183,8 @@ const SORT_LABELS = {
   name: "Nama A-Z",
 };
 const PRODUCTS_PER_PAGE = 16;
+const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
+const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
 
 const normalizeSizeLabel = (value) =>
   String(value || "")
@@ -213,6 +215,7 @@ function ShopPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
+  const [hasBootCache, setHasBootCache] = useState(false);
   const deferredSearch = useDeferredValue(searchQuery);
 
   useEffect(() => {
@@ -231,6 +234,24 @@ function ShopPage() {
     if (!isCartHydrated) return;
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
   }, [cartItems, isCartHydrated]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(PRODUCT_CACHE_KEY);
+      const cached = raw ? JSON.parse(raw) : null;
+      if (!cached?.data || !Array.isArray(cached.data)) return;
+      const age = Date.now() - Number(cached.cachedAt || 0);
+      if (age > PRODUCT_CACHE_TTL) return;
+      setProducts(cached.data);
+      setProductMeta(cached.meta || { page: 1, totalPages: 1, total: cached.data.length });
+      setProductPage(cached.meta?.page || 1);
+      setHasBootCache(true);
+      setIsLoadingProducts(false);
+    } catch {
+      // ignore cache read
+    }
+  }, []);
 
   useEffect(() => {
     setSelections((previous) => {
@@ -263,7 +284,7 @@ function ShopPage() {
     if (append) {
       setIsLoadingMore(true);
     } else {
-      setIsLoadingProducts(!cached);
+      setIsLoadingProducts(!cached && !hasBootCache);
     }
     try {
       const { data } = await swrGet("/store/products", { params }, {
@@ -286,6 +307,21 @@ function ShopPage() {
       setProducts((prev) => (append ? [...prev, ...apiProducts] : apiProducts));
       setProductMeta(data?.meta || { page, totalPages: 1, total: apiProducts.length });
       setProductPage(page);
+      if (!append && apiProducts.length > 0 && typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(
+            PRODUCT_CACHE_KEY,
+            JSON.stringify({
+              cachedAt: Date.now(),
+              data: apiProducts,
+              meta: data?.meta || { page, totalPages: 1, total: apiProducts.length },
+            }),
+          );
+          setHasBootCache(true);
+        } catch {
+          // ignore cache write
+        }
+      }
     } catch {
       if (!append) {
         setProducts([]);
@@ -665,7 +701,7 @@ function ShopPage() {
           </label>
         </div>
 
-        {isLoadingProducts ? (
+        {isLoadingProducts && products.length === 0 ? (
           <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, index) => (
               <div

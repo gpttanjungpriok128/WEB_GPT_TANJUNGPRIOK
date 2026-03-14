@@ -1056,29 +1056,31 @@ function ProductDetailPage() {
               ← Kembali ke Toko
             </Link>
           </div>
-          <Link
-            to="/shop"
-            className="sm:hidden inline-flex items-center justify-center rounded-xl border border-brand-300 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-          >
-            ← Kembali ke Toko
-          </Link>
-          <button
-            type="button"
-            onClick={handleShare}
-            className="sm:hidden inline-flex items-center justify-center gap-2 rounded-xl border border-brand-300 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.8}
+          <div className="sm:hidden grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-brand-300 bg-white px-3 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h8v8" />
-            </svg>
-            Bagikan Produk
-          </button>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h8v8" />
+              </svg>
+              Bagikan
+            </button>
+            <Link
+              to="/shop"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-brand-300 bg-white px-3 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+            >
+              ← Kembali
+            </Link>
+          </div>
 
           {/* Reviews */}
           <div className="sm:hidden">
