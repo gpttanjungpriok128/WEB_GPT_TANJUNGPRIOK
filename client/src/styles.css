@@ -870,6 +870,26 @@ html {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  will-change: transform, opacity;
+}
+
+.mobile-menu-float {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0.5rem;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  pointer-events: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  will-change: transform, opacity;
+  z-index: 40;
+}
+
+.mobile-menu-float.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
 
 .glass-card {
@@ -1289,17 +1309,18 @@ html {
   inset: 0;
   z-index: 60;
   background: rgba(4, 9, 7, 0.38);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
+  will-change: opacity;
 }
 
 @media (max-width: 640px) {
   .admin-mobile-drawer-backdrop {
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
   }
 }
 
@@ -1320,6 +1341,7 @@ html {
   padding: 1rem;
   transform: translateX(-105%);
   transition: transform 0.25s ease;
+  will-change: transform;
 }
 
 .admin-mobile-drawer-backdrop.open .admin-mobile-drawer {

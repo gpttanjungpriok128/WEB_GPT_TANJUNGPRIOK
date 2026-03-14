@@ -837,7 +837,7 @@ function ShopPage() {
                         </span>
                       )}
                     </div>
-                    <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-brand-900/10 flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[2px]">
+                    <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-brand-900/10 hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[2px]">
                       <span className="translate-y-4 rounded-full bg-white/95 px-4 py-2 text-xs font-bold text-brand-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 dark:bg-brand-800 dark:text-white sm:px-6 sm:py-2.5 sm:text-sm">
                         Lihat Produk
                       </span>

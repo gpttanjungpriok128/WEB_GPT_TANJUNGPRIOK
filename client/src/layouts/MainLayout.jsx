@@ -60,6 +60,9 @@ function MainLayout({ children }) {
   const mobileMenuToggleRef = useRef(null);
 
   const profileInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "U";
+  const isDarkMode = theme === "dark";
+  const themeStatusLabel = isDarkMode ? "Mode Gelap" : "Mode Terang";
+  const themeActionLabel = isDarkMode ? "Ubah ke Terang" : "Ubah ke Gelap";
 
   const navLinks = [
     { to: "/", label: "Home" },
@@ -221,7 +224,7 @@ function MainLayout({ children }) {
               : "nav-visible"
           }`}
         >
-          <div className="container-custom">
+          <div className="container-custom relative">
             <div className="flex items-center justify-between gap-3 h-14 sm:h-16">
               {/* Logo */}
               <Link
@@ -277,11 +280,18 @@ function MainLayout({ children }) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleTheme}
-                  className="relative rounded-xl p-2 sm:p-2.5 hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
-                  title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+                  className="inline-flex items-center gap-2 rounded-xl px-2.5 py-2 sm:px-3 hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
+                  title={themeActionLabel}
+                  aria-label={themeActionLabel}
                 >
-                  <span className="text-lg transition-transform duration-300 block" style={{ transform: theme === "dark" ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  <span
+                    className="text-base transition-transform duration-300 block"
+                    style={{ transform: theme === "dark" ? "rotate(180deg)" : "rotate(0deg)" }}
+                  >
                     {theme === "dark" ? "☀️" : "🌙"}
+                  </span>
+                  <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-200 sm:text-xs">
+                    {themeStatusLabel}
                   </span>
                 </button>
 
@@ -346,6 +356,7 @@ function MainLayout({ children }) {
                   ref={mobileMenuToggleRef}
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   className="rounded-xl p-2 sm:p-2.5 lg:hidden hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
+                  aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
                 >
                   <div className="w-5 h-4 relative flex flex-col justify-between">
                     <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 origin-center ${mobileMenuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
@@ -357,13 +368,9 @@ function MainLayout({ children }) {
             </div>
 
             {/* Mobile Menu */}
-            <div
-              ref={mobileMenuRef}
-              className={`lg:hidden overflow-hidden transition-all duration-400 ease-out ${
-                mobileMenuOpen ? "max-h-[600px] opacity-100 pb-4" : "max-h-0 opacity-0"
-              }`}
-            >
-              <div className="mobile-menu-panel space-y-1 rounded-2xl bg-brand-50/80 dark:bg-brand-900/60 p-3 backdrop-blur-sm">
+            <div ref={mobileMenuRef} className="lg:hidden relative">
+              <div className={`mobile-menu-float ${mobileMenuOpen ? "open" : ""}`}>
+                <div className="mobile-menu-panel space-y-1 rounded-2xl bg-brand-50/95 dark:bg-brand-900/95 p-3 shadow-lg">
                 {user && (
                   <div className="mb-2 flex items-center gap-3 rounded-xl border border-brand-200/80 bg-white/70 px-3 py-2.5 dark:border-brand-700 dark:bg-brand-900/50">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-300 bg-brand-100 text-sm font-semibold text-brand-800 dark:border-brand-600 dark:bg-brand-800 dark:text-brand-200">
@@ -432,6 +439,16 @@ function MainLayout({ children }) {
                     </div>
                   )}
                 </div>
+                <button
+                  onClick={toggleTheme}
+                  className="mt-2 flex w-full items-center justify-between rounded-xl border border-brand-200/80 bg-white/80 px-3 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-100 dark:border-brand-700 dark:bg-brand-900/60 dark:text-brand-200 dark:hover:bg-brand-800/60"
+                  title={themeActionLabel}
+                  aria-label={themeActionLabel}
+                >
+                  <span>{themeStatusLabel}</span>
+                  <span className="text-base">{theme === "dark" ? "☀️" : "🌙"}</span>
+                </button>
+                </div>
               </div>
             </div>
           </div>
@@ -455,10 +472,12 @@ function MainLayout({ children }) {
               <p className="text-sm font-semibold text-brand-900 dark:text-white">Admin Workspace</p>
               <button
                 onClick={toggleTheme}
-                className="rounded-xl p-2 text-lg transition-all duration-300 hover:bg-brand-100/80 dark:hover:bg-brand-800/60"
-                title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+                className="inline-flex items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-all duration-300 hover:bg-brand-100/80 dark:hover:bg-brand-800/60"
+                title={themeActionLabel}
+                aria-label={themeActionLabel}
               >
-                {theme === "dark" ? "☀️" : "🌙"}
+                <span>{themeStatusLabel}</span>
+                <span className="text-base">{theme === "dark" ? "☀️" : "🌙"}</span>
               </button>
             </div>
 
@@ -521,10 +540,12 @@ function MainLayout({ children }) {
                   </Link>
                   <button
                     onClick={toggleTheme}
-                    className="rounded-xl p-2 text-lg transition-all duration-300 hover:bg-brand-100/80 dark:hover:bg-brand-800/60"
-                    title={theme === "dark" ? "Light Mode" : "Dark Mode"}
+                    className="inline-flex items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-all duration-300 hover:bg-brand-100/80 dark:hover:bg-brand-800/60"
+                    title={themeActionLabel}
+                    aria-label={themeActionLabel}
                   >
-                    {theme === "dark" ? "☀️" : "🌙"}
+                    <span>{themeStatusLabel}</span>
+                    <span className="text-base">{theme === "dark" ? "☀️" : "🌙"}</span>
                   </button>
                 </div>
                 <p className="admin-sidebar-title">Menu Admin</p>
