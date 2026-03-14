@@ -1133,7 +1133,7 @@ function ProductDetailPage() {
           </div>
 
           {/* Reviews */}
-          <div className="sm:hidden content-visibility-auto">
+          <div className="sm:hidden">
             <details className="mobile-review rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
               <summary className="mobile-summary flex cursor-pointer items-center justify-between gap-3">
                 <div>
@@ -1168,7 +1168,7 @@ function ProductDetailPage() {
             </details>
           </div>
 
-          <div className="hidden sm:block content-visibility-auto">
+          <div className="hidden sm:block">
             <div className="space-y-5 rounded-2xl border border-brand-200 bg-white/80 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/40">
               {reviewHeader}
               {reviewBody}
@@ -1176,7 +1176,7 @@ function ProductDetailPage() {
           </div>
 
           {/* Info Box */}
-          <details className="content-visibility-auto rounded-xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
+          <details className="rounded-xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
             <summary className="info-summary flex cursor-pointer items-center justify-between gap-3 text-xs font-semibold text-blue-700 dark:text-blue-300">
               <span>ℹ️ Informasi Produk</span>
               <svg
