@@ -187,6 +187,7 @@ function ProductDetailPage() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchDeltaRef = useRef({ x: 0, y: 0 });
   const prefetchedDetailImagesRef = useRef(new Set());
@@ -881,9 +882,22 @@ function ProductDetailPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
               Deskripsi Produk
             </p>
-            <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-brand-700 dark:text-brand-300 whitespace-pre-line">
+            <p
+              className={`mt-2 text-sm sm:text-[15px] leading-relaxed text-brand-700 dark:text-brand-300 ${
+                isDescriptionExpanded ? "whitespace-pre-line" : "line-clamp-3 whitespace-normal"
+              }`}
+            >
               {product.description || "Deskripsi produk akan ditampilkan di sini."}
             </p>
+            {product.description && product.description.length > 160 && (
+              <button
+                type="button"
+                onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+                className="mt-3 text-xs font-semibold text-primary hover:underline"
+              >
+                {isDescriptionExpanded ? "Tutup Deskripsi" : "Lihat Selengkapnya"}
+              </button>
+            )}
           </div>
 
           {/* Stock Info */}
@@ -1162,17 +1176,26 @@ function ProductDetailPage() {
           </div>
 
           {/* Info Box */}
-          <div className="content-visibility-auto space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-              ℹ️ Informasi Produk
-            </p>
-            <ul className="space-y-1 text-xs text-blue-700 dark:text-blue-300">
+          <details className="content-visibility-auto rounded-xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
+            <summary className="info-summary flex cursor-pointer items-center justify-between gap-3 text-xs font-semibold text-blue-700 dark:text-blue-300">
+              <span>ℹ️ Informasi Produk</span>
+              <svg
+                className="info-summary-icon h-4 w-4 text-blue-600 dark:text-blue-200"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.6}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
+              </svg>
+            </summary>
+            <ul className="mt-2 space-y-1 text-xs text-blue-700 dark:text-blue-300">
               <li>✓ Bahan: Cotton Combed 24s Premium</li>
               <li>✓ Fit: Unisex Comfort</li>
               <li>✓ Brand: GTshirt Authentic</li>
               <li>✓ Sablon: High-quality printing</li>
             </ul>
-          </div>
+          </details>
         </div>
       </section>
 
