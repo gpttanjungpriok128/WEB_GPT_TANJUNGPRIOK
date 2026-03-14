@@ -1243,6 +1243,17 @@ html {
   }
 }
 
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 600px;
+}
+
+@media (max-width: 640px) {
+  .content-visibility-auto {
+    contain-intrinsic-size: 420px;
+  }
+}
+
 .admin-mobile-top {
   display: flex;
   align-items: center;

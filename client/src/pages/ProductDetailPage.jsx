@@ -189,6 +189,7 @@ function ProductDetailPage() {
   const [zoomScale, setZoomScale] = useState(1);
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchDeltaRef = useRef({ x: 0, y: 0 });
+  const prefetchedDetailImagesRef = useRef(new Set());
 
   const syncCartCount = () => {
     try {
@@ -245,6 +246,8 @@ function ProductDetailPage() {
   }, [slug]);
 
   useEffect(() => {
+    let handle = null;
+
     const fetchReviews = async () => {
       setIsLoadingReviews(true);
       try {
@@ -265,8 +268,37 @@ function ProductDetailPage() {
       }
     };
 
-    fetchReviews();
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      handle = window.requestIdleCallback(fetchReviews, { timeout: 1000 });
+      return () => window.cancelIdleCallback(handle);
+    }
+
+    handle = window.setTimeout(fetchReviews, 300);
+    return () => window.clearTimeout(handle);
   }, [slug]);
+
+  useEffect(() => {
+    if (!images.length) return;
+
+    const candidates = [
+      images[selectedImageIndex],
+      images[selectedImageIndex + 1],
+      images[selectedImageIndex - 1],
+    ].filter(Boolean);
+
+    candidates.forEach((image) => {
+      const imageUrl = resolveStoreImageUrl(image);
+      if (!imageUrl || prefetchedDetailImagesRef.current.has(imageUrl)) return;
+
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = imageUrl;
+      link.setAttribute("data-prefetch", "product-detail");
+      document.head.appendChild(link);
+      prefetchedDetailImagesRef.current.add(imageUrl);
+    });
+  }, [images, selectedImageIndex]);
 
   useEffect(() => {
     if (!product || !selectedSize) return;
@@ -735,6 +767,7 @@ function ProductDetailPage() {
                 handleImageError(selectedImageIndex);
               }}
               loading="eager"
+              fetchPriority="high"
               decoding="async"
               className="image-soft h-full w-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal"
             />
@@ -844,9 +877,12 @@ function ProductDetailPage() {
           )}
 
           {/* Description */}
-          <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 dark:border-brand-700 dark:bg-brand-900/30">
-            <p className="text-sm leading-relaxed text-brand-700 dark:text-brand-300">
-              {product.description}
+          <div className="rounded-xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+              Deskripsi Produk
+            </p>
+            <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-brand-700 dark:text-brand-300 whitespace-pre-line">
+              {product.description || "Deskripsi produk akan ditampilkan di sini."}
             </p>
           </div>
 
@@ -1083,7 +1119,7 @@ function ProductDetailPage() {
           </div>
 
           {/* Reviews */}
-          <div className="sm:hidden">
+          <div className="sm:hidden content-visibility-auto">
             <details className="mobile-review rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
               <summary className="mobile-summary flex cursor-pointer items-center justify-between gap-3">
                 <div>
@@ -1118,7 +1154,7 @@ function ProductDetailPage() {
             </details>
           </div>
 
-          <div className="hidden sm:block">
+          <div className="hidden sm:block content-visibility-auto">
             <div className="space-y-5 rounded-2xl border border-brand-200 bg-white/80 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/40">
               {reviewHeader}
               {reviewBody}
@@ -1126,7 +1162,7 @@ function ProductDetailPage() {
           </div>
 
           {/* Info Box */}
-          <div className="space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
+          <div className="content-visibility-auto space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
             <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
               ℹ️ Informasi Produk
             </p>
