@@ -1,3 +1,5 @@
+const etag = require('etag');
+
 const DEFAULT_TTL_MS = 30 * 1000;
 const MAX_ENTRIES = 500;
 
@@ -38,6 +40,13 @@ function cacheResponse(options = {}) {
       if (cached.contentType) {
         res.setHeader('Content-Type', cached.contentType);
       }
+      if (cached.etag) {
+        res.setHeader('ETag', cached.etag);
+        if (req.headers['if-none-match'] === cached.etag) {
+          res.setHeader('Cache-Control', cacheControl);
+          return res.status(304).end();
+        }
+      }
       res.setHeader('Cache-Control', cacheControl);
       return res.status(cached.status).send(cached.body);
     }
@@ -52,10 +61,19 @@ function cacheResponse(options = {}) {
     const storePayload = (body) => {
       if (res.statusCode < 200 || res.statusCode >= 300) return;
       const contentType = res.getHeader('Content-Type');
+      let etagValue;
+      if (typeof body !== 'undefined') {
+        const payload = Buffer.isBuffer(body) || typeof body === 'string'
+          ? body
+          : JSON.stringify(body);
+        etagValue = etag(payload);
+        res.setHeader('ETag', etagValue);
+      }
       cacheStore.set(key, {
         status: res.statusCode,
         body,
         contentType,
+        etag: etagValue,
         expiresAt: Date.now() + ttl
       });
       evictIfNeeded();

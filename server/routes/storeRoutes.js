@@ -39,9 +39,30 @@ const {
 
 const router = express.Router();
 
-router.get('/products', cacheResponse({ ttlMs: 30 * 1000 }), getPublicProducts);
-router.get('/products/:slug', cacheResponse({ ttlMs: 30 * 1000 }), getPublicProductBySlug);
-router.get('/products/:slug/reviews', cacheResponse({ ttlMs: 30 * 1000 }), getProductReviews);
+router.get(
+  '/products',
+  cacheResponse({
+    ttlMs: 120 * 1000,
+    cacheControl: 'public, max-age=120, stale-while-revalidate=300, stale-if-error=86400'
+  }),
+  getPublicProducts
+);
+router.get(
+  '/products/:slug',
+  cacheResponse({
+    ttlMs: 120 * 1000,
+    cacheControl: 'public, max-age=120, stale-while-revalidate=300, stale-if-error=86400'
+  }),
+  getPublicProductBySlug
+);
+router.get(
+  '/products/:slug/reviews',
+  cacheResponse({
+    ttlMs: 60 * 1000,
+    cacheControl: 'public, max-age=60, stale-while-revalidate=180, stale-if-error=86400'
+  }),
+  getProductReviews
+);
 router.post(
   '/products/:slug/reviews',
   optionalAuthenticate,

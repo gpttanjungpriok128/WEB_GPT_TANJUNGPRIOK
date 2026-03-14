@@ -55,9 +55,10 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-  maxAge: '7d',
+  maxAge: '30d',
   setHeaders(res) {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
   }
 }));
 
