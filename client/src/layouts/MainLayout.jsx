@@ -4,6 +4,32 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import BrandLogo from "../components/BrandLogo";
 
+function resolveApiOrigin() {
+  const raw = import.meta.env.VITE_API_URL || "";
+  if (!raw) return "";
+
+  try {
+    const url = new URL(raw, window.location.origin);
+    return url.origin;
+  } catch {
+    return "";
+  }
+}
+
+function ensureHintLink({ rel, href, crossOrigin }) {
+  if (!href) return;
+  const selector = `link[rel="${rel}"][href="${href}"]`;
+  if (document.head.querySelector(selector)) return;
+
+  const link = document.createElement("link");
+  link.rel = rel;
+  link.href = href;
+  if (crossOrigin) {
+    link.crossOrigin = "anonymous";
+  }
+  document.head.appendChild(link);
+}
+
 function MainLayout({ children }) {
   const contactEmail = "gpt.tanjungpriok128@gmail.com";
   const whatsappNumber = "6282118223784"; // Format: +62 821-1822-3784
@@ -75,6 +101,14 @@ function MainLayout({ children }) {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
+
+  useEffect(() => {
+    const apiOrigin = resolveApiOrigin();
+    if (!apiOrigin || apiOrigin === window.location.origin) return;
+
+    ensureHintLink({ rel: "preconnect", href: apiOrigin, crossOrigin: true });
+    ensureHintLink({ rel: "dns-prefetch", href: apiOrigin });
+  }, []);
 
   // Close mobile menu on route change
   useEffect(() => {

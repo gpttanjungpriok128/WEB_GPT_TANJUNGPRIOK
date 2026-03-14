@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ShopHero from "../components/ShopHero";
@@ -185,6 +185,7 @@ const SORT_LABELS = {
 const PRODUCTS_PER_PAGE = 16;
 const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
+const PREFETCH_IMAGE_COUNT = 6;
 
 const normalizeSizeLabel = (value) =>
   String(value || "")
@@ -217,6 +218,7 @@ function ShopPage() {
   const [sortBy, setSortBy] = useState("featured");
   const [hasBootCache, setHasBootCache] = useState(false);
   const deferredSearch = useDeferredValue(searchQuery);
+  const prefetchedImagesRef = useRef(new Set());
 
   useEffect(() => {
     try {
@@ -386,6 +388,23 @@ function ShopPage() {
 
     return nextProducts;
   }, [availabilityFilter, products, deferredSearch, sortBy]);
+
+  useEffect(() => {
+    if (!filteredProducts.length) return;
+
+    filteredProducts.slice(0, PREFETCH_IMAGE_COUNT).forEach((product) => {
+      const imageUrl = resolveStoreImageUrl(product.imageUrl);
+      if (!imageUrl || prefetchedImagesRef.current.has(imageUrl)) return;
+
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = imageUrl;
+      link.setAttribute("data-prefetch", "shop-catalog");
+      document.head.appendChild(link);
+      prefetchedImagesRef.current.add(imageUrl);
+    });
+  }, [filteredProducts]);
 
   const totalStockAll = useMemo(
     () => products.reduce((sum, product) => sum + getTotalStock(product), 0),
@@ -804,8 +823,8 @@ function ShopPage() {
                     <img
                       src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}
-                      loading={index < 4 ? "eager" : "lazy"}
-                      fetchPriority={index < 4 ? "high" : "low"}
+                      loading={index < PREFETCH_IMAGE_COUNT ? "eager" : "lazy"}
+                      fetchPriority={index < PREFETCH_IMAGE_COUNT ? "high" : "low"}
                       decoding="async"
                       className="image-soft h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
                       onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
