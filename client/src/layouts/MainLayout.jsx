@@ -439,15 +439,6 @@ function MainLayout({ children }) {
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={toggleTheme}
-                  className="mt-2 flex w-full items-center justify-between rounded-xl border border-brand-200/80 bg-white/80 px-3 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-100 dark:border-brand-700 dark:bg-brand-900/60 dark:text-brand-200 dark:hover:bg-brand-800/60"
-                  title={themeActionLabel}
-                  aria-label={themeActionLabel}
-                >
-                  <span>{themeStatusLabel}</span>
-                  <span className="text-base">{theme === "dark" ? "☀️" : "🌙"}</span>
-                </button>
                 </div>
               </div>
             </div>
