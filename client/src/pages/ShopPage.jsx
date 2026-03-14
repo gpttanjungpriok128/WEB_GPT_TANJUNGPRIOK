@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ShopHero from "../components/ShopHero";
@@ -213,6 +213,7 @@ function ShopPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
+  const deferredSearch = useDeferredValue(searchQuery);
 
   useEffect(() => {
     try {
@@ -308,7 +309,7 @@ function ShopPage() {
   }, [debouncedSearch]);
 
   const filteredProducts = useMemo(() => {
-    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const normalizedSearch = deferredSearch.trim().toLowerCase();
     let nextProducts = [...products];
 
     if (normalizedSearch) {
@@ -348,7 +349,7 @@ function ShopPage() {
     });
 
     return nextProducts;
-  }, [availabilityFilter, products, searchQuery, sortBy]);
+  }, [availabilityFilter, products, deferredSearch, sortBy]);
 
   const totalStockAll = useMemo(
     () => products.reduce((sum, product) => sum + getTotalStock(product), 0),
@@ -749,7 +750,7 @@ function ShopPage() {
         ) : (
           <>
             <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-              {filteredProducts.map((product) => {
+              {filteredProducts.map((product, index) => {
               const effectivePrice = Number(
                 product.finalPrice ?? product.basePrice ?? 0,
               );
@@ -761,13 +762,14 @@ function ShopPage() {
                 <Link
                   key={product.id}
                   to={`/shop/${product.slug}`}
-                  className="group card-soft flex flex-col overflow-hidden rounded-2xl border border-brand-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 dark:border-brand-700 dark:bg-brand-900/40 sm:rounded-3xl"
+                  className="product-card group card-soft flex flex-col overflow-hidden rounded-2xl border border-brand-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 dark:border-brand-700 dark:bg-brand-900/40 sm:rounded-3xl"
                 >
                   <div className="relative aspect-square overflow-hidden bg-white p-3 dark:bg-brand-900/40 sm:p-4">
                     <img
                       src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}
-                      loading="lazy"
+                      loading={index < 4 ? "eager" : "lazy"}
+                      fetchPriority={index < 4 ? "high" : "low"}
                       decoding="async"
                       className="image-soft h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
                       onLoad={(event) => event.currentTarget.classList.add("is-loaded")}

@@ -1212,6 +1212,18 @@ html {
   color: #eaf4ef;
 }
 
+/* ─── Shop Catalog Perf ─── */
+.product-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 320px 420px;
+}
+
+@media (max-width: 640px) {
+  .product-card {
+    contain-intrinsic-size: 200px 320px;
+  }
+}
+
 .admin-mobile-top {
   display: flex;
   align-items: center;
