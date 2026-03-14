@@ -1,7 +1,16 @@
 const { body } = require('express-validator');
 
 const PROMO_TYPES = ['none', 'percentage', 'fixed'];
-const ORDER_STATUSES = ['new', 'confirmed', 'packed', 'shipping', 'completed', 'cancelled'];
+const ORDER_STATUSES = [
+  'new',
+  'confirmed',
+  'packed',
+  'ready_pickup',
+  'shipping',
+  'picked_up',
+  'completed',
+  'cancelled'
+];
 
 const createOrderValidation = [
   body('name').trim().notEmpty().withMessage('Nama pemesan wajib diisi'),
