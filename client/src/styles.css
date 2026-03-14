@@ -675,6 +675,18 @@ html {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  display: block;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+}
+
+@media (max-width: 640px) {
+  .input-modern[type="date"],
+  .input-modern[type="datetime-local"] {
+    font-size: 12px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
 }
 
 .input-modern:focus {

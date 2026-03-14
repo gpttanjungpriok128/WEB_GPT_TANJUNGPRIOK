@@ -2370,7 +2370,7 @@ function ManageStorePage() {
                       </label>
                       <input
                         type="datetime-local"
-                        className="input-modern"
+                        className="input-modern min-w-0 w-full"
                         value={productForm.promoStartAt}
                         onChange={(event) => handleProductFormChange("promoStartAt", event.target.value)}
                         disabled={productForm.promoType === "none"}
@@ -2382,7 +2382,7 @@ function ManageStorePage() {
                       </label>
                       <input
                         type="datetime-local"
-                        className="input-modern"
+                        className="input-modern min-w-0 w-full"
                         value={productForm.promoEndAt}
                         onChange={(event) => handleProductFormChange("promoEndAt", event.target.value)}
                         disabled={productForm.promoType === "none"}
