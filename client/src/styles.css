@@ -1065,6 +1065,59 @@ html {
     linear-gradient(145deg, rgba(9, 14, 11, 0.95), rgba(11, 16, 13, 0.86));
 }
 
+/* ─── Admin Metrics ─── */
+.admin-metric-strip {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scroll-snap-type: x proximity;
+}
+
+.admin-metric-card {
+  min-width: 180px;
+  flex: 0 0 auto;
+  padding: 0.85rem 1rem;
+  scroll-snap-align: start;
+}
+
+.admin-metric-value {
+  font-size: 1.4rem;
+}
+
+.admin-metric-strip::-webkit-scrollbar {
+  height: 6px;
+}
+
+.admin-metric-strip::-webkit-scrollbar-thumb {
+  background: rgba(16, 106, 72, 0.3);
+  border-radius: 999px;
+}
+
+@media (min-width: 640px) {
+  .admin-metric-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .admin-metric-card {
+    min-width: 0;
+    padding: 1.1rem 1.25rem;
+  }
+
+  .admin-metric-value {
+    font-size: 1.65rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .admin-metric-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   .admin-shell .admin-card,
   .editor-shell .editor-card {

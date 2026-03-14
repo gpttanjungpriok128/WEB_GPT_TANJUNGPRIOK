@@ -1885,7 +1885,7 @@ function ManageStorePage() {
         </section>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="admin-metric-strip">
         {loadingAnalytics && (
           <div className="col-span-full flex justify-center py-8">
             <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -1893,11 +1893,11 @@ function ManageStorePage() {
         )}
         {!loadingAnalytics &&
           metricCards.map((item) => (
-            <article key={item.label} className="glass-card dense-card p-5">
+            <article key={item.label} className="admin-metric-card glass-card dense-card">
               <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">
                 {item.label}
               </p>
-              <p className="mt-2 text-2xl font-bold gradient-text">
+              <p className="admin-metric-value mt-2 text-2xl font-bold gradient-text">
                 {item.value}
               </p>
             </article>
