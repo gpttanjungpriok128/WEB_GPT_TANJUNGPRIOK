@@ -398,6 +398,35 @@ function ProductDetailPage() {
     }
   };
 
+  const buildShareUrl = () => {
+    if (typeof window === "undefined") return "";
+    const base = window.location.origin;
+    const safeSlug = product?.slug || slug || "";
+    return safeSlug ? `${base}/shop/${safeSlug}` : base;
+  };
+
+  const handleShare = async () => {
+    if (!product) return;
+    const shareUrl = buildShareUrl();
+    const shareTitle = product.name || "Produk GTshirt";
+    const shareText = `Lihat ${shareTitle} di GTshirt`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+        setFeedback("Link produk siap dibagikan.");
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setFeedback("Link produk berhasil disalin.");
+      } else {
+        window.prompt("Salin link produk:", shareUrl);
+      }
+    } catch {
+      setFeedback("Gagal membagikan link produk.");
+    } finally {
+      setTimeout(() => setFeedback(""), 2500);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="page-stack flex items-center justify-center py-20">
@@ -1003,6 +1032,23 @@ function ProductDetailPage() {
                 </span>
               )}
             </Link>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-brand-300 bg-white px-4 py-3 font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/60"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h8v8" />
+              </svg>
+              <span>Bagikan</span>
+            </button>
             <Link
               to="/shop"
               className="flex-1 rounded-xl bg-primary px-4 py-3 text-center font-semibold text-white transition hover:bg-primary/90"
@@ -1016,6 +1062,23 @@ function ProductDetailPage() {
           >
             ← Kembali ke Toko
           </Link>
+          <button
+            type="button"
+            onClick={handleShare}
+            className="sm:hidden inline-flex items-center justify-center gap-2 rounded-xl border border-brand-300 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h8v8" />
+            </svg>
+            Bagikan Produk
+          </button>
 
           {/* Reviews */}
           <div className="sm:hidden">
