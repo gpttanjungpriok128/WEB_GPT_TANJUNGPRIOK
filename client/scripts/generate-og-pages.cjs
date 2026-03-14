@@ -99,6 +99,28 @@ async function fetchAllProducts(apiBase) {
   return products;
 }
 
+function buildSitemapXml(entries = []) {
+  const urls = entries
+    .filter((entry) => entry && entry.loc)
+    .map((entry) => {
+      const lastmod = entry.lastmod ? `<lastmod>${entry.lastmod}</lastmod>` : "";
+      return `  <url><loc>${entry.loc}</loc>${lastmod}</url>`;
+    })
+    .join("\n");
+
+  return `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n` +
+    `<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n` +
+    `${urls}\n` +
+    `</urlset>\n`;
+}
+
+function toIsoDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString();
+}
+
 async function main() {
   if (!fs.existsSync(indexPath)) {
     console.error("index.html not found, skip OG generation.");
@@ -111,11 +133,13 @@ async function main() {
       process.env.VITE_PUBLIC_URL ||
       "https://gpttanjungpriok.vercel.app"
   );
-  const apiBase = normalizeBaseUrl(
+  const apiBaseRaw = normalizeBaseUrl(
     process.env.VITE_API_URL ||
       process.env.PUBLIC_API_URL ||
       "https://linguistic-alameda-gpttanjungpriok-e69cc92f.koyeb.app/api"
   );
+  const apiBase = apiBaseRaw.endsWith("/api") ? apiBaseRaw : `${apiBaseRaw}/api`;
+  const apiOrigin = apiBaseRaw.replace(/\/api\/?$/, "");
 
   const shopHtml = applyMeta(baseHtml, {
     title: "GTshirt Store — GPT Tanjung Priok",
@@ -136,13 +160,25 @@ async function main() {
     console.warn("Skip product OG pages:", error.message);
   }
 
+  const sitemapEntries = [
+    { loc: `${siteUrl}/`, lastmod: "" },
+    { loc: `${siteUrl}/about`, lastmod: "" },
+    { loc: `${siteUrl}/schedules`, lastmod: "" },
+    { loc: `${siteUrl}/articles`, lastmod: "" },
+    { loc: `${siteUrl}/gallery`, lastmod: "" },
+    { loc: `${siteUrl}/shop`, lastmod: "" },
+    { loc: `${siteUrl}/contact`, lastmod: "" },
+    { loc: `${siteUrl}/track-order`, lastmod: "" }
+  ];
+
   products.forEach((product) => {
     const slug = String(product.slug || "").trim();
     if (!slug) return;
-    const imageUrl = resolveImageUrl(product.imageUrl || product.imageUrls?.[0], apiBase);
+    const imageUrl = resolveImageUrl(product.imageUrl || product.imageUrls?.[0], apiOrigin);
     const title = product.name ? `${product.name} — GTshirt` : "Produk GTshirt";
     const description = product.description || product.verse || "Koleksi GTshirt terbaru dari GPT Tanjung Priok.";
     const url = `${siteUrl}/shop/${encodeURIComponent(slug)}`;
+    sitemapEntries.push({ loc: url, lastmod: toIsoDate(product.updatedAt) });
     const html = applyMeta(baseHtml, {
       title,
       description,
@@ -154,6 +190,12 @@ async function main() {
     ensureDir(productDir);
     fs.writeFileSync(path.join(productDir, "index.html"), html);
   });
+
+  const sitemapXml = buildSitemapXml(sitemapEntries);
+  fs.writeFileSync(path.join(distDir, "sitemap.xml"), sitemapXml);
+
+  const robotsTxt = `User-agent: *\nAllow: /\nSitemap: ${siteUrl}/sitemap.xml\n`;
+  fs.writeFileSync(path.join(distDir, "robots.txt"), robotsTxt);
 
   console.log(`OG pages generated: shop (${products.length} products)`);
 }
