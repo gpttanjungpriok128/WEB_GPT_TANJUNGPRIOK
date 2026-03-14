@@ -2016,7 +2016,7 @@ function ManageStorePage() {
                 </button>
                 {productAccordion.basic && (
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-0">
                       <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                         Nama Produk *
                       </label>
@@ -2035,7 +2035,7 @@ function ManageStorePage() {
                         </p>
                       )}
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-0">
                       <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
                         Slug
                       </label>

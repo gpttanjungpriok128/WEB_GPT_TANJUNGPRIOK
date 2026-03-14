@@ -817,15 +817,6 @@ function ShopPage() {
                           Promo
                         </span>
                       )}
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 shadow-sm ${
-                          totalStock <= 0
-                            ? "bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300"
-                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
-                        }`}
-                      >
-                        {totalStock <= 0 ? "Habis" : `Stok ${totalStock}`}
-                      </span>
                     </div>
                     <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-brand-900/10 flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[2px]">
                       <span className="translate-y-4 rounded-full bg-white/95 px-4 py-2 text-xs font-bold text-brand-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 dark:bg-brand-800 dark:text-white sm:px-6 sm:py-2.5 sm:text-sm">

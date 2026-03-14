@@ -670,6 +670,13 @@ html {
   border-color: var(--brand-border);
 }
 
+.input-modern[type="date"],
+.input-modern[type="datetime-local"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .input-modern:focus {
   @apply outline-none ring-2;
   border-color: #148458;
