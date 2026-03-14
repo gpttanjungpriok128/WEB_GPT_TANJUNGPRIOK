@@ -3,6 +3,18 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/shop",
+      "destination": "/shop/index.html"
+    },
+    {
+      "source": "/shop/",
+      "destination": "/shop/index.html"
+    },
+    {
+      "source": "/shop/(.*)",
+      "destination": "/shop/$1/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
