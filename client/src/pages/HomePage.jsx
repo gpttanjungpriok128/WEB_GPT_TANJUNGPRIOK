@@ -64,7 +64,6 @@ function HomePage() {
             alt=""
             className="hero-bg-media h-full w-full object-cover"
             loading="eager"
-            decoding="async"
             fetchpriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-brand-900/90 via-brand-800/75 to-brand-900/50" />
@@ -107,7 +106,7 @@ function HomePage() {
                 to="/shop"
                 className="inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold text-white border border-white/25 bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300"
               >
-                🛍️ Toko Kaos Rohani
+                🛍️ GTshirt Store
               </Link>
               {user && (
                 <Link

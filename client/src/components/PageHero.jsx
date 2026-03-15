@@ -10,7 +10,6 @@ function PageHero({ image, title, titleAccent, subtitle, tone = "default" }) {
           alt=""
           className="hero-bg-media h-full w-full object-cover"
           loading="eager"
-          decoding="async"
           fetchpriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#03140d]/98 via-[#062417]/94 to-[#03140d]/92" />
