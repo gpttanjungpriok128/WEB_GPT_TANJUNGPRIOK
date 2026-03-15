@@ -219,6 +219,7 @@ function ShopPage() {
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const [hasBootCache, setHasBootCache] = useState(false);
+  const [isCacheStale, setIsCacheStale] = useState(false);
   const deferredSearch = useDeferredValue(searchQuery);
   const prefetchedImagesRef = useRef(new Set());
 
@@ -245,8 +246,9 @@ function ShopPage() {
       const raw = window.localStorage.getItem(PRODUCT_CACHE_KEY);
       const cached = raw ? JSON.parse(raw) : null;
       if (!cached?.data || !Array.isArray(cached.data)) return;
+      if (cached.source && cached.source !== "api") return;
       const age = Date.now() - Number(cached.cachedAt || 0);
-      if (age > PRODUCT_CACHE_TTL) return;
+      setIsCacheStale(age > PRODUCT_CACHE_TTL);
       setProducts(cached.data);
       setProductMeta(cached.meta || { page: 1, totalPages: 1, total: cached.data.length });
       setProductPage(cached.meta?.page || 1);
@@ -314,6 +316,7 @@ function ShopPage() {
       setProductPage(page);
       if (!append) {
         setProductLoadError(false);
+        setIsCacheStale(false);
       }
       if (!append && apiProducts.length > 0 && typeof window !== "undefined") {
         try {
@@ -322,6 +325,7 @@ function ShopPage() {
             JSON.stringify({
               cachedAt: Date.now(),
               data: apiProducts,
+              source: "api",
               meta: data?.meta || { page, totalPages: 1, total: apiProducts.length },
             }),
           );
@@ -813,6 +817,23 @@ function ShopPage() {
           </div>
         ) : (
           <>
+            {isCacheStale && !isLoadingProducts && filteredProducts.length > 0 && (
+              <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200">
+                Menampilkan data terakhir. Sedang memperbarui katalog.
+              </div>
+            )}
+            {productLoadError && filteredProducts.length > 0 && (
+              <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/20 dark:text-rose-200">
+                Gagal memperbarui katalog. Menampilkan data terakhir.
+                <button
+                  type="button"
+                  onClick={() => fetchProducts({ page: 1, append: false })}
+                  className="ml-2 font-semibold text-rose-700 underline underline-offset-2 dark:text-rose-200"
+                >
+                  Muat ulang
+                </button>
+              </div>
+            )}
             <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
               {filteredProducts.map((product, index) => {
               const effectivePrice = Number(
