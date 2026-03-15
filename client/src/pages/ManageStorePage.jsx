@@ -4,6 +4,13 @@ import * as XLSX from "xlsx";
 import api from "../services/api";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 import jsQR from "jsqr";
+import AdminStoreTabs from "../components/store-admin/AdminStoreTabs";
+import ProductsTab from "../components/store-admin/ProductsTab";
+import OrdersTab from "../components/store-admin/OrdersTab";
+import ScanTab from "../components/store-admin/ScanTab";
+import ReviewsTab from "../components/store-admin/ReviewsTab";
+import ReportsTab from "../components/store-admin/ReportsTab";
+import ShippingTab from "../components/store-admin/ShippingTab";
 
 const ORDER_STATUS_OPTIONS = [
   { value: "new", label: "Baru" },
@@ -1845,6 +1852,167 @@ function ManageStorePage() {
     setProductAccordion((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const productTabCtx = {
+    editingProductId,
+    handleSaveProduct,
+    productAccordion,
+    toggleAccordion,
+    productForm,
+    productFieldErrors,
+    nameInputRef,
+    descriptionInputRef,
+    basePriceInputRef,
+    sizesInputRef,
+    productFormSizes,
+    productFormStockBySize,
+    productFormTotalStock,
+    productFormHasPreorderSizes,
+    handleProductFormChange,
+    handleStockBySizeChange,
+    normalizeSizePayload,
+    fileInputRef,
+    imageDropRef,
+    handleDropFiles,
+    handleFileInputChange,
+    existingImages,
+    imagePreviews,
+    removeExistingImage,
+    removeNewImage,
+    handlePreviewDragStart,
+    handlePreviewDragOver,
+    handlePreviewDrop,
+    handlePreviewDragEnd,
+    movePreview,
+    savingProduct,
+    resetProductForm,
+    products,
+    loadingProducts,
+    productSearch,
+    setProductSearch,
+    productActiveFilter,
+    setProductActiveFilter,
+    PRODUCT_ACTIVE_OPTIONS,
+    fetchProducts,
+    fillProductForm,
+    handleToggleProductStatus,
+    handleDeleteProduct,
+    resolveImageUrl,
+    formatRupiah,
+    filterOutXXL,
+    normalizeSizeLabel,
+  };
+
+  const ordersTabCtx = {
+    orderSearch,
+    setOrderSearch,
+    orderStatusFilter,
+    setOrderStatusFilter,
+    setOrderPage,
+    fetchOrders,
+    handleClearOrders,
+    selectAllOrders,
+    clearSelectedOrders,
+    bulkStatus,
+    setBulkStatus,
+    handleBulkStatusUpdate,
+    printOrderLabels,
+    selectedOrders,
+    selectedOrderIds,
+    orderListRef,
+    setOrderScrollTop,
+    loadingOrders,
+    orders,
+    orderPage,
+    orderMeta,
+    isLoadingMoreOrders,
+    useVirtualOrders,
+    orderPaddingTop,
+    orderPaddingBottom,
+    visibleOrders,
+    orderRowMeasureRef,
+    toggleOrderSelection,
+    handleQuickOrderAction,
+    setActiveOrderSheet,
+    handleOrderStatusChange,
+    printOrderLabel,
+    statusBadge,
+    mapOrderStatusLabel,
+    formatDateTime,
+    formatRupiah,
+    ORDER_STATUS_OPTIONS,
+    getQuickActionForOrder,
+    analytics,
+    setActiveTab,
+    setScanError,
+  };
+
+  const scanTabCtx = {
+    qrVideoRef,
+    isScannerActive,
+    scanStatus,
+    scanError,
+    setScanError,
+    setScanStatus,
+    setScanSession,
+    toggleTorch,
+    torchSupported,
+    torchEnabled,
+    setActiveTab,
+    lastScannedCode,
+    lastScannedAt,
+    lastScannedMode,
+    lastScannedStatus,
+    formatDateTime,
+  };
+
+  const reviewsTabCtx = {
+    reviewSearch,
+    setReviewSearch,
+    reviewStatusFilter,
+    setReviewStatusFilter,
+    setReviewPage,
+    fetchReviews,
+    loadingReviews,
+    reviews,
+    reviewPage,
+    reviewMeta,
+    isLoadingMoreReviews,
+    REVIEW_STATUS_OPTIONS,
+    reviewStatusBadge,
+    renderStars,
+    formatDateTime,
+    handleReviewStatusToggle,
+    handleDeleteReview,
+    analytics,
+  };
+
+  const reportsTabCtx = {
+    reportFilters,
+    setReportFilters,
+    REPORT_STATUS_OPTIONS,
+    fetchRevenueReport,
+    handleExportReport,
+    handleSyncReportSheet,
+    syncingSheet,
+    sheetSyncInfo,
+    reportRows,
+    reportMeta,
+    loadingReport,
+    formatRupiah,
+    formatDateTime,
+    statusBadge,
+    mapOrderStatusLabel,
+  };
+
+  const shippingTabCtx = {
+    shippingCost,
+    shippingCostInput,
+    setShippingCostInput,
+    handleSaveShipping,
+    savingShipping,
+    formatRupiah,
+  };
+
   return (
     <div className="page-stack admin-shell space-y-5 sm:space-y-6">
       <section className="glass-card dense-card overflow-hidden p-0">
@@ -1905,1792 +2073,25 @@ function ManageStorePage() {
       </section>
 
       {/* ── Tab Navigation ──────────────────────── */}
-      <div className={`admin-tabs flex gap-2 border-b border-brand-200 dark:border-brand-700 overflow-x-auto pb-1 ${tabHidden ? "admin-tabs-hidden" : ""}`}>
-        <button
-          onClick={() => setActiveTab("produk")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
-            activeTab === "produk"
-              ? "text-primary"
-              : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
-          }`}
-        >
-          📦 Produk GTshirt
-          {activeTab === "produk" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("pesanan")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
-            activeTab === "pesanan"
-              ? "text-primary"
-              : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
-          }`}
-        >
-          📬 Pesanan Masuk
-          {activeTab === "pesanan" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("scan")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
-            activeTab === "scan"
-              ? "text-primary"
-              : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
-          }`}
-        >
-          📷 Scan Resi
-          {activeTab === "scan" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("ulasan")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
-            activeTab === "ulasan"
-              ? "text-primary"
-              : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
-          }`}
-        >
-          ⭐ Ulasan Produk
-          {activeTab === "ulasan" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("laporan")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
-            activeTab === "laporan"
-              ? "text-primary"
-              : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
-          }`}
-        >
-          📈 Laporan
-          {activeTab === "laporan" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("ongkir")}
-          className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
-            activeTab === "ongkir"
-              ? "text-primary"
-              : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
-          }`}
-        >
-          ⚙️ Pengaturan Ongkir
-          {activeTab === "ongkir" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
-          )}
-        </button>
-      </div>
+      <AdminStoreTabs activeTab={activeTab} setActiveTab={setActiveTab} tabHidden={tabHidden} />
 
       {/* ── TAB: PRODUK GTSHIRT ──────────────────── */}
-      {activeTab === "produk" && (
-        <section className="grid gap-6 xl:grid-cols-[1fr_1.1fr]">
-          <article className="glass-card dense-card p-6">
-            <h2 className="text-xl font-bold text-brand-900 dark:text-white">
-              {editingProductId ? "Edit Produk GTshirt" : "Tambah Produk GTshirt"}
-            </h2>
-
-            <form onSubmit={handleSaveProduct} className="mt-4 space-y-4 pb-24 sm:pb-0">
-              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("basic")}
-                  className="flex w-full items-center justify-between gap-3 text-left"
-                  aria-expanded={productAccordion.basic}
-                >
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-                      Informasi
-                    </p>
-                    <p className="text-sm font-bold text-brand-900 dark:text-white">
-                      Detail Produk
-                    </p>
-                  </div>
-                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
-                    {productAccordion.basic ? "−" : "+"}
-                  </span>
-                </button>
-                {productAccordion.basic && (
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div className="space-y-1.5 min-w-0">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Nama Produk *
-                      </label>
-                      <input
-                        required
-                        ref={nameInputRef}
-                        className={`input-modern ${productFieldErrors.name ? "input-error" : ""}`}
-                        value={productForm.name}
-                        onChange={(event) => handleProductFormChange("name", event.target.value)}
-                        placeholder="Contoh: Hope in Him Tee"
-                        aria-invalid={Boolean(productFieldErrors.name)}
-                      />
-                      {productFieldErrors.name && (
-                        <p className="text-[11px] font-semibold text-rose-500">
-                          {productFieldErrors.name}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-1.5 min-w-0">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Slug
-                      </label>
-                      <input
-                        className="input-modern"
-                        value={productForm.slug}
-                        onChange={(event) => handleProductFormChange("slug", event.target.value)}
-                        placeholder="auto dari nama jika kosong"
-                      />
-                    </div>
-                    <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Deskripsi
-                      </label>
-                      <textarea
-                        ref={descriptionInputRef}
-                        className={`input-modern min-h-[86px] resize-y ${productFieldErrors.description ? "input-error" : ""}`}
-                        value={productForm.description}
-                        onChange={(event) => handleProductFormChange("description", event.target.value)}
-                        placeholder="Deskripsi produk"
-                        aria-invalid={Boolean(productFieldErrors.description)}
-                      />
-                      {productFieldErrors.description && (
-                        <p className="text-[11px] font-semibold text-rose-500">
-                          {productFieldErrors.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Warna
-                      </label>
-                      <input
-                        className="input-modern"
-                        value={productForm.color}
-                        onChange={(event) => handleProductFormChange("color", event.target.value)}
-                        placeholder="Jet Black"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("media")}
-                  className="flex w-full items-center justify-between gap-3 text-left"
-                  aria-expanded={productAccordion.media}
-                >
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-                      Media
-                    </p>
-                    <p className="text-sm font-bold text-brand-900 dark:text-white">
-                      Foto Produk
-                    </p>
-                  </div>
-                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
-                    {productAccordion.media ? "−" : "+"}
-                  </span>
-                </button>
-                {productAccordion.media && (
-                  <div className="mt-4 space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                      📷 Foto Produk * (max 8 file, jpeg/png/webp, maks 2MB per file)
-                    </label>
-
-                    {/* Drop zone */}
-                    <div
-                      ref={imageDropRef}
-                      className={`relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50/50 p-4 transition hover:border-primary hover:bg-brand-50 dark:border-brand-600 dark:bg-brand-900/30 dark:hover:border-primary ${productFieldErrors.images ? "input-error" : ""}`}
-                      tabIndex={-1}
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={handleDropFiles}
-                    >
-                      <svg className="h-8 w-8 text-brand-400 dark:text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
-                      </svg>
-                      <p className="text-sm text-brand-500 dark:text-brand-400">
-                        <span className="font-semibold text-primary">Klik untuk pilih file</span> atau drag & drop
-                      </p>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept="image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={handleFileInputChange}
-                      />
-                    </div>
-                    {productFieldErrors.images && (
-                      <p className="text-[11px] font-semibold text-rose-500">
-                        {productFieldErrors.images}
-                      </p>
-                    )}
-
-                    {/* Existing images (saat edit) */}
-                    {existingImages.length > 0 && (
-                      <div>
-                        <p className="mb-1 text-xs font-medium text-brand-500 dark:text-brand-400">
-                          Gambar saat ini (tidak dikirim ulang jika tidak upload baru):
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {existingImages.map((src, index) => (
-                            <div key={`existing-${index}`} className="group relative">
-                              <img
-                                src={resolveImageUrl(src)}
-                                alt={`Existing ${index + 1}`}
-                                loading="lazy"
-                                decoding="async"
-                                className="h-16 w-16 rounded-xl border border-brand-200 object-cover dark:border-brand-700 sm:h-20 sm:w-20"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeExistingImage(index)}
-                                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white opacity-0 shadow transition group-hover:opacity-100"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* New image previews */}
-                    {imagePreviews.length > 0 && (
-                      <div>
-                        <p className="mb-1 text-xs font-medium text-brand-500 dark:text-brand-400">
-                          Foto baru yang akan diupload:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {imagePreviews.map((src, index) => (
-                            <div
-                              key={`new-${index}`}
-                              className="group relative"
-                              draggable
-                              onDragStart={(event) => handlePreviewDragStart(index, event)}
-                              onDragOver={handlePreviewDragOver}
-                              onDrop={(event) => {
-                                event.preventDefault();
-                                handlePreviewDrop(index);
-                              }}
-                              onDragEnd={handlePreviewDragEnd}
-                            >
-                              <img
-                                src={src}
-                                alt={`Preview ${index + 1}`}
-                                loading="lazy"
-                                decoding="async"
-                                className="h-16 w-16 rounded-xl border border-brand-200 object-cover dark:border-brand-700 sm:h-20 sm:w-20"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeNewImage(index)}
-                                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white opacity-0 shadow transition group-hover:opacity-100"
-                              >
-                                ✕
-                              </button>
-                              <div className="image-reorder-controls sm:hidden">
-                                <button type="button" onClick={() => movePreview(index, -1)}>◀</button>
-                                <button type="button" onClick={() => movePreview(index, 1)}>▶</button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("stock")}
-                  className="flex w-full items-center justify-between gap-3 text-left"
-                  aria-expanded={productAccordion.stock}
-                >
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-                      Harga & Stok
-                    </p>
-                    <p className="text-sm font-bold text-brand-900 dark:text-white">
-                      Pengaturan Stok
-                    </p>
-                  </div>
-                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
-                    {productAccordion.stock ? "−" : "+"}
-                  </span>
-                </button>
-                {productAccordion.stock && (
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Harga Dasar
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        ref={basePriceInputRef}
-                        className={`input-modern ${productFieldErrors.basePrice ? "input-error" : ""}`}
-                        value={productForm.basePrice}
-                        onChange={(event) => handleProductFormChange("basePrice", event.target.value)}
-                        aria-invalid={Boolean(productFieldErrors.basePrice)}
-                      />
-                      {productFieldErrors.basePrice && (
-                        <p className="text-[11px] font-semibold text-rose-500">
-                          {productFieldErrors.basePrice}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Ukuran (pisahkan koma)
-                      </label>
-                      <input
-                        ref={sizesInputRef}
-                        className={`input-modern ${productFieldErrors.sizesText ? "input-error" : ""}`}
-                        value={productForm.sizesText}
-                        onChange={(event) => handleProductFormChange("sizesText", event.target.value)}
-                        onBlur={() => {
-                          const sanitized = normalizeSizePayload(productForm.sizesText);
-                          setProductForm((previous) => ({
-                            ...previous,
-                            sizesText: sanitized.join(", "),
-                          }));
-                        }}
-                        placeholder="S, M, L, XL"
-                        aria-invalid={Boolean(productFieldErrors.sizesText)}
-                      />
-                      <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                        XXL tidak tersedia. Ukuran di atas XL akan masuk preorder.
-                      </p>
-                      {productFormHasPreorderSizes && (
-                        <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-300">
-                          Ukuran di atas XL terdeteksi — tandai sebagai preorder.
-                        </p>
-                      )}
-                      {productFieldErrors.sizesText && (
-                        <p className="text-[11px] font-semibold text-rose-500">
-                          {productFieldErrors.sizesText}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                          Stok per Ukuran
-                        </label>
-                        <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">
-                          Total stok: {productFormTotalStock}
-                        </span>
-                      </div>
-                      <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4">
-                        {productFormSizes.map((size) => (
-                          <label
-                            key={size}
-                            className="rounded-xl border border-brand-200 bg-white/70 p-2 text-xs dark:border-brand-700 dark:bg-brand-900/45"
-                          >
-                            <span className="mb-1 block font-semibold text-brand-700 dark:text-brand-300">
-                              {size}
-                            </span>
-                            <input
-                              type="number"
-                              min="0"
-                              className="input-modern !py-2 !text-sm"
-                              value={productFormStockBySize[size] ?? 0}
-                              onChange={(event) => handleStockBySizeChange(size, event.target.value)}
-                            />
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("promo")}
-                  className="flex w-full items-center justify-between gap-3 text-left"
-                  aria-expanded={productAccordion.promo}
-                >
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-                      Promo
-                    </p>
-                    <p className="text-sm font-bold text-brand-900 dark:text-white">
-                      Harga Spesial
-                    </p>
-                  </div>
-                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
-                    {productAccordion.promo ? "−" : "+"}
-                  </span>
-                </button>
-                {productAccordion.promo && (
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Jenis Promo
-                      </label>
-                      <select
-                        className="input-modern"
-                        value={productForm.promoType}
-                        onChange={(event) => handleProductFormChange("promoType", event.target.value)}
-                      >
-                        <option value="none">Tanpa Promo</option>
-                        <option value="percentage">Persentase (%)</option>
-                        <option value="fixed">Potongan Nominal</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Nilai Promo
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="input-modern"
-                        value={productForm.promoValue}
-                        onChange={(event) => handleProductFormChange("promoValue", event.target.value)}
-                        disabled={productForm.promoType === "none"}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Promo Mulai
-                      </label>
-                      <input
-                        type="datetime-local"
-                        className="input-modern min-w-0 w-full"
-                        value={productForm.promoStartAt}
-                        onChange={(event) => handleProductFormChange("promoStartAt", event.target.value)}
-                        disabled={productForm.promoType === "none"}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                        Promo Selesai
-                      </label>
-                      <input
-                        type="datetime-local"
-                        className="input-modern min-w-0 w-full"
-                        value={productForm.promoEndAt}
-                        onChange={(event) => handleProductFormChange("promoEndAt", event.target.value)}
-                        disabled={productForm.promoType === "none"}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-brand-200/80 bg-white/70 p-4 dark:border-brand-700/80 dark:bg-brand-900/40">
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("status")}
-                  className="flex w-full items-center justify-between gap-3 text-left"
-                  aria-expanded={productAccordion.status}
-                >
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-                      Status
-                    </p>
-                    <p className="text-sm font-bold text-brand-900 dark:text-white">
-                      Simpan Produk
-                    </p>
-                  </div>
-                  <span className="text-xl font-semibold text-brand-500 dark:text-brand-300">
-                    {productAccordion.status ? "−" : "+"}
-                  </span>
-                </button>
-                {productAccordion.status && (
-                  <div className="mt-4 space-y-4">
-                    <label className="inline-flex items-center gap-2 text-sm font-medium text-brand-700 dark:text-brand-300">
-                      <input
-                        type="checkbox"
-                        checked={productForm.isActive}
-                        onChange={(event) => handleProductFormChange("isActive", event.target.checked)}
-                      />
-                      Produk aktif ditampilkan di katalog
-                    </label>
-
-                    <div className="admin-action-desktop flex flex-wrap gap-3">
-                      <button type="submit" disabled={savingProduct} className="btn-primary !px-6 !py-2.5 disabled:opacity-60">
-                        {savingProduct
-                          ? "Menyimpan..."
-                          : editingProductId
-                            ? "Update Produk"
-                            : "Tambah Produk"}
-                      </button>
-                      {editingProductId && (
-                        <button type="button" onClick={resetProductForm} className="btn-outline !px-6 !py-2.5">
-                          Batal Edit
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="admin-sticky-actions sm:hidden">
-                <div className="admin-sticky-surface">
-                  <button type="submit" disabled={savingProduct} className="btn-primary min-h-[44px] flex-1 !px-4 !py-3 disabled:opacity-60">
-                    {savingProduct
-                      ? "Menyimpan..."
-                      : editingProductId
-                        ? "Update Produk"
-                        : "Tambah Produk"}
-                  </button>
-                  {editingProductId && (
-                    <button type="button" onClick={resetProductForm} className="btn-outline min-h-[44px] !px-4 !py-3">
-                      Batal
-                    </button>
-                  )}
-                </div>
-              </div>
-            </form>
-        </article>
-
-        <article className="glass-card dense-card p-6">
-          <div className="admin-filter-card flex flex-wrap items-end gap-3">
-            <div className="min-w-[200px] flex-1 space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Cari Produk
-              </label>
-              <input
-                className="input-modern"
-                value={productSearch}
-                onChange={(event) => setProductSearch(event.target.value)}
-                placeholder="Nama / slug"
-              />
-            </div>
-            <div className="min-w-[180px] space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Status
-              </label>
-              <select
-                className="input-modern"
-                value={productActiveFilter}
-                onChange={(event) => setProductActiveFilter(event.target.value)}
-              >
-                {PRODUCT_ACTIVE_OPTIONS.map((option) => (
-                  <option key={option.value || "all"} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              onClick={() => fetchProducts()}
-              className="btn-primary !px-6 !py-2.5"
-            >
-              Terapkan
-            </button>
-          </div>
-
-          <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
-            {loadingProducts && (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={`product-skeleton-${index}`}
-                    className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-14 w-14 rounded-xl skeleton" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3 w-2/3 rounded-full skeleton" />
-                        <div className="h-3 w-1/3 rounded-full skeleton" />
-                      </div>
-                      <div className="h-6 w-16 rounded-full skeleton" />
-                    </div>
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      <div className="h-3 rounded-full skeleton" />
-                      <div className="h-3 rounded-full skeleton" />
-                      <div className="h-3 rounded-full skeleton" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {!loadingProducts && products.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-brand-200 p-8 text-center text-sm text-brand-600 dark:border-brand-700 dark:text-brand-400">
-                Belum ada produk GTshirt.
-              </div>
-            )}
-            {!loadingProducts &&
-              products.map((product) => (
-                <div
-                  key={product.id}
-                  className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Product thumbnail */}
-                    {product.imageUrl && (
-                      <img
-                        src={resolveImageUrl(product.imageUrl)}
-                        alt={product.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-14 w-14 flex-shrink-0 rounded-xl border border-brand-200 object-cover dark:border-brand-700"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-bold text-brand-900 dark:text-white">
-                            {product.name}
-                          </p>
-                          <p className="text-xs text-brand-500 dark:text-brand-400">
-                            {product.slug}
-                          </p>
-                        </div>
-                        <span
-                          className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            product.isActive
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                              : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
-                          }`}
-                        >
-                          {product.isActive ? "Aktif" : "Nonaktif"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-brand-600 dark:text-brand-300">
-                    <span>Harga: {formatRupiah(product.basePrice)}</span>
-                    <span>Final: {formatRupiah(product.finalPrice)}</span>
-                    <span>Stok: {product.stock}</span>
-                    <span>
-                      Size: {Array.isArray(product.sizes)
-                        ? filterOutXXL(product.sizes).join("/") || "-"
-                        : "-"}
-                    </span>
-                    <span>Foto: {Array.isArray(product.imageUrls) ? product.imageUrls.length : 0}</span>
-                  </div>
-                  {product.stockBySize && (
-                    <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                      Stok per ukuran: {Object.entries(product.stockBySize)
-                        .filter(([size]) => normalizeSizeLabel(size) !== "XXL")
-                        .map(([size, qty]) => `${String(size).toUpperCase()}=${Number(qty) || 0}`)
-                        .join(" • ")}
-                    </p>
-                  )}
-                  {product.promoIsActive && (
-                    <p className="mt-1 text-xs font-semibold text-primary">
-                      Promo aktif: {product.promoLabel}
-                    </p>
-                  )}
-                  <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
-                    <button
-                      type="button"
-                      onClick={() => fillProductForm(product)}
-                      className="min-h-[44px] rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleProductStatus(product, !product.isActive)}
-                      className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-semibold text-white transition ${
-                        product.isActive
-                          ? "bg-rose-500 hover:bg-rose-600"
-                          : "bg-emerald-600 hover:bg-emerald-700"
-                      }`}
-                    >
-                      {product.isActive ? "Nonaktifkan" : "Aktifkan"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteProduct(product)}
-                      className="min-h-[44px] rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
-                    >
-                      Hapus
-                    </button>
-                  </div>
-                  <details className="mt-3 sm:hidden">
-                    <summary className="admin-action-summary min-h-[44px] cursor-pointer rounded-xl border border-brand-200 bg-white/70 px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200">
-                      Aksi Produk
-                    </summary>
-                    <div className="mt-2 grid gap-2">
-                      <button
-                        type="button"
-                        onClick={() => fillProductForm(product)}
-                        className="min-h-[44px] rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleProductStatus(product, !product.isActive)}
-                        className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-semibold text-white transition ${
-                          product.isActive
-                            ? "bg-rose-500 hover:bg-rose-600"
-                            : "bg-emerald-600 hover:bg-emerald-700"
-                        }`}
-                      >
-                        {product.isActive ? "Nonaktifkan" : "Aktifkan"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteProduct(product)}
-                        className="min-h-[44px] rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  </details>
-                </div>
-              ))}
-          </div>
-        </article>
-      </section>
-      )}
+      {activeTab === "produk" && <ProductsTab ctx={productTabCtx} />}
 
       {/* ── TAB: PESANAN MASUK ──────────────────── */}
-      {activeTab === "pesanan" && (
-        <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <article className="glass-card dense-card p-6">
-          <div className="admin-filter-card flex flex-wrap items-end gap-3">
-            <div className="min-w-[220px] flex-1 space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Cari Order
-              </label>
-              <input
-                className="input-modern"
-                value={orderSearch}
-                onChange={(event) => setOrderSearch(event.target.value)}
-                placeholder="Kode order / nama / nomor WA"
-              />
-            </div>
-            <div className="min-w-[180px] space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Status
-              </label>
-              <select
-                className="input-modern"
-                value={orderStatusFilter}
-                onChange={(event) => setOrderStatusFilter(event.target.value)}
-              >
-                <option value="">Semua Status</option>
-                {ORDER_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setOrderPage(1);
-                fetchOrders({ page: 1 });
-              }}
-              className="btn-primary !px-6 !py-2.5"
-            >
-              Terapkan
-            </button>
-            <button
-              type="button"
-              onClick={handleClearOrders}
-              className="rounded-2xl border border-rose-500 bg-rose-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:border-rose-600 hover:bg-rose-700 dark:border-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
-            >
-              Reset Semua Pesanan
-            </button>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={selectAllOrders}
-              className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
-            >
-              Pilih Semua
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("scan");
-                setScanError("");
-              }}
-              className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
-            >
-              Scan QR
-            </button>
-            <button
-              type="button"
-              onClick={clearSelectedOrders}
-              className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-            >
-              Bersihkan
-            </button>
-            <select
-              className="input-modern !py-2 text-xs"
-              value={bulkStatus}
-              onChange={(event) => setBulkStatus(event.target.value)}
-            >
-              <option value="">Pilih Status</option>
-              {ORDER_STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={handleBulkStatusUpdate}
-              disabled={!bulkStatus || selectedOrders.length === 0}
-              className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
-            >
-              Update Status ({selectedOrders.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => printOrderLabels(selectedOrders)}
-              disabled={selectedOrders.length === 0}
-              className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
-            >
-              Print Resi Terpilih ({selectedOrders.length})
-            </button>
-          </div>
-
-          <div
-            ref={orderListRef}
-            onScroll={(event) => setOrderScrollTop(event.currentTarget.scrollTop)}
-            className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1"
-          >
-            {loadingOrders && (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={`order-skeleton-${index}`}
-                    className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="space-y-2">
-                        <div className="h-3 w-32 rounded-full skeleton" />
-                        <div className="h-3 w-40 rounded-full skeleton" />
-                      </div>
-                      <div className="h-6 w-20 rounded-full skeleton" />
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <div className="h-3 rounded-full skeleton" />
-                      <div className="h-3 rounded-full skeleton" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {!loadingOrders && orders.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-brand-200 p-8 text-center text-sm text-brand-600 dark:border-brand-700 dark:text-brand-400">
-                Belum ada order masuk.
-              </div>
-            )}
-            {!loadingOrders && (
-              <div style={{ paddingTop: orderPaddingTop, paddingBottom: orderPaddingBottom }}>
-                {visibleOrders.map((order, index) => {
-                  const quickAction = getQuickActionForOrder(order);
-                  return (
-                    <div
-                      key={order.id}
-                      ref={useVirtualOrders && index === 0 ? orderRowMeasureRef : null}
-                      className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
-                    >
-                  <div className="sm:hidden">
-                    <details className="admin-order-details">
-                      <summary className="admin-order-summary mobile-summary flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <label
-                            className="flex items-center"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedOrderIds.has(order.id)}
-                              onChange={() => toggleOrderSelection(order.id)}
-                              className="h-4 w-4 rounded border-brand-300 text-primary"
-                            />
-                          </label>
-                          <div>
-                            <p className="text-sm font-bold text-brand-900 dark:text-white">
-                              {order.orderCode}
-                            </p>
-                            <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                              {formatDateTime(order.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-right">
-                            <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>
-                              {mapOrderStatusLabel(order.status)}
-                            </span>
-                            <p className="mt-1 text-xs font-semibold text-primary">
-                              {formatRupiah(order.totalAmount)}
-                            </p>
-                          </div>
-                          <svg
-                            className="mobile-summary-icon h-5 w-5 text-brand-500 dark:text-brand-300"
-                            viewBox="0 0 20 20"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={1.6}
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
-                          </svg>
-                        </div>
-                      </summary>
-                      <div className="mt-3 space-y-2 text-xs text-brand-600 dark:text-brand-300">
-                        <p>{order.customerName} • {order.customerPhone}</p>
-                        {order.user?.email && (
-                          <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                            Akun: {order.user.email}
-                          </p>
-                        )}
-                        <p>{order.shippingMethod} • {order.paymentMethod}</p>
-                        <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                          Potong stok: {order.stockDeductedAt ? `Sudah (${formatDateTime(order.stockDeductedAt)})` : "Belum"}
-                        </p>
-                        {Array.isArray(order.items) && order.items.length > 0 && (
-                          <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                            {order.items.length} item • {order.items.map((item) => `${item.productName} (${item.size} x${item.quantity})`).join(", ")}
-                          </p>
-                        )}
-                        {quickAction && (
-                          <button
-                            type="button"
-                            onClick={() => handleQuickOrderAction(order, quickAction)}
-                            className="btn-primary !w-full !py-2 !text-xs"
-                          >
-                            {quickAction.label}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setActiveOrderSheet(order)}
-                          className="admin-order-action"
-                        >
-                          Ubah Status
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => printOrderLabel(order)}
-                          className="admin-order-action"
-                        >
-                          Print Resi
-                        </button>
-                      </div>
-                    </details>
-                  </div>
-
-                  <div className="hidden sm:block">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <label className="flex items-start pt-1">
-                          <input
-                            type="checkbox"
-                            checked={selectedOrderIds.has(order.id)}
-                            onChange={() => toggleOrderSelection(order.id)}
-                            className="h-4 w-4 rounded border-brand-300 text-primary"
-                          />
-                        </label>
-                        <div>
-                          <p className="text-sm font-bold text-brand-900 dark:text-white">
-                            {order.orderCode}
-                          </p>
-                          <p className="text-xs text-brand-500 dark:text-brand-400">
-                            {order.customerName} • {order.customerPhone}
-                          </p>
-                          {order.user?.email && (
-                            <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                              Akun: {order.user.email}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>
-                        {mapOrderStatusLabel(order.status)}
-                      </span>
-                    </div>
-
-                    <div className="mt-2 text-xs text-brand-600 dark:text-brand-300">
-                      {formatDateTime(order.createdAt)} • {order.shippingMethod} • {order.paymentMethod}
-                    </div>
-                    <div className="mt-1 text-xs font-semibold text-primary">
-                      Total: {formatRupiah(order.totalAmount)}
-                    </div>
-                    <div className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">
-                      Potong stok: {order.stockDeductedAt ? `Sudah (${formatDateTime(order.stockDeductedAt)})` : "Belum"}
-                    </div>
-                    {Array.isArray(order.items) && order.items.length > 0 && (
-                      <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                        {order.items.length} item • {order.items.map((item) => `${item.productName} (${item.size} x${item.quantity})`).join(", ")}
-                      </p>
-                    )}
-
-                    <div className="mt-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {quickAction && (
-                          <button
-                            type="button"
-                            onClick={() => handleQuickOrderAction(order, quickAction)}
-                            className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90"
-                          >
-                            {quickAction.label}
-                          </button>
-                        )}
-                        <select
-                          className="input-modern !py-2 text-xs"
-                          value={order.status}
-                          onChange={(event) =>
-                            handleOrderStatusChange(order.id, event.target.value)
-                          }
-                        >
-                          {ORDER_STATUS_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => printOrderLabel(order)}
-                          className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200 dark:hover:bg-brand-800/40"
-                        >
-                          Print Resi
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-              </div>
-            )}
-            {!loadingOrders && orderPage < orderMeta.totalPages && (
-              <div className="flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => fetchOrders({ page: orderPage + 1, append: true })}
-                  disabled={isLoadingMoreOrders}
-                  className="btn-outline !px-4 !py-2 text-xs disabled:opacity-60"
-                >
-                  {isLoadingMoreOrders ? "Memuat..." : "Muat Order Lainnya"}
-                </button>
-              </div>
-            )}
-          </div>
-        </article>
-
-        <article className="glass-card dense-card p-6">
-          <h3 className="text-lg font-bold text-brand-900 dark:text-white">
-            Top Produk Terlaris
-          </h3>
-          <div className="mt-4 space-y-2">
-            {!analytics?.topProducts?.length && (
-              <p className="text-sm text-brand-600 dark:text-brand-400">
-                Belum ada data penjualan produk.
-              </p>
-            )}
-            {analytics?.topProducts?.map((item) => (
-              <div
-                key={item.productName}
-                className="rounded-xl border border-brand-200 bg-white/70 px-3 py-2 text-sm dark:border-brand-700 dark:bg-brand-900/45"
-              >
-                <p className="font-semibold text-brand-900 dark:text-white">{item.productName}</p>
-                <p className="text-xs text-brand-500 dark:text-brand-400">
-                  Terjual: {item.soldQty} • Revenue: {formatRupiah(item.revenue)}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <h3 className="mt-6 text-lg font-bold text-brand-900 dark:text-white">
-            Revenue per Status
-          </h3>
-          <div className="mt-3 space-y-2">
-            {!analytics?.revenueByStatus && (
-              <p className="text-sm text-brand-600 dark:text-brand-400">
-                Belum ada data revenue.
-              </p>
-            )}
-            {analytics?.revenueByStatus &&
-              Object.entries(analytics.revenueByStatus).map(([status, amount]) => (
-                <div
-                  key={status}
-                  className="flex items-center justify-between rounded-xl border border-brand-200 bg-white/70 px-3 py-2 text-sm dark:border-brand-700 dark:bg-brand-900/45"
-                >
-                  <span className="font-medium text-brand-700 dark:text-brand-300">
-                    {mapOrderStatusLabel(status)}
-                  </span>
-                  <span className="font-semibold text-brand-900 dark:text-white">
-                    {formatRupiah(amount)}
-                  </span>
-                </div>
-              ))}
-          </div>
-        </article>
-      </section>
-      )}
+      {activeTab === "pesanan" && <OrdersTab ctx={ordersTabCtx} />}
 
       {/* ── TAB: SCAN RESI ──────────────────── */}
-      {activeTab === "scan" && (
-        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <article className="glass-card dense-card p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-              Scanner Standby
-            </p>
-            <h3 className="mt-2 text-2xl font-bold text-brand-900 dark:text-white">
-              Scan QR Resi / Invoice
-            </h3>
-            <p className="mt-2 text-sm text-brand-600 dark:text-brand-300">
-              QR resi menandai pesanan menjadi <strong>siap diambil</strong> (ambil di gereja) atau <strong>shipping</strong> (kurir).
-              QR invoice menandai pesanan menjadi <strong>sudah diambil</strong> / <strong>selesai</strong>.
-            </p>
-
-            <div className="mt-4 relative overflow-hidden rounded-2xl border border-brand-200 bg-black dark:border-brand-700">
-              <video
-                ref={qrVideoRef}
-                className="h-72 w-full object-cover"
-                muted
-                playsInline
-              />
-              <div className="pointer-events-none absolute inset-6 rounded-2xl border-2 border-emerald-400/70" />
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
-                Standby: {isScannerActive ? "Aktif" : "Nonaktif"}
-              </span>
-              {scanStatus && (
-                <span className="rounded-full border border-brand-200 bg-white/80 px-2 py-1 font-semibold text-brand-700 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
-                  {scanStatus}
-                </span>
-              )}
-            </div>
-            {scanError && (
-              <p className="mt-2 text-xs font-semibold text-rose-500">
-                {scanError}
-              </p>
-            )}
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setScanError("");
-                  setScanStatus("");
-                  setScanSession((prev) => prev + 1);
-                }}
-                className="rounded-xl border border-brand-200 bg-white/80 px-4 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
-              >
-                Restart Scanner
-              </button>
-              <button
-                type="button"
-                onClick={toggleTorch}
-                disabled={!torchSupported}
-                className="rounded-xl border border-brand-200 bg-white/80 px-4 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 disabled:opacity-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40"
-              >
-                {torchEnabled ? "Matikan Flash" : "Nyalakan Flash"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("pesanan")}
-                className="rounded-xl border border-brand-200 bg-white/80 px-4 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-              >
-                Kembali ke Pesanan
-              </button>
-            </div>
-          </article>
-
-          <article className="glass-card dense-card p-6 space-y-4">
-            <div>
-              <h4 className="text-lg font-bold text-brand-900 dark:text-white">
-                Log Scan Terakhir
-              </h4>
-              <p className="text-sm text-brand-600 dark:text-brand-400">
-                Gunakan tab ini untuk scan cepat tanpa menutup kamera.
-              </p>
-            </div>
-
-            {lastScannedCode ? (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200">
-                <p className="font-semibold">Order: {lastScannedCode}</p>
-                <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-200/80">
-                  Terakhir scan: {formatDateTime(lastScannedAt)}
-                </p>
-                <p className="mt-2 text-xs">
-                  QR: <strong>{lastScannedMode === "invoice" ? "Invoice" : "Resi"}</strong>
-                </p>
-                <p className="mt-1 text-xs">
-                  Status → <strong>{lastScannedStatus || "tersimpan"}</strong>
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-brand-200 bg-white/80 p-4 text-sm text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
-                Belum ada QR yang discan.
-              </div>
-            )}
-
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-200">
-              Tips: pastikan cahaya cukup dan kamera fokus agar QR cepat terbaca.
-            </div>
-          </article>
-        </section>
-      )}
+      {activeTab === "scan" && <ScanTab ctx={scanTabCtx} />}
 
       {/* ── TAB: ULASAN PRODUK ──────────────────── */}
-      {activeTab === "ulasan" && (
-        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <article className="glass-card dense-card p-6">
-            <div className="admin-filter-card flex flex-wrap items-end gap-3">
-              <div className="min-w-[220px] flex-1 space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                  Cari Ulasan
-                </label>
-                <input
-                  className="input-modern"
-                  value={reviewSearch}
-                  onChange={(event) => setReviewSearch(event.target.value)}
-                  placeholder="Nama, nomor WA, atau isi ulasan"
-                />
-              </div>
-              <div className="min-w-[180px] space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                  Status
-                </label>
-                <select
-                  className="input-modern"
-                  value={reviewStatusFilter}
-                  onChange={(event) => setReviewStatusFilter(event.target.value)}
-                >
-                  {REVIEW_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setReviewPage(1);
-                  fetchReviews({ page: 1 });
-                }}
-                className="btn-primary !px-6 !py-2.5"
-              >
-                Terapkan
-              </button>
-            </div>
-
-            <div className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
-              {loadingReviews && (
-                <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <div
-                      key={`review-skeleton-${index}`}
-                      className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="space-y-2">
-                          <div className="h-3 w-32 rounded-full skeleton" />
-                          <div className="h-3 w-40 rounded-full skeleton" />
-                        </div>
-                        <div className="h-6 w-16 rounded-full skeleton" />
-                      </div>
-                      <div className="mt-3 space-y-2">
-                        <div className="h-3 w-full rounded-full skeleton" />
-                        <div className="h-3 w-5/6 rounded-full skeleton" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {!loadingReviews && reviews.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-brand-200 p-8 text-center text-sm text-brand-600 dark:border-brand-700 dark:text-brand-400">
-                  Belum ada ulasan masuk.
-                </div>
-              )}
-              {!loadingReviews &&
-                reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-bold text-brand-900 dark:text-white">
-                          {review.product?.name || "Produk"}
-                        </p>
-                        <p className="text-xs text-brand-500 dark:text-brand-400">
-                          {review.reviewerName} • {review.reviewerPhone}
-                        </p>
-                        {review.order?.orderCode && (
-                          <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                            Order: {review.order.orderCode}
-                          </p>
-                        )}
-                      </div>
-                      <span
-                        className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${reviewStatusBadge(review.isApproved)}`}
-                      >
-                        {review.isApproved ? "Tayang" : "Menunggu"}
-                      </span>
-                    </div>
-
-                    <div className="mt-2 flex items-center gap-2 text-sm">
-                      <div className="flex items-center gap-1">
-                        {renderStars(review.rating)}
-                      </div>
-                      <span className="text-xs text-brand-500 dark:text-brand-400">
-                        {formatDateTime(review.createdAt)}
-                      </span>
-                    </div>
-
-                    {review.reviewText && (
-                      <p className="mt-3 text-sm text-brand-700 dark:text-brand-300">
-                        {review.reviewText}
-                      </p>
-                    )}
-
-                    <div className="admin-review-actions mt-4 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleReviewStatusToggle(review.id, !review.isApproved)}
-                        className="min-h-[44px] rounded-xl border border-brand-200 bg-white px-3 py-2 text-xs font-semibold text-brand-700 transition hover:border-primary hover:text-primary dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300"
-                      >
-                        {review.isApproved ? "Sembunyikan" : "Tayangkan"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteReview(review.id)}
-                        className="min-h-[44px] rounded-xl border border-rose-500 bg-rose-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:border-rose-600 hover:bg-rose-700 dark:border-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600"
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              {!loadingReviews && reviewPage < reviewMeta.totalPages && (
-                <div className="flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => fetchReviews({ page: reviewPage + 1, append: true })}
-                    disabled={isLoadingMoreReviews}
-                    className="btn-outline !px-4 !py-2 text-xs disabled:opacity-60"
-                  >
-                    {isLoadingMoreReviews ? "Memuat..." : "Muat Ulasan Lainnya"}
-                  </button>
-                </div>
-              )}
-            </div>
-          </article>
-
-          <article className="glass-card dense-card p-6">
-            <h3 className="text-lg font-bold text-brand-900 dark:text-white">
-              Ringkasan Rating
-            </h3>
-            <div className="mt-4 space-y-2 text-sm text-brand-600 dark:text-brand-300">
-              <div className="flex items-center justify-between rounded-xl border border-brand-200 bg-white/70 px-3 py-2 dark:border-brand-700 dark:bg-brand-900/45">
-                <span>Rata-rata Rating</span>
-                <span className="font-semibold text-brand-900 dark:text-white">
-                  {(Number(analytics?.metrics?.averageRating) || 0).toFixed(1)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-xl border border-brand-200 bg-white/70 px-3 py-2 dark:border-brand-700 dark:bg-brand-900/45">
-                <span>Total Ulasan</span>
-                <span className="font-semibold text-brand-900 dark:text-white">
-                  {analytics?.metrics?.totalReviews ?? 0}
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-xl border border-brand-200 bg-white/70 px-3 py-2 dark:border-brand-700 dark:bg-brand-900/45">
-                <span>Ulasan Pending</span>
-                <span className="font-semibold text-brand-900 dark:text-white">
-                  {analytics?.metrics?.pendingReviews ?? 0}
-                </span>
-              </div>
-            </div>
-            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-300">
-              Gunakan toggle untuk menayangkan atau menyembunyikan ulasan sebelum tampil di katalog publik.
-            </div>
-          </article>
-        </section>
-      )}
+      {activeTab === "ulasan" && <ReviewsTab ctx={reviewsTabCtx} />}
 
       {/* ── TAB: LAPORAN PEMASUKAN ──────────────────── */}
-      {activeTab === "laporan" && (
-        <>
-          <section className="grid gap-6 pb-24 sm:pb-0">
-          <article className="glass-card dense-card p-6">
-            <div className="sm:hidden">
-              <details className="admin-report-filter rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/45">
-                <summary className="mobile-summary flex cursor-pointer items-center justify-between gap-3">
-                  <span className="text-sm font-semibold text-brand-900 dark:text-white">
-                    Filter Laporan
-                  </span>
-                  <svg
-                    className="mobile-summary-icon h-5 w-5 text-brand-500 dark:text-brand-300"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.6}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
-                  </svg>
-                </summary>
-                <div className="mt-3 grid gap-3">
-                  <label className="space-y-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                      Mulai
-                    </span>
-                    <input
-                      type="date"
-                      className="input-modern"
-                      value={reportFilters.startDate}
-                      onChange={(event) =>
-                        setReportFilters((prev) => ({ ...prev, startDate: event.target.value }))
-                      }
-                    />
-                  </label>
-                  <label className="space-y-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                      Sampai
-                    </span>
-                    <input
-                      type="date"
-                      className="input-modern"
-                      value={reportFilters.endDate}
-                      onChange={(event) =>
-                        setReportFilters((prev) => ({ ...prev, endDate: event.target.value }))
-                      }
-                    />
-                  </label>
-                  <label className="space-y-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                      Status
-                    </span>
-                    <select
-                      className="input-modern"
-                      value={reportFilters.status}
-                      onChange={(event) =>
-                        setReportFilters((prev) => ({ ...prev, status: event.target.value }))
-                      }
-                    >
-                      {REPORT_STATUS_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => fetchRevenueReport()}
-                    className="btn-primary !px-6 !py-2.5"
-                  >
-                    Terapkan
-                  </button>
-                </div>
-              </details>
-            </div>
-
-            <div className="admin-filter-card hidden sm:flex flex-wrap items-end gap-3">
-              <div className="min-w-[180px] space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                  Mulai
-                </label>
-                <input
-                  type="date"
-                  className="input-modern"
-                  value={reportFilters.startDate}
-                  onChange={(event) =>
-                    setReportFilters((prev) => ({ ...prev, startDate: event.target.value }))
-                  }
-                />
-              </div>
-              <div className="min-w-[180px] space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                  Sampai
-                </label>
-                <input
-                  type="date"
-                  className="input-modern"
-                  value={reportFilters.endDate}
-                  onChange={(event) =>
-                    setReportFilters((prev) => ({ ...prev, endDate: event.target.value }))
-                  }
-                />
-              </div>
-              <div className="min-w-[180px] space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                  Status
-                </label>
-                <select
-                  className="input-modern"
-                  value={reportFilters.status}
-                  onChange={(event) =>
-                    setReportFilters((prev) => ({ ...prev, status: event.target.value }))
-                  }
-                >
-                  {REPORT_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="button"
-                onClick={() => fetchRevenueReport()}
-                className="btn-primary !px-6 !py-2.5"
-              >
-                Terapkan
-              </button>
-              <button
-                type="button"
-                onClick={handleExportReport}
-                disabled={!reportRows.length}
-                className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300"
-              >
-                Export Excel
-              </button>
-              <button
-                type="button"
-                onClick={handleSyncReportSheet}
-                disabled={syncingSheet}
-                className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-xs font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100 disabled:opacity-60 dark:border-sky-900/70 dark:bg-sky-900/20 dark:text-sky-200"
-              >
-                {syncingSheet ? "Syncing..." : "Sync Spreadsheet"}
-              </button>
-            </div>
-
-            {sheetSyncInfo && (
-              <div
-                className={`mt-3 flex flex-wrap items-center gap-2 rounded-2xl border px-4 py-3 text-xs font-semibold ${
-                  sheetSyncInfo.type === "success"
-                    ? "border-emerald-200 bg-emerald-50/80 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-200"
-                    : "border-rose-200 bg-rose-50/80 text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-200"
-                }`}
-              >
-                <span>{sheetSyncInfo.text}</span>
-                {sheetSyncInfo.sheetUrl && (
-                  <a
-                    href={sheetSyncInfo.sheetUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-full border border-current px-3 py-1 text-[11px] font-semibold hover:bg-white/70 dark:hover:bg-black/20"
-                  >
-                    Buka Spreadsheet
-                  </a>
-                )}
-              </div>
-            )}
-
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
-              {[
-                {
-                  label: "Total Pemasukan",
-                  value: formatRupiah(reportMeta?.totalRevenue ?? 0),
-                },
-                {
-                  label: "Total Order",
-                  value: reportMeta?.totalOrders ?? 0,
-                },
-                {
-                  label: "Total Item Terjual",
-                  value: reportMeta?.totalItems ?? 0,
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-brand-200 bg-white/70 p-4 text-sm dark:border-brand-700 dark:bg-brand-900/45"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-                    {item.label}
-                  </p>
-                  <p className="mt-2 text-lg font-bold text-brand-900 dark:text-white">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-brand-200 dark:border-brand-700">
-              {loadingReport ? (
-                <div className="flex justify-center py-8">
-                  <div className="h-9 w-9 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
-                </div>
-              ) : reportRows.length === 0 ? (
-                <div className="p-6 text-center text-sm text-brand-600 dark:text-brand-400">
-                  Belum ada data pemasukan.
-                </div>
-              ) : (
-                <>
-                  <div className="sm:hidden space-y-3 p-4">
-                    {reportRows.map((row) => (
-                      <div
-                        key={row.id}
-                        className="rounded-2xl border border-brand-200 bg-white/70 p-4 text-sm dark:border-brand-700 dark:bg-brand-900/45"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-brand-900 dark:text-white">
-                              {row.orderCode}
-                            </p>
-                            <p className="text-xs text-brand-500 dark:text-brand-400">
-                              {formatDateTime(row.createdAt)}
-                            </p>
-                          </div>
-                          <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(row.status)}`}>
-                            {mapOrderStatusLabel(row.status)}
-                          </span>
-                        </div>
-                        <div className="mt-2 text-xs text-brand-500 dark:text-brand-400">
-                          {row.customerName} • {row.customerPhone}
-                        </div>
-                        <div className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
-                          Total: {formatRupiah(row.totalAmount)}
-                        </div>
-                        <div className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                          {row.itemsSummary}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="hidden sm:block overflow-x-auto">
-                    <table className="min-w-full text-left text-sm">
-                      <thead className="bg-brand-50 text-xs uppercase tracking-[0.2em] text-brand-500 dark:bg-brand-900/50 dark:text-brand-400">
-                        <tr>
-                          <th className="px-4 py-3">Kode</th>
-                          <th className="px-4 py-3">Tanggal</th>
-                          <th className="px-4 py-3">Pelanggan</th>
-                          <th className="px-4 py-3">Status</th>
-                          <th className="px-4 py-3">Total</th>
-                          <th className="px-4 py-3">Item</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {reportRows.map((row) => (
-                          <tr
-                            key={row.id}
-                            className="border-t border-brand-100 text-brand-700 dark:border-brand-800 dark:text-brand-300"
-                          >
-                            <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
-                              {row.orderCode}
-                            </td>
-                            <td className="px-4 py-3">{formatDateTime(row.createdAt)}</td>
-                            <td className="px-4 py-3">
-                              <div className="font-medium text-brand-900 dark:text-white">
-                                {row.customerName}
-                              </div>
-                              <div className="text-xs text-brand-500 dark:text-brand-400">
-                                {row.customerPhone}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(row.status)}`}>
-                                {mapOrderStatusLabel(row.status)}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
-                              {formatRupiah(row.totalAmount)}
-                            </td>
-                            <td className="px-4 py-3 text-xs text-brand-500 dark:text-brand-400">
-                              {row.itemsSummary}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-            </div>
-
-          </article>
-          </section>
-          <div className="admin-report-sticky sm:hidden">
-            <div className="admin-report-surface">
-              <button
-                type="button"
-                onClick={handleExportReport}
-                disabled={!reportRows.length}
-                className="admin-report-btn"
-              >
-                Export
-              </button>
-              <button
-                type="button"
-                onClick={handleSyncReportSheet}
-                disabled={syncingSheet}
-                className="admin-report-btn"
-              >
-                {syncingSheet ? "Syncing..." : "Sync"}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      {activeTab === "laporan" && <ReportsTab ctx={reportsTabCtx} />}
 
       {/* ── TAB: PENGATURAN ONGKIR ──────────────────── */}
-      {activeTab === "ongkir" && (
-        <section className="glass-card dense-card p-6">
-          <h2 className="text-xl font-bold text-brand-900 dark:text-white">
-            ⚙️ Pengaturan Ongkir
-          </h2>
-          <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-            Harga ongkir saat ini: <strong>{formatRupiah(shippingCost)}</strong>
-          </p>
-          <div className="mt-6 space-y-4 max-w-md">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
-                Harga Ongkir (Rp)
-              </label>
-              <input
-                type="number"
-                min="0"
-                className="input-modern"
-                value={shippingCostInput}
-                onChange={(e) => setShippingCostInput(e.target.value)}
-                placeholder="15000"
-              />
-              <p className="text-xs text-brand-500 dark:text-brand-400">
-                Masukkan dalam satuan Rupiah (contoh: 15000 untuk Rp 15.000)
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleSaveShipping}
-              disabled={savingShipping}
-              className="btn-primary !w-full !px-6 !py-3 disabled:opacity-60 font-semibold"
-            >
-              {savingShipping ? "🔄 Menyimpan..." : "✅ Simpan Pengaturan Ongkir"}
-            </button>
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-brand-200 bg-brand-50/50 p-4 dark:border-brand-700 dark:bg-brand-900/20">
-            <p className="text-sm font-semibold text-brand-900 dark:text-white">
-              📌 Informasi Pengaturan Ongkir
-            </p>
-            <ul className="mt-2 space-y-1 text-xs text-brand-600 dark:text-brand-400 list-disc list-inside">
-              <li>Ongkir yang diset di sini akan otomatis ditambahkan ke setiap pesanan</li>
-              <li>Pelanggan akan melihat biaya ongkir saat checkout</li>
-              <li>Perubahan ongkir hanya mempengaruhi pesanan yang dibuat setelah disimpan</li>
-              <li>Anggap ongkir sudah termasuk dalam total harga ketika negosiasi dengan kurir</li>
-            </ul>
-          </div>
-        </section>
-      )}
+      {activeTab === "ongkir" && <ShippingTab ctx={shippingTabCtx} />}
 
       {activeOrderSheet && (
         <div className="admin-sheet-backdrop sm:hidden" onClick={() => setActiveOrderSheet(null)} role="presentation">
