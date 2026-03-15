@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import RichTextEditor from '../components/RichTextEditor';
+import DOMPurify from 'dompurify';
 
 function ArticleEditorPage() {
   const { user } = useAuth();
@@ -148,7 +149,7 @@ function ArticleEditorPage() {
 
       <div className="editor-card space-y-2 p-4">
         <h2 className="font-semibold text-brand-900 dark:text-white">Preview</h2>
-        <div className="prose max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: content }} />
+        <div className="prose max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
       </div>
     </section>
   );

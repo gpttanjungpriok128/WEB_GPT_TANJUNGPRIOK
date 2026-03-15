@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../services/api";
+import DOMPurify from "dompurify";
 
 function ArticleDetailPage() {
   const { id } = useParams();
@@ -118,7 +119,7 @@ function ArticleDetailPage() {
             )}
 
             <div className="article-reader-content article-detail-content">
-              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }} />
             </div>
           </article>
         )}
