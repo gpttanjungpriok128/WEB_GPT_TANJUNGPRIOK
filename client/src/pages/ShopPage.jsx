@@ -186,6 +186,7 @@ const PRODUCTS_PER_PAGE = 16;
 const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
 const PREFETCH_IMAGE_COUNT = 6;
+const USE_FALLBACK_PRODUCTS = import.meta.env.MODE === "development";
 
 const normalizeSizeLabel = (value) =>
   String(value || "")
@@ -204,12 +205,13 @@ function getDefaultSize(product) {
 
 function ShopPage() {
   const { user } = useAuth();
-  const [products, setProducts] = useState(FALLBACK_PRODUCTS);
+  const [products, setProducts] = useState(USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : []);
   const [selections, setSelections] = useState({});
   const [cartItems, setCartItems] = useState([]);
   const [isCartHydrated, setIsCartHydrated] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [productLoadError, setProductLoadError] = useState(false);
   const [productPage, setProductPage] = useState(1);
   const [productMeta, setProductMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [searchQuery, setSearchQuery] = useState("");
@@ -287,6 +289,7 @@ function ShopPage() {
       setIsLoadingMore(true);
     } else {
       setIsLoadingProducts(!cached && !hasBootCache);
+      setProductLoadError(false);
     }
     try {
       const { data } = await swrGet("/store/products", { params }, {
@@ -309,6 +312,9 @@ function ShopPage() {
       setProducts((prev) => (append ? [...prev, ...apiProducts] : apiProducts));
       setProductMeta(data?.meta || { page, totalPages: 1, total: apiProducts.length });
       setProductPage(page);
+      if (!append) {
+        setProductLoadError(false);
+      }
       if (!append && apiProducts.length > 0 && typeof window !== "undefined") {
         try {
           window.localStorage.setItem(
@@ -326,8 +332,11 @@ function ShopPage() {
       }
     } catch {
       if (!append) {
-        setProducts([]);
-        setProductMeta({ page: 1, totalPages: 1, total: 0 });
+        setProductLoadError(true);
+        if (!products.length && !hasBootCache && !cached) {
+          setProducts(USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : []);
+          setProductMeta({ page: 1, totalPages: 1, total: 0 });
+        }
       }
     } finally {
       setIsLoadingProducts(false);
@@ -913,6 +922,18 @@ function ShopPage() {
               );
               })}
             </div>
+            {productLoadError && filteredProducts.length === 0 && (
+              <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/20 dark:text-rose-200">
+                Gagal memuat katalog. Coba muat ulang.
+                <button
+                  type="button"
+                  onClick={() => fetchProducts({ page: 1, append: false })}
+                  className="ml-2 font-semibold text-rose-700 underline underline-offset-2 dark:text-rose-200"
+                >
+                  Muat ulang
+                </button>
+              </div>
+            )}
             {!isLoadingProducts && filteredProducts.length > 0 && hasMoreProducts && (
               <div className="mt-6 flex justify-center">
                 <button
