@@ -1,21 +1,129 @@
-export default function ReportsTab({ ctx }) {
-  const {
-    reportFilters,
-    setReportFilters,
-    REPORT_STATUS_OPTIONS,
-    fetchRevenueReport,
-    handleExportReport,
-    handleSyncReportSheet,
-    syncingSheet,
-    sheetSyncInfo,
-    reportRows,
-    reportMeta,
-    loadingReport,
-    formatRupiah,
-    formatDateTime,
-    statusBadge,
-    mapOrderStatusLabel,
-  } = ctx;
+import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
+import api from "../../services/api";
+import { formatRupiah, formatDateTime, mapOrderStatusLabel, statusBadge } from "../../utils/storeFormatters";
+
+const REPORT_FILTERS_KEY = "gpt_tanjungpriok_admin_report_filters_v1";
+const REPORT_STATUS_OPTIONS = [
+  { value: "all", label: "Semua Status" },
+  { value: "picked_up", label: "Sudah Diambil" },
+  { value: "ready_pickup", label: "Siap Diambil" },
+  { value: "completed", label: "Selesai" },
+  { value: "shipping", label: "Dalam Pengiriman" },
+  { value: "packed", label: "Dikemas" },
+  { value: "confirmed", label: "Dikonfirmasi" },
+  { value: "new", label: "Baru" },
+  { value: "cancelled", label: "Dibatalkan" },
+];
+
+export default function ReportsTab({ isActive }) {
+  const [reportFilters, setReportFilters] = useState(() => {
+    try {
+      const saved = localStorage.getItem(REPORT_FILTERS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      //
+    }
+    return { startDate: "", endDate: "", status: "all", shippingMethod: "all" };
+  });
+
+  const [reportRows, setReportRows] = useState([]);
+  const [reportMeta, setReportMeta] = useState({});
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [syncingSheet, setSyncingSheet] = useState(false);
+  const [sheetSyncInfo, setSheetSyncInfo] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem(REPORT_FILTERS_KEY, JSON.stringify(reportFilters));
+  }, [reportFilters]);
+
+  const fetchRevenueReport = async () => {
+    setLoadingReport(true);
+    setSheetSyncInfo(null);
+    try {
+      const params = {
+        startDate: reportFilters.startDate,
+        endDate: reportFilters.endDate,
+        status: reportFilters.status,
+      };
+      const { data } = await api.get("/store/admin/reports/revenue", { params });
+      setReportRows(Array.isArray(data?.data) ? data.data : []);
+      setReportMeta(data?.meta || null);
+    } catch (error) {
+      setReportRows([]);
+      setReportMeta(null);
+      setSheetSyncInfo({
+        type: "error",
+        text: error.response?.data?.message || "Gagal memuat laporan pemasukan.",
+      });
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
+  const handleSyncReportSheet = async () => {
+    setSyncingSheet(true);
+    setSheetSyncInfo(null);
+    try {
+      const payload = {
+        startDate: reportFilters.startDate,
+        endDate: reportFilters.endDate,
+        status: reportFilters.status,
+      };
+      const { data } = await api.post("/store/admin/reports/revenue/sync", payload);
+      setSheetSyncInfo({
+        type: "success",
+        text: data?.message || "Spreadsheet berhasil diperbarui.",
+        sheetUrl: data?.data?.sheetUrl || "",
+        sheetName: data?.data?.sheetName || "",
+      });
+    } catch (error) {
+      setSheetSyncInfo({
+        type: "error",
+        text: error.response?.data?.message || "Gagal sinkron ke spreadsheet.",
+      });
+    } finally {
+      setSyncingSheet(false);
+    }
+  };
+
+  const handleExportReport = () => {
+    if (!reportRows.length) {
+      setSheetSyncInfo({ type: "error", text: "Tidak ada data untuk diexport." });
+      return;
+    }
+
+    const rows = reportRows.map((row, index) => ({
+      No: index + 1,
+      "Kode Order": row.orderCode,
+      Tanggal: formatDateTime(row.createdAt),
+      Nama: row.customerName,
+      "No. WA": row.customerPhone,
+      Status: mapOrderStatusLabel(row.status),
+      Pengiriman: row.shippingMethod,
+      Pembayaran: row.paymentMethod,
+      Subtotal: row.subtotal,
+      Ongkir: row.shippingCost,
+      Total: row.totalAmount,
+      "Jumlah Item": row.itemCount,
+      Produk: row.itemsSummary,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Pemasukan");
+
+    const startLabel = reportFilters.startDate || "semua";
+    const endLabel = reportFilters.endDate || "semua";
+    XLSX.writeFile(workbook, `laporan-pemasukan-${startLabel}-${endLabel}.xlsx`);
+  };
+
+  useEffect(() => {
+    if (isActive) {
+      fetchRevenueReport();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]);
 
   return (
     <>
@@ -240,9 +348,7 @@ export default function ReportsTab({ ctx }) {
                             {formatDateTime(row.createdAt)}
                           </p>
                         </div>
-                        <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(row.status)}`}>
-                          {mapOrderStatusLabel(row.status)}
-                        </span>
+                        {statusBadge(row.status)}
                       </div>
                       <div className="mt-2 text-xs text-brand-500 dark:text-brand-400">
                         {row.customerName} • {row.customerPhone}
@@ -287,9 +393,7 @@ export default function ReportsTab({ ctx }) {
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(row.status)}`}>
-                              {mapOrderStatusLabel(row.status)}
-                            </span>
+                            {statusBadge(row.status)}
                           </td>
                           <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
                             {formatRupiah(row.totalAmount)}

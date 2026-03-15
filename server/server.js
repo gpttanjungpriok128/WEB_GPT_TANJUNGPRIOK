@@ -10,7 +10,7 @@ function isTrue(value) {
 }
 
 async function runPendingMigrations() {
-  if (isTrue(process.env.SKIP_AUTO_MIGRATE)) {
+  if (isTrue(process.env.SKIP_AUTO_MIGRATE) || process.env.NODE_ENV === 'production') {
     return;
   }
 
@@ -179,7 +179,9 @@ async function bootstrap() {
   try {
     await runPendingMigrations();
     await sequelize.authenticate();
-    await sequelize.sync();
+    if (process.env.NODE_ENV !== 'production') {
+      await sequelize.sync();
+    }
 
     await LiveStreamSetting.findOrCreate({
       where: { id: 1 },

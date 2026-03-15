@@ -1,28 +1,142 @@
-export default function ReviewsTab({ ctx }) {
-  const {
-    reviewSearch,
-    setReviewSearch,
-    reviewStatusFilter,
-    setReviewStatusFilter,
-    setReviewPage,
-    fetchReviews,
-    loadingReviews,
-    reviews,
-    reviewPage,
-    reviewMeta,
-    isLoadingMoreReviews,
-    REVIEW_STATUS_OPTIONS,
-    reviewStatusBadge,
-    renderStars,
-    formatDateTime,
-    handleReviewStatusToggle,
-    handleDeleteReview,
-    analytics,
-  } = ctx;
+import { useState, useEffect } from "react";
+import api from "../../services/api";
+import { formatDateTime } from "../../utils/storeFormatters";
+
+const REVIEW_PAGE_SIZE = 12;
+const REVIEW_STATUS_OPTIONS = [
+  { value: "", label: "Semua Status" },
+  { value: "approved", label: "Tayang" },
+  { value: "pending", label: "Menunggu" },
+];
+
+function reviewStatusBadge(isApproved) {
+  return isApproved
+    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+    : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
+}
+
+function renderStars(value) {
+  const safeValue = Math.max(0, Math.min(5, Number(value) || 0));
+  const filledCount = Math.round(safeValue);
+  return [...Array(5)].map((_, index) => (
+    <span
+      key={index}
+      className={index < filledCount ? "text-amber-400" : "text-brand-200 dark:text-brand-700"}
+    >
+      ★
+    </span>
+  ));
+}
+
+export default function ReviewsTab({ isActive, analytics }) {
+  const [reviewSearch, setReviewSearch] = useState("");
+  const [reviewStatusFilter, setReviewStatusFilter] = useState("");
+  const [reviews, setReviews] = useState([]);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewMeta, setReviewMeta] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", text: "" });
+
+  const fetchReviews = async (overrides = {}) => {
+    const page = Math.max(1, Number(overrides.page ?? reviewPage) || 1);
+    const limit = Math.min(50, Math.max(1, Number(overrides.limit ?? REVIEW_PAGE_SIZE) || REVIEW_PAGE_SIZE));
+    const append = Boolean(overrides.append);
+    if (append) {
+      setIsLoadingMoreReviews(true);
+    } else {
+      setLoadingReviews(true);
+    }
+    try {
+      const { data } = await api.get("/store/admin/reviews", {
+        params: {
+          page,
+          limit,
+          search: overrides.search ?? reviewSearch,
+          status: overrides.status ?? reviewStatusFilter,
+        },
+      });
+      const rows = Array.isArray(data?.data) ? data.data : [];
+      const meta = data?.meta || { page, totalPages: 1, total: rows.length };
+      setReviewMeta({
+        page: meta.page ?? page,
+        totalPages: meta.totalPages ?? 1,
+        total: meta.total ?? rows.length,
+      });
+      setReviewPage(page);
+      setReviews((prev) => {
+        if (!append) return rows;
+        const existing = new Set(prev.map((review) => review.id));
+        const merged = [...prev];
+        rows.forEach((review) => {
+          if (!existing.has(review.id)) merged.push(review);
+        });
+        return merged;
+      });
+    } catch (error) {
+      setReviews([]);
+      setFeedback({
+        type: "error",
+        text: error.response?.data?.message || "Gagal memuat ulasan produk.",
+      });
+    } finally {
+      if (append) {
+        setIsLoadingMoreReviews(false);
+      } else {
+        setLoadingReviews(false);
+      }
+    }
+  };
+
+  const handleReviewStatusToggle = async (reviewId, nextApproved) => {
+    try {
+      await api.patch(`/store/admin/reviews/${reviewId}`, { isApproved: nextApproved });
+      setFeedback({ type: "success", text: "Status ulasan diperbarui." });
+      await fetchReviews();
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        text: error.response?.data?.message || "Gagal memperbarui status ulasan.",
+      });
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    const confirmed = window.confirm("Hapus ulasan ini? Tindakan ini permanen.");
+    if (!confirmed) return;
+    try {
+      await api.delete(`/store/admin/reviews/${reviewId}`);
+      setFeedback({ type: "success", text: "Ulasan berhasil dihapus." });
+      await fetchReviews();
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        text: error.response?.data?.message || "Gagal menghapus ulasan.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isActive) {
+      setFeedback({ type: "", text: "" });
+      fetchReviews({ page: 1 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]);
 
   return (
     <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
       <article className="glass-card dense-card p-6">
+        {feedback.text && (
+          <div className={`mb-4 rounded-xl px-4 py-3 text-sm font-medium border ${
+            feedback.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300"
+              : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300"
+          }`}>
+            {feedback.text}
+          </div>
+        )}
+
         <div className="admin-filter-card flex flex-wrap items-end gap-3">
           <div className="min-w-[220px] flex-1 space-y-1.5">
             <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
