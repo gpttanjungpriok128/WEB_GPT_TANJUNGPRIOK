@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-prayer.jpeg";
+import heroImage from "../img/hero-prayer.webp";
 
 function PrayerPage() {
   const { user } = useAuth();

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-gallery.jpeg";
+import heroImage from "../img/hero-gallery.webp";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 function GalleryPage() {

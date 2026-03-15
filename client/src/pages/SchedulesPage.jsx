@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-schedules.jpeg";
+import heroImage from "../img/hero-schedules.webp";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 function SchedulesPage() {

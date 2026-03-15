@@ -7,5 +7,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-  }
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-axios': ['axios'],
+          'vendor-xlsx': ['xlsx'],
+        },
+      },
+    },
+  },
 });

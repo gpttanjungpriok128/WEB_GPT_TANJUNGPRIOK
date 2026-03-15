@@ -26,6 +26,8 @@ const CongregationDataPage = lazy(() => import("./pages/CongregationDataPage"));
 const ManageStorePage = lazy(() => import("./pages/ManageStorePage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
+import ErrorBoundary from "./components/ErrorBoundary";
+
 const RouteLoader = () => (
   <div className="flex min-h-[40vh] items-center justify-center">
     <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
@@ -34,65 +36,67 @@ const RouteLoader = () => (
 
 function App() {
   return (
-    <MainLayout>
-      <Suspense fallback={<RouteLoader />}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/schedules" element={<SchedulesPage />} />
-          <Route path="/articles" element={<ArticlesPage />} />
-          <Route path="/articles/:id" element={<ArticleDetailPage />} />
-          <Route path="/gallery" element={<GalleryPage />} />
-          <Route path="/shop" element={<ShopPage />} />
-          <Route path="/shop/:slug" element={<ProductDetailPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/track-order" element={<TrackOrderPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+    <ErrorBoundary>
+      <MainLayout>
+        <Suspense fallback={<RouteLoader />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/schedules" element={<SchedulesPage />} />
+            <Route path="/articles" element={<ArticlesPage />} />
+            <Route path="/articles/:id" element={<ArticleDetailPage />} />
+            <Route path="/gallery" element={<GalleryPage />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/shop/:slug" element={<ProductDetailPage />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/track-order" element={<TrackOrderPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-          <Route element={<ProtectedRoute roles={["admin", "multimedia"]} />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-          </Route>
+            <Route element={<ProtectedRoute roles={["admin", "multimedia"]} />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+            </Route>
 
-          <Route element={<ProtectedRoute roles={["admin"]} />}>
-            <Route path="/dashboard/store" element={<ManageStorePage />} />
-          </Route>
+            <Route element={<ProtectedRoute roles={["admin"]} />}>
+              <Route path="/dashboard/store" element={<ManageStorePage />} />
+            </Route>
 
-          <Route
-            element={<ProtectedRoute roles={["admin", "multimedia", "jemaat"]} />}
-          >
-            <Route path="/live" element={<LivePage />} />
-            <Route path="/prayer" element={<PrayerPage />} />
-            <Route path="/my-orders" element={<MyOrdersPage />} />
-          </Route>
-
-          <Route element={<ProtectedRoute roles={["admin", "multimedia"]} />}>
             <Route
-              path="/dashboard/articles/new"
-              element={<ArticleEditorPage />}
-            />
-            <Route
-              path="/dashboard/articles/:id/edit"
-              element={<ArticleEditorPage />}
-            />
-            <Route
-              path="/dashboard/articles/manage"
-              element={<ManageArticlesPage />}
-            />
-          </Route>
+              element={<ProtectedRoute roles={["admin", "multimedia", "jemaat"]} />}
+            >
+              <Route path="/live" element={<LivePage />} />
+              <Route path="/prayer" element={<PrayerPage />} />
+              <Route path="/my-orders" element={<MyOrdersPage />} />
+            </Route>
 
-          <Route element={<ProtectedRoute roles={["admin", "jemaat"]} />}>
-            <Route
-              path="/dashboard/congregation"
-              element={<CongregationDataPage />}
-            />
-          </Route>
+            <Route element={<ProtectedRoute roles={["admin", "multimedia"]} />}>
+              <Route
+                path="/dashboard/articles/new"
+                element={<ArticleEditorPage />}
+              />
+              <Route
+                path="/dashboard/articles/:id/edit"
+                element={<ArticleEditorPage />}
+              />
+              <Route
+                path="/dashboard/articles/manage"
+                element={<ManageArticlesPage />}
+              />
+            </Route>
 
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
-    </MainLayout>
+            <Route element={<ProtectedRoute roles={["admin", "jemaat"]} />}>
+              <Route
+                path="/dashboard/congregation"
+                element={<CongregationDataPage />}
+              />
+            </Route>
+
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </MainLayout>
+    </ErrorBoundary>
   );
 }
 

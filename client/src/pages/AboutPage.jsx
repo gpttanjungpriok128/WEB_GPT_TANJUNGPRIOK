@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-about.jpeg";
+import heroImage from "../img/hero-about.webp";
 
 function AboutPage() {
   const { user } = useAuth();

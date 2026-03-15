@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import heroImage from "../img/hero-church.png";
+import heroImage from "../img/hero-church.webp";
 import { swrGet } from "../utils/swrCache";
 
 function HomePage() {

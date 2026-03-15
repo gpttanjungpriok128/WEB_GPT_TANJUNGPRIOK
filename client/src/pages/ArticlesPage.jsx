@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-articles.jpeg";
+import heroImage from "../img/hero-articles.webp";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 function ArticlesPage() {

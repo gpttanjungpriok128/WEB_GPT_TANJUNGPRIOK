@@ -1,6 +1,6 @@
 import { useState } from "react";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-contact.jpeg";
+import heroImage from "../img/hero-contact.webp";
 
 function ContactPage() {
   const contactEmail = "gpt.tanjungpriok128@gmail.com";

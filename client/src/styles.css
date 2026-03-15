@@ -753,7 +753,7 @@ html {
 .app-shell::before,
 .app-shell::after {
   content: "";
-  position: fixed;
+  position: absolute; /* Changed from fixed to absolute to avoid scrolling repaints */
   inset: auto auto 8% -180px;
   width: 360px;
   height: 360px;
@@ -819,6 +819,8 @@ html {
 .page-stack > section,
 .page-stack > div > section {
   position: relative;
+  content-visibility: auto; /* Optimizes rendering for off-screen sections */
+  contain-intrinsic-size: 100px;
 }
 
 .nav-glass {
