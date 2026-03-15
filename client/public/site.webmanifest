@@ -1,0 +1,20 @@
+{
+  "name": "GPT Tanjung Priok",
+  "short_name": "GPT Tanjung Priok",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eefbf3",
+  "theme_color": "#148458",
+  "icons": [
+    {
+      "src": "/img/logo1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/img/logo1.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
