@@ -61,8 +61,8 @@ function MainLayout({ children }) {
 
   const profileInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "U";
   const isDarkMode = theme === "dark";
-  const themeStatusLabel = isDarkMode ? "Mode Gelap" : "Mode Terang";
-  const themeActionLabel = isDarkMode ? "Ubah ke Terang" : "Ubah ke Gelap";
+  const themeActionLabel = isDarkMode ? "Ubah ke Mode Terang" : "Ubah ke Mode Gelap";
+  const themeIconSrc = isDarkMode ? "/img/theme-light.svg" : "/img/theme-dark.svg";
 
   const navLinks = [
     { to: "/", label: "Home" },
@@ -284,15 +284,13 @@ function MainLayout({ children }) {
                   title={themeActionLabel}
                   aria-label={themeActionLabel}
                 >
-                  <span
-                    className="text-base transition-transform duration-300 block"
-                    style={{ transform: theme === "dark" ? "rotate(180deg)" : "rotate(0deg)" }}
-                  >
-                    {theme === "dark" ? "☀️" : "🌙"}
-                  </span>
-                  <span className="text-[11px] font-semibold text-brand-700 dark:text-brand-200 sm:text-xs">
-                    {themeStatusLabel}
-                  </span>
+                  <img
+                    src={themeIconSrc}
+                    alt={themeActionLabel}
+                    className="h-5 w-5"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </button>
 
                 {!user && (
@@ -467,8 +465,13 @@ function MainLayout({ children }) {
                 title={themeActionLabel}
                 aria-label={themeActionLabel}
               >
-                <span>{themeStatusLabel}</span>
-                <span className="text-base">{theme === "dark" ? "☀️" : "🌙"}</span>
+                <img
+                  src={themeIconSrc}
+                  alt={themeActionLabel}
+                  className="h-5 w-5"
+                  loading="lazy"
+                  decoding="async"
+                />
               </button>
             </div>
 
@@ -535,8 +538,13 @@ function MainLayout({ children }) {
                     title={themeActionLabel}
                     aria-label={themeActionLabel}
                   >
-                    <span>{themeStatusLabel}</span>
-                    <span className="text-base">{theme === "dark" ? "☀️" : "🌙"}</span>
+                    <img
+                      src={themeIconSrc}
+                      alt={themeActionLabel}
+                      className="h-5 w-5"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </button>
                 </div>
                 <p className="admin-sidebar-title">Menu Admin</p>
