@@ -491,12 +491,30 @@ function normalizeReviewerName(name) {
   return `${parts[0]} ${parts[1].slice(0, 1)}.`;
 }
 
+function normalizeReviewImages(value) {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(Boolean);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return [];
+}
+
 function serializeReview(review) {
   return {
     id: review.id,
     rating: Number(review.rating) || 0,
     reviewText: review.reviewText || '',
     reviewerName: normalizeReviewerName(review.reviewerName),
+    imageUrls: normalizeReviewImages(review.imageUrls),
     createdAt: review.createdAt
   };
 }
@@ -870,6 +888,9 @@ async function getProductReviews(req, res, next) {
 }
 
 async function createProductReview(req, res, next) {
+  const uploadedFiles = getUploadedFiles(req);
+  const uploadedPaths = uploadedFiles.map(toPublicImagePath);
+
   try {
     const { slug } = req.params;
     const product = await StoreProduct.findOne({
@@ -877,6 +898,7 @@ async function createProductReview(req, res, next) {
     });
 
     if (!product) {
+      await removeImageFiles(uploadedPaths);
       return res.status(404).json({ message: 'Produk tidak ditemukan' });
     }
 
@@ -894,18 +916,21 @@ async function createProductReview(req, res, next) {
     });
 
     if (!order) {
+      await removeImageFiles(uploadedPaths);
       return res.status(404).json({
         message: 'Order tidak ditemukan. Pastikan kode pesanan dan nomor WhatsApp sesuai.'
       });
     }
 
     if (order.status === 'cancelled') {
+      await removeImageFiles(uploadedPaths);
       return res.status(400).json({ message: 'Order dibatalkan dan tidak bisa diberi ulasan.' });
     }
 
     const items = Array.isArray(order.items) ? order.items : [];
     const hasProduct = items.some((item) => Number(item.productId) === Number(product.id));
     if (!hasProduct) {
+      await removeImageFiles(uploadedPaths);
       return res.status(400).json({
         message: 'Produk ini tidak ada di pesanan yang dimasukkan.'
       });
@@ -919,6 +944,7 @@ async function createProductReview(req, res, next) {
     });
 
     if (existingReview) {
+      await removeImageFiles(uploadedPaths);
       return res.status(409).json({ message: 'Ulasan untuk produk ini sudah dikirim.' });
     }
 
@@ -930,6 +956,7 @@ async function createProductReview(req, res, next) {
       reviewerPhone: order.customerPhone,
       rating,
       reviewText: reviewText || null,
+      imageUrls: uploadedPaths,
       isApproved: true
     });
 
@@ -938,6 +965,7 @@ async function createProductReview(req, res, next) {
       data: serializeReview(review)
     });
   } catch (error) {
+    await removeImageFiles(uploadedPaths);
     return next(error);
   }
 }
@@ -1446,6 +1474,10 @@ async function deleteAdminReview(req, res, next) {
       return res.status(404).json({ message: 'Ulasan tidak ditemukan' });
     }
 
+    const imageUrls = normalizeReviewImages(review.imageUrls);
+    if (imageUrls.length) {
+      await removeImageFiles(imageUrls);
+    }
     await review.destroy();
     return res.status(200).json({ message: 'Ulasan berhasil dihapus' });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 import { formatDateTime } from "../../utils/storeFormatters";
+import { resolveStoreImageUrl } from "../../utils/storeImage";
 
 const REVIEW_PAGE_SIZE = 12;
 const REVIEW_STATUS_OPTIONS = [
@@ -245,6 +246,29 @@ export default function ReviewsTab({ isActive, analytics }) {
                   <p className="mt-3 text-sm text-brand-700 dark:text-brand-300">
                     {review.reviewText}
                   </p>
+                )}
+                {Array.isArray(review.imageUrls) && review.imageUrls.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {review.imageUrls.map((image, index) => {
+                      const resolved = resolveStoreImageUrl(image);
+                      return (
+                        <a
+                          key={`${review.id}-image-${index}`}
+                          href={resolved}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block h-16 w-16 overflow-hidden rounded-xl border border-brand-200 bg-white/80 dark:border-brand-700 dark:bg-brand-900/40"
+                        >
+                          <img
+                            src={resolved}
+                            alt={`Foto ulasan ${index + 1}`}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </a>
+                      );
+                    })}
+                  </div>
                 )}
 
                 <div className="admin-review-actions mt-4 flex flex-wrap gap-2">

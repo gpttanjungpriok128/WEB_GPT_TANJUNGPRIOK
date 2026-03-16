@@ -66,6 +66,7 @@ router.get(
 router.post(
   '/products/:slug/reviews',
   optionalAuthenticate,
+  uploadImage.array('images', 3),
   createReviewValidation,
   validate,
   createProductReview

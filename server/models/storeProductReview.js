@@ -32,6 +32,11 @@ const StoreProductReview = sequelize.define('StoreProductReview', {
   reviewText: {
     type: DataTypes.TEXT
   },
+  imageUrls: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: []
+  },
   isApproved: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
