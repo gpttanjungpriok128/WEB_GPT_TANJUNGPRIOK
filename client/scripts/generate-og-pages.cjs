@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 const fs = require("fs");
 const path = require("path");
+const axios = require("axios");
 
 const distDir = path.join(__dirname, "..", "dist");
 const indexPath = path.join(distDir, "index.html");
@@ -84,12 +85,16 @@ async function fetchAllProducts(apiBase) {
   let totalPages = 1;
 
   while (page <= totalPages) {
-    const url = `${apiBase}/store/products?limit=${limit}&page=${page}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Failed to fetch products: ${res.status}`);
-    }
-    const payload = await res.json();
+    const url = `${apiBase}/store/products`;
+    const res = await axios.get(url, {
+      params: { limit, page },
+      timeout: 15000,
+      headers: {
+        "User-Agent": "gtshirt-og-generator"
+      },
+      validateStatus: (status) => status >= 200 && status < 300
+    });
+    const payload = res.data;
     const rows = Array.isArray(payload?.data) ? payload.data : [];
     products.push(...rows);
     totalPages = Number(payload?.meta?.totalPages) || 1;
