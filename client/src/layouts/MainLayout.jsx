@@ -55,6 +55,8 @@ function MainLayout({ children }) {
     );
   const mainRef = useRef(null);
   const lastScrollY = useRef(0);
+  const navHiddenRef = useRef(false);
+  const scrollRafRef = useRef(null);
   const profileMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const mobileMenuToggleRef = useRef(null);
@@ -91,18 +93,39 @@ function MainLayout({ children }) {
 
   // Auto-hide nav on scroll
   const handleScroll = useCallback(() => {
-    const currentY = window.scrollY;
-    if (currentY > 80 && currentY > lastScrollY.current) {
-      setNavHidden(true);
-    } else {
-      setNavHidden(false);
-    }
-    lastScrollY.current = currentY;
+    if (scrollRafRef.current) return;
+    scrollRafRef.current = window.requestAnimationFrame(() => {
+      const currentY = window.scrollY || 0;
+      const delta = currentY - lastScrollY.current;
+      let nextHidden = navHiddenRef.current;
+
+      if (currentY <= 64) {
+        nextHidden = false;
+      } else if (delta > 10) {
+        nextHidden = true;
+      } else if (delta < -8) {
+        nextHidden = false;
+      }
+
+      if (nextHidden !== navHiddenRef.current) {
+        navHiddenRef.current = nextHidden;
+        setNavHidden(nextHidden);
+      }
+
+      lastScrollY.current = currentY;
+      scrollRafRef.current = null;
+    });
   }, []);
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollRafRef.current) {
+        window.cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
   }, [handleScroll]);
 
   useEffect(() => {
@@ -168,6 +191,7 @@ function MainLayout({ children }) {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     setNavHidden(false);
+    navHiddenRef.current = false;
     lastScrollY.current = 0;
   }, [location.pathname]);
 

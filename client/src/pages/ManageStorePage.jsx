@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../services/api";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
@@ -18,6 +18,7 @@ function ManageStorePage() {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [lastAnalyticsAt, setLastAnalyticsAt] = useState(0);
   const [tabHidden, setTabHidden] = useState(false);
+  const tabHiddenRef = useRef(false);
 
   const fetchAnalytics = useCallback(async (options = {}) => {
     const now = Date.now();
@@ -41,13 +42,40 @@ function ManageStorePage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     let lastY = window.scrollY || 0;
+    let ticking = false;
+    let rafId = 0;
     const onScroll = () => {
-      const currentY = window.scrollY || 0;
-      setTabHidden(currentY > 120 && currentY > lastY);
-      lastY = currentY;
+      if (ticking) return;
+      ticking = true;
+      rafId = window.requestAnimationFrame(() => {
+        const currentY = window.scrollY || 0;
+        const delta = currentY - lastY;
+        let nextHidden = tabHiddenRef.current;
+
+        if (currentY <= 80) {
+          nextHidden = false;
+        } else if (delta > 12) {
+          nextHidden = true;
+        } else if (delta < -8) {
+          nextHidden = false;
+        }
+
+        if (nextHidden !== tabHiddenRef.current) {
+          tabHiddenRef.current = nextHidden;
+          setTabHidden(nextHidden);
+        }
+
+        lastY = currentY;
+        ticking = false;
+      });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
   // Handle deep-link to order search

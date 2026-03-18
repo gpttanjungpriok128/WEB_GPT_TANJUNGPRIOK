@@ -541,7 +541,10 @@ html {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid rgba(213, 245, 227, 0.5);
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.2s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .dark .nav-glass {
@@ -550,12 +553,12 @@ html {
 }
 
 .nav-hidden {
-  transform: translateY(-100%);
+  transform: translate3d(0, -100%, 0);
   opacity: 0;
 }
 
 .nav-visible {
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
   opacity: 1;
 }
 
@@ -847,6 +850,8 @@ html {
     margin-top: 0.3rem;
     border-radius: 0 0 1rem 1rem;
     box-shadow: 0 12px 28px rgba(14, 69, 50, 0.1);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
   }
 
   .dark .nav-glass {
@@ -1992,6 +1997,13 @@ html {
 
   .sticky-mobile-surface {
     box-shadow: 0 10px 20px rgba(14, 69, 50, 0.12);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+  }
+
+  .admin-sticky-surface {
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
   }
 
   .admin-tabs {
@@ -2003,6 +2015,10 @@ html {
     background: color-mix(in srgb, #ffffff 92%, #f0fdf6 8%);
     box-shadow: 0 14px 30px rgba(14, 69, 50, 0.12);
     transition: transform 0.25s ease, opacity 0.25s ease;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
 
   .dark .admin-tabs {
@@ -2143,7 +2159,10 @@ html {
   backdrop-filter: blur(18px) saturate(180%);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   transform: translateZ(0);
-  will-change: transform;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  contain: paint;
 }
 
 .dark .sticky-mobile-surface {
@@ -2176,6 +2195,11 @@ html {
   padding: 0.75rem;
   backdrop-filter: blur(18px) saturate(180%);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  contain: paint;
 }
 
 .dark .admin-sticky-surface {

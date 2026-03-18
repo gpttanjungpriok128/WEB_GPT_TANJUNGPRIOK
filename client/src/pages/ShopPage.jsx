@@ -186,6 +186,8 @@ const PRODUCTS_PER_PAGE = 16;
 const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
 const PREFETCH_IMAGE_COUNT = 6;
+const MAX_BOOT_RETRIES = 2;
+const BOOT_RETRY_DELAY_MS = 900;
 const USE_FALLBACK_PRODUCTS = import.meta.env.MODE === "development";
 
 const normalizeSizeLabel = (value) =>
@@ -222,6 +224,9 @@ function ShopPage() {
   const [isCacheStale, setIsCacheStale] = useState(false);
   const deferredSearch = useDeferredValue(searchQuery);
   const prefetchedImagesRef = useRef(new Set());
+  const retryTimerRef = useRef(null);
+  const retryAttemptRef = useRef(0);
+  const keepLoadingRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -274,7 +279,24 @@ function ShopPage() {
     });
   }, [products]);
 
+  useEffect(() => {
+    return () => {
+      if (retryTimerRef.current) {
+        window.clearTimeout(retryTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    retryAttemptRef.current = 0;
+    if (retryTimerRef.current) {
+      window.clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+  }, [debouncedSearch]);
+
   const fetchProducts = async ({ page = 1, append = false } = {}) => {
+    keepLoadingRef.current = false;
     const params = {
       page,
       limit: PRODUCTS_PER_PAGE,
@@ -282,6 +304,8 @@ function ShopPage() {
     };
     const cacheKey = buildCacheKey("/store/products", { params });
     const cached = append ? null : getCacheSnapshot(cacheKey);
+    const isBootRequest = page === 1 && !append && !debouncedSearch;
+    const hasSnapshotData = (cached?.data?.data?.length || 0) > 0 || products.length > 0 || hasBootCache;
     if (cached?.data?.data && !append) {
       setProducts(cached.data.data);
       setProductMeta(cached.data.meta || { page, totalPages: 1, total: cached.data.data.length });
@@ -310,13 +334,35 @@ function ShopPage() {
       const apiProducts = Array.isArray(data?.data)
         ? data.data.filter((item) => item.isActive !== false)
         : [];
+      const meta = data?.meta || { page, totalPages: 1, total: apiProducts.length };
+      const shouldRetryEmpty = isBootRequest
+        && apiProducts.length === 0
+        && retryAttemptRef.current < MAX_BOOT_RETRIES;
+
+      if (shouldRetryEmpty) {
+        retryAttemptRef.current += 1;
+        if (retryTimerRef.current) {
+          window.clearTimeout(retryTimerRef.current);
+        }
+        retryTimerRef.current = window.setTimeout(() => {
+          fetchProducts({ page: 1, append: false });
+        }, BOOT_RETRY_DELAY_MS * retryAttemptRef.current);
+        if (hasSnapshotData) {
+          setProductLoadError(true);
+          setIsCacheStale(true);
+        } else {
+          keepLoadingRef.current = true;
+        }
+        return;
+      }
 
       setProducts((prev) => (append ? [...prev, ...apiProducts] : apiProducts));
-      setProductMeta(data?.meta || { page, totalPages: 1, total: apiProducts.length });
+      setProductMeta(meta);
       setProductPage(page);
       if (!append) {
         setProductLoadError(false);
         setIsCacheStale(false);
+        retryAttemptRef.current = 0;
       }
       if (!append && apiProducts.length > 0 && typeof window !== "undefined") {
         try {
@@ -337,13 +383,30 @@ function ShopPage() {
     } catch {
       if (!append) {
         setProductLoadError(true);
+        if (isBootRequest && retryAttemptRef.current < MAX_BOOT_RETRIES) {
+          retryAttemptRef.current += 1;
+          if (retryTimerRef.current) {
+            window.clearTimeout(retryTimerRef.current);
+          }
+          retryTimerRef.current = window.setTimeout(() => {
+            fetchProducts({ page: 1, append: false });
+          }, BOOT_RETRY_DELAY_MS * retryAttemptRef.current);
+          if (hasSnapshotData) {
+            setIsCacheStale(true);
+          } else {
+            keepLoadingRef.current = true;
+          }
+          return;
+        }
         if (!products.length && !hasBootCache && !cached) {
           setProducts(USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : []);
           setProductMeta({ page: 1, totalPages: 1, total: 0 });
         }
       }
     } finally {
-      setIsLoadingProducts(false);
+      if (!keepLoadingRef.current) {
+        setIsLoadingProducts(false);
+      }
       setIsLoadingMore(false);
     }
   };
@@ -777,7 +840,23 @@ function ShopPage() {
                 />
               </svg>
             </div>
-            {products.length === 0 ? (
+            {productLoadError ? (
+              <>
+                <h3 className="text-xl font-bold text-brand-900 dark:text-white">
+                  Gagal memuat katalog
+                </h3>
+                <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">
+                  Koneksi sedang bermasalah. Coba muat ulang atau cek jaringan kamu.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fetchProducts({ page: 1, append: false })}
+                  className="btn-outline mt-4 !px-4 !py-2 text-xs"
+                >
+                  Muat ulang
+                </button>
+              </>
+            ) : products.length === 0 ? (
               <>
                 <h3 className="text-xl font-bold text-brand-900 dark:text-white">
                   Katalog belum tersedia
@@ -943,18 +1022,6 @@ function ShopPage() {
               );
               })}
             </div>
-            {productLoadError && filteredProducts.length === 0 && (
-              <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/20 dark:text-rose-200">
-                Gagal memuat katalog. Coba muat ulang.
-                <button
-                  type="button"
-                  onClick={() => fetchProducts({ page: 1, append: false })}
-                  className="ml-2 font-semibold text-rose-700 underline underline-offset-2 dark:text-rose-200"
-                >
-                  Muat ulang
-                </button>
-              </div>
-            )}
             {!isLoadingProducts && filteredProducts.length > 0 && hasMoreProducts && (
               <div className="mt-6 flex justify-center">
                 <button
