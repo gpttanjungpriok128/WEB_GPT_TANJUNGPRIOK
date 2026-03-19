@@ -10,6 +10,7 @@ import { clampQuantity, getStockForSize, getTotalStock } from "../utils/storeSto
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
+const PROMO_VIDEO_URL = "https://youtu.be/oOOdw2ulGIg";
 
 const FALLBACK_PRODUCTS = [
   {
@@ -186,14 +187,36 @@ const PRODUCTS_PER_PAGE = 16;
 const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
 const PREFETCH_IMAGE_COUNT = 6;
-const MAX_BOOT_RETRIES = 2;
-const BOOT_RETRY_DELAY_MS = 900;
 const USE_FALLBACK_PRODUCTS = import.meta.env.MODE === "development";
 
 const normalizeSizeLabel = (value) =>
   String(value || "")
     .toUpperCase()
     .replace(/\s+/g, "");
+
+const normalizeYouTubeUrl = (value = "") => {
+  const input = value.trim();
+  if (!input) return "";
+  if (input.includes("/embed/")) return input;
+  try {
+    const parsed = new URL(input);
+    const host = parsed.hostname.replace("www.", "");
+    if (host === "youtu.be") {
+      const id = parsed.pathname.split("/").filter(Boolean)[0];
+      return id ? `https://www.youtube.com/embed/${id}` : input;
+    }
+    if (host.includes("youtube.com")) {
+      const videoId = parsed.searchParams.get("v");
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      const pathParts = parsed.pathname.split("/").filter(Boolean);
+      if (pathParts[0] === "shorts" && pathParts[1]) return `https://www.youtube.com/embed/${pathParts[1]}`;
+      if (pathParts[0] === "live" && pathParts[1]) return `https://www.youtube.com/embed/${pathParts[1]}`;
+    }
+  } catch {
+    return input;
+  }
+  return input;
+};
 
 function getDefaultSize(product) {
   const sizes = Array.isArray(product?.sizes)
@@ -220,13 +243,11 @@ function ShopPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
+  const promoVideoSrc = normalizeYouTubeUrl(PROMO_VIDEO_URL);
   const [hasBootCache, setHasBootCache] = useState(false);
   const [isCacheStale, setIsCacheStale] = useState(false);
   const deferredSearch = useDeferredValue(searchQuery);
   const prefetchedImagesRef = useRef(new Set());
-  const retryTimerRef = useRef(null);
-  const retryAttemptRef = useRef(0);
-  const keepLoadingRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -279,24 +300,7 @@ function ShopPage() {
     });
   }, [products]);
 
-  useEffect(() => {
-    return () => {
-      if (retryTimerRef.current) {
-        window.clearTimeout(retryTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    retryAttemptRef.current = 0;
-    if (retryTimerRef.current) {
-      window.clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = null;
-    }
-  }, [debouncedSearch]);
-
   const fetchProducts = async ({ page = 1, append = false } = {}) => {
-    keepLoadingRef.current = false;
     const params = {
       page,
       limit: PRODUCTS_PER_PAGE,
@@ -304,8 +308,6 @@ function ShopPage() {
     };
     const cacheKey = buildCacheKey("/store/products", { params });
     const cached = append ? null : getCacheSnapshot(cacheKey);
-    const isBootRequest = page === 1 && !append && !debouncedSearch;
-    const hasSnapshotData = (cached?.data?.data?.length || 0) > 0 || products.length > 0 || hasBootCache;
     if (cached?.data?.data && !append) {
       setProducts(cached.data.data);
       setProductMeta(cached.data.meta || { page, totalPages: 1, total: cached.data.data.length });
@@ -334,35 +336,13 @@ function ShopPage() {
       const apiProducts = Array.isArray(data?.data)
         ? data.data.filter((item) => item.isActive !== false)
         : [];
-      const meta = data?.meta || { page, totalPages: 1, total: apiProducts.length };
-      const shouldRetryEmpty = isBootRequest
-        && apiProducts.length === 0
-        && retryAttemptRef.current < MAX_BOOT_RETRIES;
-
-      if (shouldRetryEmpty) {
-        retryAttemptRef.current += 1;
-        if (retryTimerRef.current) {
-          window.clearTimeout(retryTimerRef.current);
-        }
-        retryTimerRef.current = window.setTimeout(() => {
-          fetchProducts({ page: 1, append: false });
-        }, BOOT_RETRY_DELAY_MS * retryAttemptRef.current);
-        if (hasSnapshotData) {
-          setProductLoadError(true);
-          setIsCacheStale(true);
-        } else {
-          keepLoadingRef.current = true;
-        }
-        return;
-      }
 
       setProducts((prev) => (append ? [...prev, ...apiProducts] : apiProducts));
-      setProductMeta(meta);
+      setProductMeta(data?.meta || { page, totalPages: 1, total: apiProducts.length });
       setProductPage(page);
       if (!append) {
         setProductLoadError(false);
         setIsCacheStale(false);
-        retryAttemptRef.current = 0;
       }
       if (!append && apiProducts.length > 0 && typeof window !== "undefined") {
         try {
@@ -383,30 +363,13 @@ function ShopPage() {
     } catch {
       if (!append) {
         setProductLoadError(true);
-        if (isBootRequest && retryAttemptRef.current < MAX_BOOT_RETRIES) {
-          retryAttemptRef.current += 1;
-          if (retryTimerRef.current) {
-            window.clearTimeout(retryTimerRef.current);
-          }
-          retryTimerRef.current = window.setTimeout(() => {
-            fetchProducts({ page: 1, append: false });
-          }, BOOT_RETRY_DELAY_MS * retryAttemptRef.current);
-          if (hasSnapshotData) {
-            setIsCacheStale(true);
-          } else {
-            keepLoadingRef.current = true;
-          }
-          return;
-        }
         if (!products.length && !hasBootCache && !cached) {
           setProducts(USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : []);
           setProductMeta({ page: 1, totalPages: 1, total: 0 });
         }
       }
     } finally {
-      if (!keepLoadingRef.current) {
-        setIsLoadingProducts(false);
-      }
+      setIsLoadingProducts(false);
       setIsLoadingMore(false);
     }
   };
@@ -603,6 +566,43 @@ function ShopPage() {
   return (
     <div className="page-stack space-y-6 sm:space-y-8">
       <ShopHero />
+
+      {promoVideoSrc && (
+        <section className="grid gap-6 rounded-3xl border border-brand-200 bg-white/90 p-4 shadow-sm dark:border-brand-700 dark:bg-brand-900/40 sm:p-6 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+              Video Promo
+            </p>
+            <h2 className="text-xl font-bold text-brand-900 dark:text-white sm:text-2xl">
+              Lihat vibe GTshirt sebelum kamu checkout
+            </h2>
+            <p className="text-sm leading-relaxed text-brand-600 dark:text-brand-300">
+              Cuplikan singkat tentang bahan, detail sablon, dan gaya streetwear rohani terbaru dari GTshirt.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
+              <span className="rounded-full bg-brand-100 px-3 py-1 text-brand-700 dark:bg-brand-800/60 dark:text-brand-200">
+                Ready to watch
+              </span>
+              <span className="rounded-full bg-brand-100 px-3 py-1 text-brand-700 dark:bg-brand-800/60 dark:text-brand-200">
+                Official GTshirt
+              </span>
+            </div>
+          </div>
+          <div className="relative overflow-hidden rounded-2xl border border-brand-200 bg-black shadow-lg dark:border-brand-700">
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary/20 via-emerald-400/10 to-primary/20 blur-sm pointer-events-none" />
+            <div className="relative aspect-video">
+              <iframe
+                title="Video Promosi GTshirt"
+                src={promoVideoSrc}
+                className="h-full w-full"
+                allowFullScreen
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-6">
         <div className="grid gap-4 rounded-3xl border border-brand-200 bg-white/80 p-4 shadow-sm md:grid-cols-[1.2fr_0.8fr] dark:border-brand-700 dark:bg-brand-900/40 sm:p-5">
@@ -840,23 +840,7 @@ function ShopPage() {
                 />
               </svg>
             </div>
-            {productLoadError ? (
-              <>
-                <h3 className="text-xl font-bold text-brand-900 dark:text-white">
-                  Gagal memuat katalog
-                </h3>
-                <p className="mt-2 max-w-sm text-brand-600 dark:text-brand-400">
-                  Koneksi sedang bermasalah. Coba muat ulang atau cek jaringan kamu.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => fetchProducts({ page: 1, append: false })}
-                  className="btn-outline mt-4 !px-4 !py-2 text-xs"
-                >
-                  Muat ulang
-                </button>
-              </>
-            ) : products.length === 0 ? (
+            {products.length === 0 ? (
               <>
                 <h3 className="text-xl font-bold text-brand-900 dark:text-white">
                   Katalog belum tersedia
@@ -1022,6 +1006,18 @@ function ShopPage() {
               );
               })}
             </div>
+            {productLoadError && filteredProducts.length === 0 && (
+              <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/20 dark:text-rose-200">
+                Gagal memuat katalog. Coba muat ulang.
+                <button
+                  type="button"
+                  onClick={() => fetchProducts({ page: 1, append: false })}
+                  className="ml-2 font-semibold text-rose-700 underline underline-offset-2 dark:text-rose-200"
+                >
+                  Muat ulang
+                </button>
+              </div>
+            )}
             {!isLoadingProducts && filteredProducts.length > 0 && hasMoreProducts && (
               <div className="mt-6 flex justify-center">
                 <button
