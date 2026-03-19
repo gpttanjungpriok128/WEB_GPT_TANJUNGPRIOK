@@ -255,7 +255,7 @@ function MainLayout({ children }) {
           }`}
         >
           <div className="container-custom">
-            <div className="flex min-h-[72px] items-center justify-between gap-3 py-3">
+            <div className="flex min-h-[68px] items-center justify-between gap-3 py-2.5 sm:min-h-[72px] sm:py-3">
               <Link to="/" className="flex min-w-0 flex-1 items-center gap-3">
                 <BrandLogo />
                 <div className="min-w-0">
@@ -367,94 +367,98 @@ function MainLayout({ children }) {
               </div>
             </div>
 
-            <div ref={mobileMenuRef} className="relative lg:hidden">
-              <div
-                className={`mobile-menu-backdrop ${mobileMenuOpen ? "open" : ""}`}
-                aria-hidden="true"
-                onClick={() => setMobileMenuOpen(false)}
-              />
-              <div className={`mobile-menu-float ${mobileMenuOpen ? "open" : ""}`}>
-                <div className="mobile-menu-panel rounded-[1.75rem] border border-zinc-200/80 bg-white/96 p-3 shadow-[0_24px_64px_rgba(15,23,42,0.12)] dark:border-zinc-800 dark:bg-zinc-950/96">
-                  <div className="mobile-menu-head mb-3 flex items-center justify-between gap-3 rounded-[1.25rem] border border-zinc-200/80 bg-zinc-50/80 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900/80">
-                    {user ? (
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
-                          {user?.name || "Pengguna"}
-                        </p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">{user?.role || "jemaat"}</p>
+            <div ref={mobileMenuRef} className="lg:hidden">
+              {mobileMenuOpen && (
+                <>
+                  <div
+                    className="mobile-menu-backdrop open"
+                    aria-hidden="true"
+                    onClick={() => setMobileMenuOpen(false)}
+                  />
+                  <div className="mobile-menu-float open">
+                    <div className="mobile-menu-panel rounded-[1.75rem] border border-zinc-200/80 bg-white/96 p-3 shadow-[0_24px_64px_rgba(15,23,42,0.12)] dark:border-zinc-800 dark:bg-zinc-950/96">
+                      <div className="mobile-menu-head mb-3 flex items-center justify-between gap-3 rounded-[1.25rem] border border-zinc-200/80 bg-zinc-50/80 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900/80">
+                        {user ? (
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
+                              {user?.name || "Pengguna"}
+                            </p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">{user?.role || "jemaat"}</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm font-semibold text-zinc-950 dark:text-white">Menu Navigasi</p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">Cepat, ringan, dan lebih nyaman di mobile.</p>
+                          </div>
+                        )}
+                        {themeButton}
                       </div>
-                    ) : (
-                      <div>
-                        <p className="text-sm font-semibold text-zinc-950 dark:text-white">Menu Navigasi</p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">Cepat, ringan, dan mobile-first.</p>
+
+                      <nav aria-label="Mobile primary" className="space-y-1.5">
+                        {navLinks.map((link) => (
+                          <NavLink
+                            key={link.to}
+                            to={link.to}
+                            end={link.to === "/"}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={({ isActive }) =>
+                              `mobile-nav-link ${isActive ? "active" : ""}`
+                            }
+                          >
+                            <span>{link.label}</span>
+                            <ArrowRightIcon className="h-4 w-4" />
+                          </NavLink>
+                        ))}
+                        {user && ["admin", "multimedia"].includes(user.role) && (
+                          <NavLink
+                            to="/dashboard/articles/manage"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={({ isActive }) =>
+                              `mobile-nav-link ${isActive ? "active" : ""}`
+                            }
+                          >
+                            <span>CMS</span>
+                            <ArrowRightIcon className="h-4 w-4" />
+                          </NavLink>
+                        )}
+                      </nav>
+
+                      <div className="mt-3 grid gap-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-800">
+                        {!user && (
+                          <Link
+                            to="/login"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="btn-primary tap-target"
+                          >
+                            Login
+                          </Link>
+                        )}
+                        {user && canAccessDashboard && (
+                          <NavLink
+                            to="/dashboard"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="btn-outline tap-target"
+                          >
+                            Dashboard
+                          </NavLink>
+                        )}
+                        {user && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              logout();
+                              setMobileMenuOpen(false);
+                            }}
+                            className="tap-target inline-flex items-center justify-center rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-600"
+                          >
+                            Logout
+                          </button>
+                        )}
                       </div>
-                    )}
-                    {themeButton}
+                    </div>
                   </div>
-
-                  <nav aria-label="Mobile primary" className="space-y-1.5">
-                    {navLinks.map((link) => (
-                      <NavLink
-                        key={link.to}
-                        to={link.to}
-                        end={link.to === "/"}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={({ isActive }) =>
-                          `mobile-nav-link ${isActive ? "active" : ""}`
-                        }
-                      >
-                        <span>{link.label}</span>
-                        <ArrowRightIcon className="h-4 w-4" />
-                      </NavLink>
-                    ))}
-                    {user && ["admin", "multimedia"].includes(user.role) && (
-                      <NavLink
-                        to="/dashboard/articles/manage"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={({ isActive }) =>
-                          `mobile-nav-link ${isActive ? "active" : ""}`
-                        }
-                      >
-                        <span>CMS</span>
-                        <ArrowRightIcon className="h-4 w-4" />
-                      </NavLink>
-                    )}
-                  </nav>
-
-                  <div className="mt-3 grid gap-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-800">
-                    {!user && (
-                      <Link
-                        to="/login"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="btn-primary tap-target"
-                      >
-                        Login
-                      </Link>
-                    )}
-                    {user && canAccessDashboard && (
-                      <NavLink
-                        to="/dashboard"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="btn-outline tap-target"
-                      >
-                        Dashboard
-                      </NavLink>
-                    )}
-                    {user && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          logout();
-                          setMobileMenuOpen(false);
-                        }}
-                        className="tap-target inline-flex items-center justify-center rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-600"
-                      >
-                        Logout
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
           </div>
         </header>

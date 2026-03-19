@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 import {
   ShieldIcon,
   ShoppingBagIcon,
@@ -37,61 +38,120 @@ function ShopHero() {
   };
 
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white px-6 py-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:border-zinc-800 dark:bg-zinc-950 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+    <section className="relative overflow-hidden rounded-[2rem] border border-emerald-950/20 bg-[#0b1712] px-6 py-8 shadow-[0_28px_70px_rgba(3,12,8,0.42)] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-10 top-0 h-48 w-48 rounded-full bg-emerald-100 blur-3xl dark:bg-emerald-950/60" />
-        <div className="absolute right-0 top-6 h-40 w-40 rounded-full bg-zinc-100 blur-3xl dark:bg-zinc-900" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent dark:via-emerald-500/30" />
+        <div className="absolute inset-y-0 right-0 w-full sm:w-[70%] lg:w-[56%]">
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-30 sm:opacity-45 lg:opacity-80"
+            style={{ backgroundImage: `url(${gtshirtLogo})`, filter: "saturate(0.92) brightness(0.78)" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1712] via-[#0b1712]/88 to-[#0b1712]/38 sm:via-[#0b1712]/78 lg:to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_38%)]" />
+        </div>
+        <div className="absolute -left-10 top-0 h-48 w-48 rounded-full bg-emerald-400/12 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-emerald-300/10 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent" />
       </div>
 
       <div className="relative grid gap-8 lg:grid-cols-12 lg:items-end">
         <div className="lg:col-span-7">
-          <p className="hero-kicker hero-reveal">GTSHIRT STOREFRONT</p>
-          <h1 className="hero-reveal delay-1 max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-white sm:text-4xl lg:text-5xl">
+          <div className="hero-reveal inline-flex items-center gap-3 rounded-full border border-emerald-200/20 bg-white/10 px-3 py-2 text-white/90 shadow-[0_12px_30px_rgba(0,0,0,0.18)] backdrop-blur">
+            <img
+              src={gtshirtLogo}
+              alt="GTshirt"
+              width="44"
+              height="44"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="h-11 w-11 rounded-2xl object-cover ring-1 ring-white/15"
+            />
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald-100/80">
+                Official Brand
+              </p>
+              <p className="truncate text-sm font-semibold text-white">GTshirtwear</p>
+            </div>
+          </div>
+          <p className="hero-kicker hero-reveal mt-5 text-emerald-200/80">GTSHIRT STOREFRONT</p>
+          <h1 className="hero-reveal delay-1 max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl lg:text-5xl">
             Streetwear rohani yang clean, bold, dan siap dipakai setiap hari.
           </h1>
-          <p className="hero-reveal delay-2 mt-4 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 sm:text-base">
+          <p className="hero-reveal delay-2 mt-4 max-w-2xl text-sm leading-7 text-emerald-50/78 sm:text-base">
             Koleksi kaos minimalist dari komunitas gereja. Checkout cepat, status order jelas, dan desain siap tampil.
           </p>
 
           <div className="hero-reveal delay-3 mt-7 flex flex-wrap gap-3">
-            <Link to="/cart" className="btn-primary tap-target">
+            <Link
+              to="/cart"
+              className="tap-target inline-flex items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-300"
+            >
               Lihat Keranjang
             </Link>
             <button
               type="button"
               onClick={handleScrollToCatalog}
-              className="btn-outline tap-target"
+              className="tap-target inline-flex items-center justify-center rounded-full border border-emerald-200/40 px-6 py-3 text-sm font-semibold text-emerald-50 transition hover:border-emerald-200 hover:bg-white/5"
             >
               Lihat Katalog
             </button>
           </div>
+
+          <div className="hero-reveal delay-3 mt-6 lg:hidden">
+            <div className="overflow-hidden rounded-[1.5rem] border border-emerald-200/20 bg-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.2)] backdrop-blur">
+              <img
+                src={gtshirtLogo}
+                alt="Logo GTshirt"
+                width="768"
+                height="768"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="aspect-[4/3] w-full object-cover"
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:col-span-5 lg:grid-cols-1">
+        <div className="lg:col-span-5">
+          <div className="hero-reveal relative mb-4 hidden overflow-hidden rounded-[1.75rem] border border-emerald-200/20 bg-white/10 shadow-[0_22px_60px_rgba(0,0,0,0.24)] backdrop-blur lg:block">
+            <img
+              src={gtshirtLogo}
+              alt="Logo GTshirt"
+              width="768"
+              height="768"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="aspect-[5/3] w-full object-cover opacity-95"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0b1712]/60 via-transparent to-transparent" />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
           {HIGHLIGHTS.map(({ label, title, description, Icon }) => (
             <article
               key={label}
-              className="hero-reveal rounded-[1.5rem] border border-zinc-200/80 bg-zinc-50/90 p-4 dark:border-zinc-800 dark:bg-zinc-900/80"
+              className="hero-reveal rounded-[1.5rem] border border-emerald-200/20 bg-white/10 p-4 text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)] backdrop-blur"
             >
               <div className="flex items-start gap-3">
-                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-zinc-900 shadow-[0_10px_24px_rgba(15,23,42,0.06)] dark:bg-zinc-950 dark:text-zinc-100">
+                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/90 text-zinc-900 shadow-[0_10px_24px_rgba(0,0,0,0.16)]">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/70">
                     {label}
                   </p>
-                  <h2 className="mt-2 text-base font-semibold text-zinc-950 dark:text-white">
+                  <h2 className="mt-2 text-base font-semibold text-white">
                     {title}
                   </h2>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                  <p className="mt-2 text-sm leading-6 text-emerald-50/78">
                     {description}
                   </p>
                 </div>
               </div>
             </article>
           ))}
+          </div>
         </div>
       </div>
     </section>

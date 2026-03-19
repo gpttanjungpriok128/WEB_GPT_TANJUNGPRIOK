@@ -2797,6 +2797,20 @@ body {
 }
 
 @media (max-width: 767px) {
+  .nav-glass {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom-color: rgba(228, 228, 231, 0.92);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  }
+
+  .dark .nav-glass {
+    background: rgba(9, 9, 11, 0.98);
+    border-bottom-color: rgba(39, 39, 42, 0.92);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.26);
+  }
+
   .mobile-menu-toggle {
     min-width: 48px;
     padding-left: 0.32rem;
@@ -2807,6 +2821,22 @@ body {
     right: max(0.75rem, env(safe-area-inset-right));
     top: calc(env(safe-area-inset-top, 0px) + 4.7rem);
     bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .mobile-menu-panel {
+    background: rgba(255, 255, 255, 0.998);
+    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.16);
+  }
+
+  .dark .mobile-menu-panel {
+    background: rgba(9, 9, 11, 0.998);
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.38);
+  }
+
+  .mobile-menu-backdrop {
+    background: rgba(9, 9, 11, 0.28);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
 
   .mobile-menu-toggle-label {
