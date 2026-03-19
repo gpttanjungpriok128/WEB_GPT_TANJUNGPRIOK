@@ -145,65 +145,33 @@ function HomePage() {
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent dark:via-emerald-500/40" />
         </div>
 
-        <div className="relative grid gap-8 lg:grid-cols-12 lg:items-end">
-          <header className="lg:col-span-7">
-            <p className="hero-kicker hero-reveal">Modern Minimalist Experience</p>
+        <div className="relative">
+          <header className="max-w-3xl">
+            <p className="hero-kicker hero-reveal">Selamat Datang di</p>
             <h1 className="hero-reveal delay-1 max-w-4xl text-4xl font-semibold tracking-[-0.05em] text-zinc-950 dark:text-white sm:text-5xl lg:text-6xl">
-              GPT Tanjung Priok yang lebih ringan, lebih cepat, dan lebih mudah dijelajahi.
+              GPT Tanjung Priok
             </h1>
+            <p className="hero-reveal delay-2 mt-3 text-lg font-medium text-zinc-500 dark:text-zinc-400 sm:text-xl">
+              {"\ud83c\udf31 Growing Together"}
+            </p>
             <p className="hero-reveal delay-2 mt-5 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 sm:text-base">
-              Komunitas gereja dengan pengalaman web yang fokus pada konten inti: jadwal ibadah, renungan, galeri, live streaming, dan storefront yang tetap nyaman dibuka di jaringan mobile.
+              Menjadi komunitas yang berakar dalam Kristus dan bertumbuh dalam kasih untuk saling melayani.
             </p>
 
             <div className="hero-reveal delay-3 mt-7 flex flex-wrap gap-3">
               <Link to="/schedules" className="btn-primary tap-target">
-                Jadwal Ibadah
-                <ArrowRightIcon />
-              </Link>
-              <Link to="/articles" className="btn-outline tap-target">
-                Baca Renungan
+                {"\ud83d\udcc5 Jadwal Ibadah"}
               </Link>
               <Link to="/shop" className="btn-outline tap-target">
-                Lihat GTshirt
+                {"\ud83d\uded2 GTshirt Store"}
               </Link>
+              {user && (
+                <Link to="/prayer" className="btn-outline tap-target">
+                  {"\ud83d\ude4f Kirim Permohonan Doa"}
+                </Link>
+              )}
             </div>
           </header>
-
-          <aside className="grid gap-3 sm:grid-cols-3 lg:col-span-5 lg:grid-cols-1">
-            <article className="hero-reveal rounded-[1.5rem] border border-zinc-200/80 bg-zinc-50/90 p-5 dark:border-zinc-800 dark:bg-zinc-900/80">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
-                Experience
-              </p>
-              <h2 className="mt-3 text-lg font-semibold text-zinc-950 dark:text-white">
-                Sticky nav yang ringan dan fokus
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                Menu selalu dekat, blur tetap subtle, dan interaksi mobile dibuat cepat tanpa animasi mahal.
-              </p>
-            </article>
-            <article className="hero-reveal delay-1 rounded-[1.5rem] border border-zinc-200/80 bg-zinc-50/90 p-5 dark:border-zinc-800 dark:bg-zinc-900/80">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
-                Core Web Vitals
-              </p>
-              <h2 className="mt-3 text-lg font-semibold text-zinc-950 dark:text-white">
-                System fonts dan no heavy hero image
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                Layout lebih stabil, payload awal lebih kecil, dan visual utama dibangun dari CSS gradient yang murah dirender.
-              </p>
-            </article>
-            <article className="hero-reveal delay-2 rounded-[1.5rem] border border-zinc-200/80 bg-zinc-50/90 p-5 dark:border-zinc-800 dark:bg-zinc-900/80">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
-                Accessibility
-              </p>
-              <h2 className="mt-3 text-lg font-semibold text-zinc-950 dark:text-white">
-                Tap target 48px dan hierarchy lebih jelas
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                CTA, nav, dan kontrol mobile disusun agar mudah dipakai tanpa mengorbankan kerapian visual.
-              </p>
-            </article>
-          </aside>
         </div>
       </section>
 

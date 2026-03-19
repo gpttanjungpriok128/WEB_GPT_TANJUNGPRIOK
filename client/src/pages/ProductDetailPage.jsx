@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
-import worshipSmokeImage from "../img/store/made-to-worship.png";
-import lightJohnImage from "../img/store/you-are-the-light.png";
-import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
+import storePlaceholderImage from "../img/logo1.png";
 import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
 import {
   clampQuantity,
@@ -29,8 +27,8 @@ const FALLBACK_PRODUCTS = [
     description:
       "Desain minimalist streetwear dengan nuansa worship modern. Nyaman untuk ibadah, youth service, dan kegiatan komunitas.",
     sizes: ["S", "M", "L", "XL"],
-    imageUrl: worshipSmokeImage,
-    imageUrls: [worshipSmokeImage],
+    imageUrl: storePlaceholderImage,
+    imageUrls: [storePlaceholderImage],
     stock: 20,
     isActive: true,
     ratingAverage: 0,
@@ -50,8 +48,8 @@ const FALLBACK_PRODUCTS = [
     description:
       "Visual clean dan kuat dengan statement LIGHT. Cocok untuk look casual harian dengan pesan iman yang jelas.",
     sizes: ["S", "M", "L", "XL"],
-    imageUrl: lightJohnImage,
-    imageUrls: [lightJohnImage],
+    imageUrl: storePlaceholderImage,
+    imageUrls: [storePlaceholderImage],
     stock: 20,
     isActive: true,
     ratingAverage: 0,
@@ -71,8 +69,8 @@ const FALLBACK_PRODUCTS = [
     description:
       "Potongan basic oversize dengan artwork belakang bertema HOPE. Karakter streetwear simple dan tetap rohani.",
     sizes: ["S", "M", "L", "XL"],
-    imageUrl: hopePsalmImage,
-    imageUrls: [hopePsalmImage],
+    imageUrl: storePlaceholderImage,
+    imageUrls: [storePlaceholderImage],
     stock: 20,
     isActive: true,
     ratingAverage: 0,
@@ -126,7 +124,7 @@ const isAboveXL = (value) => {
 };
 
 function getImageWithFallback(product, fallbackProducts) {
-  if (!product) return worshipSmokeImage;
+  if (!product) return storePlaceholderImage;
 
   const imageUrls =
     Array.isArray(product.imageUrls) && product.imageUrls.length > 0
@@ -145,7 +143,7 @@ function getImageWithFallback(product, fallbackProducts) {
     return [...imageUrls, ...fallbackProduct.imageUrls];
   }
 
-  return imageUrls.length > 0 ? imageUrls : [worshipSmokeImage];
+  return imageUrls.length > 0 ? imageUrls : [storePlaceholderImage];
 }
 
 function getDefaultSize(product) {
@@ -183,8 +181,6 @@ function ProductDetailPage() {
     phone: "",
     reviewText: "",
   });
-  const [reviewImages, setReviewImages] = useState([]);
-  const [reviewImagePreviews, setReviewImagePreviews] = useState([]);
   const [reviewFeedback, setReviewFeedback] = useState({ type: "", text: "" });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
@@ -193,7 +189,6 @@ function ProductDetailPage() {
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchDeltaRef = useRef({ x: 0, y: 0 });
   const prefetchedDetailImagesRef = useRef(new Set());
-  const reviewFileInputRef = useRef(null);
 
   const syncCartCount = () => {
     try {
@@ -294,12 +289,9 @@ function ProductDetailPage() {
       const imageUrl = resolveStoreImageUrl(image);
       if (!imageUrl || prefetchedDetailImagesRef.current.has(imageUrl)) return;
 
-      const link = document.createElement("link");
-      link.rel = "preload";
-      link.as = "image";
-      link.href = imageUrl;
-      link.setAttribute("data-prefetch", "product-detail");
-      document.head.appendChild(link);
+      const prefetchImage = new Image();
+      prefetchImage.decoding = "async";
+      prefetchImage.src = imageUrl;
       prefetchedDetailImagesRef.current.add(imageUrl);
     });
   }, [images, selectedImageIndex]);
@@ -310,43 +302,11 @@ function ProductDetailPage() {
     setQuantity((previous) => clampQuantity(previous, maxQty));
   }, [product, selectedSize]);
 
-  useEffect(() => {
-    return () => {
-      reviewImagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
-    };
-  }, [reviewImagePreviews]);
-
   const updateReviewField = (field, value) => {
     setReviewForm((previous) => ({
       ...previous,
       [field]: value,
     }));
-  };
-
-  const handleReviewImagesChange = (event) => {
-    const files = Array.from(event.target.files || []);
-    if (!files.length) {
-      setReviewImages([]);
-      setReviewImagePreviews([]);
-      if (reviewFileInputRef.current) {
-        reviewFileInputRef.current.value = "";
-      }
-      return;
-    }
-
-    const limitedFiles = files.slice(0, 3);
-    const previews = limitedFiles.map((file) => URL.createObjectURL(file));
-    setReviewImages(limitedFiles);
-    setReviewImagePreviews(previews);
-  };
-
-  const removeReviewImage = (index) => {
-    setReviewImages((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
-    setReviewImagePreviews((prev) => {
-      const preview = prev[index];
-      if (preview) URL.revokeObjectURL(preview);
-      return prev.filter((_, currentIndex) => currentIndex !== index);
-    });
   };
 
   const submitReview = async () => {
@@ -361,17 +321,13 @@ function ProductDetailPage() {
     setIsSubmittingReview(true);
     setReviewFeedback({ type: "", text: "" });
     try {
-      const formData = new FormData();
-      formData.append("rating", Number(reviewForm.rating));
-      formData.append("orderCode", reviewForm.orderCode.trim());
-      formData.append("phone", reviewForm.phone.trim());
-      formData.append("reviewText", reviewForm.reviewText.trim());
-      reviewImages.forEach((file) => {
-        formData.append("images", file);
-      });
-      await api.post(`/store/products/${slug}/reviews`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const payload = {
+        rating: Number(reviewForm.rating),
+        orderCode: reviewForm.orderCode.trim(),
+        phone: reviewForm.phone.trim(),
+        reviewText: reviewForm.reviewText.trim(),
+      };
+      await api.post(`/store/products/${slug}/reviews`, payload);
       setReviewFeedback({
         type: "success",
         text: "Terima kasih! Ulasan kamu sudah tercatat.",
@@ -381,8 +337,6 @@ function ProductDetailPage() {
         rating: 5,
         reviewText: "",
       }));
-      setReviewImages([]);
-      setReviewImagePreviews([]);
       const { data } = await api.get(`/store/products/${slug}/reviews`);
       const reviewList = Array.isArray(data?.data) ? data.data : [];
       const meta = data?.meta || {};
@@ -701,47 +655,6 @@ function ProductDetailPage() {
             onChange={(event) => updateReviewField("reviewText", event.target.value)}
           />
         </label>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-              Foto Produk (opsional)
-            </span>
-            <span className="text-[11px] text-brand-500 dark:text-brand-400">
-              Maks 3 foto • 5MB
-            </span>
-          </div>
-          <input
-            ref={reviewFileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="input-modern cursor-pointer file:mr-3 file:rounded-full file:border-0 file:bg-brand-200 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-brand-700 file:transition hover:file:bg-brand-300 dark:file:bg-brand-800 dark:file:text-brand-100 dark:hover:file:bg-brand-700"
-            onChange={handleReviewImagesChange}
-          />
-          {reviewImagePreviews.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {reviewImagePreviews.map((preview, index) => (
-                <div
-                  key={`review-preview-${preview}-${index}`}
-                  className="relative h-16 w-16 overflow-hidden rounded-xl border border-brand-200 bg-white/80 dark:border-brand-700 dark:bg-brand-900/40"
-                >
-                  <img
-                    src={preview}
-                    alt={`Preview ${index + 1}`}
-                    className="h-full w-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeReviewImage(index)}
-                    className="absolute right-1 top-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-rose-500 shadow"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
         {reviewFeedback.text && (
           <div
             className={`rounded-lg border px-3 py-2 text-sm font-medium ${
@@ -794,29 +707,6 @@ function ProductDetailPage() {
                 <p className="mt-3 text-sm leading-relaxed text-brand-700 dark:text-brand-300">
                   {review.reviewText}
                 </p>
-              )}
-              {Array.isArray(review.imageUrls) && review.imageUrls.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {review.imageUrls.map((image, index) => {
-                    const resolved = resolveStoreImageUrl(image);
-                    return (
-                      <a
-                        key={`${review.id}-image-${index}`}
-                        href={resolved}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block h-16 w-16 overflow-hidden rounded-xl border border-brand-200 bg-white/80 dark:border-brand-700 dark:bg-brand-900/40"
-                      >
-                        <img
-                          src={resolved}
-                          alt={`Foto ulasan ${index + 1}`}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                        />
-                      </a>
-                    );
-                  })}
-                </div>
               )}
             </div>
           ))

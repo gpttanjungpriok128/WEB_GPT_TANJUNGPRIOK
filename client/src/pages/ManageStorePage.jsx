@@ -1,15 +1,22 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../services/api";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 import { formatRupiah } from "../utils/storeFormatters";
 import AdminStoreTabs from "../components/store-admin/AdminStoreTabs";
-import ProductsTab from "../components/store-admin/ProductsTab";
-import OrdersTab from "../components/store-admin/OrdersTab";
-import ScanTab from "../components/store-admin/ScanTab";
-import ReviewsTab from "../components/store-admin/ReviewsTab";
-import ReportsTab from "../components/store-admin/ReportsTab";
-import ShippingTab from "../components/store-admin/ShippingTab";
+
+const ProductsTab = lazy(() => import("../components/store-admin/ProductsTab"));
+const OrdersTab = lazy(() => import("../components/store-admin/OrdersTab"));
+const ScanTab = lazy(() => import("../components/store-admin/ScanTab"));
+const ReviewsTab = lazy(() => import("../components/store-admin/ReviewsTab"));
+const ReportsTab = lazy(() => import("../components/store-admin/ReportsTab"));
+const ShippingTab = lazy(() => import("../components/store-admin/ShippingTab"));
+
+const TabLoader = () => (
+  <div className="flex justify-center py-10">
+    <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
+  </div>
+);
 
 function ManageStorePage() {
   const location = useLocation();
@@ -18,7 +25,6 @@ function ManageStorePage() {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [lastAnalyticsAt, setLastAnalyticsAt] = useState(0);
   const [tabHidden, setTabHidden] = useState(false);
-  const tabHiddenRef = useRef(false);
 
   const fetchAnalytics = useCallback(async (options = {}) => {
     const now = Date.now();
@@ -42,40 +48,13 @@ function ManageStorePage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     let lastY = window.scrollY || 0;
-    let ticking = false;
-    let rafId = 0;
     const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      rafId = window.requestAnimationFrame(() => {
-        const currentY = window.scrollY || 0;
-        const delta = currentY - lastY;
-        let nextHidden = tabHiddenRef.current;
-
-        if (currentY <= 80) {
-          nextHidden = false;
-        } else if (delta > 12) {
-          nextHidden = true;
-        } else if (delta < -8) {
-          nextHidden = false;
-        }
-
-        if (nextHidden !== tabHiddenRef.current) {
-          tabHiddenRef.current = nextHidden;
-          setTabHidden(nextHidden);
-        }
-
-        lastY = currentY;
-        ticking = false;
-      });
+      const currentY = window.scrollY || 0;
+      setTabHidden(currentY > 120 && currentY > lastY);
+      lastY = currentY;
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (rafId) {
-        window.cancelAnimationFrame(rafId);
-      }
-    };
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   // Handle deep-link to order search
@@ -154,24 +133,32 @@ function ManageStorePage() {
 
       <AdminStoreTabs activeTab={activeTab} setActiveTab={setActiveTab} tabHidden={tabHidden} />
 
-      {activeTab === "produk" && (
-        <ProductsTab isActive={activeTab === "produk"} onRefreshAnalytics={() => fetchAnalytics({ force: true })} />
-      )}
-      {activeTab === "pesanan" && (
-        <OrdersTab isActive={activeTab === "pesanan"} analytics={analytics} onGoToScan={() => setActiveTab("scan")} />
-      )}
-      {activeTab === "scan" && (
-        <ScanTab isActive={activeTab === "scan"} onGoToOrders={() => setActiveTab("pesanan")} />
-      )}
-      {activeTab === "ulasan" && (
-        <ReviewsTab isActive={activeTab === "ulasan"} analytics={analytics} />
-      )}
-      {activeTab === "laporan" && (
-        <ReportsTab isActive={activeTab === "laporan"} />
-      )}
-      {activeTab === "ongkir" && (
-        <ShippingTab isActive={activeTab === "ongkir"} />
-      )}
+      <Suspense fallback={<TabLoader />}>
+        {activeTab === "produk" && (
+          <ProductsTab
+            isActive={activeTab === "produk"}
+            onRefreshAnalytics={() => fetchAnalytics({ force: true })}
+          />
+        )}
+        {activeTab === "pesanan" && (
+          <OrdersTab
+            isActive={activeTab === "pesanan"}
+            analytics={analytics}
+            onGoToScan={() => setActiveTab("scan")}
+          />
+        )}
+        {activeTab === "scan" && (
+          <ScanTab
+            isActive={activeTab === "scan"}
+            onGoToOrders={() => setActiveTab("pesanan")}
+          />
+        )}
+        {activeTab === "ulasan" && (
+          <ReviewsTab isActive={activeTab === "ulasan"} analytics={analytics} />
+        )}
+        {activeTab === "laporan" && <ReportsTab isActive={activeTab === "laporan"} />}
+        {activeTab === "ongkir" && <ShippingTab isActive={activeTab === "ongkir"} />}
+      </Suspense>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import * as XLSX from "xlsx";
 import api from "../../services/api";
 import { formatRupiah, formatDateTime, mapOrderStatusLabel, statusBadge } from "../../utils/storeFormatters";
 
@@ -87,35 +86,43 @@ export default function ReportsTab({ isActive }) {
     }
   };
 
-  const handleExportReport = () => {
+  const handleExportReport = async () => {
     if (!reportRows.length) {
       setSheetSyncInfo({ type: "error", text: "Tidak ada data untuk diexport." });
       return;
     }
 
-    const rows = reportRows.map((row, index) => ({
-      No: index + 1,
-      "Kode Order": row.orderCode,
-      Tanggal: formatDateTime(row.createdAt),
-      Nama: row.customerName,
-      "No. WA": row.customerPhone,
-      Status: mapOrderStatusLabel(row.status),
-      Pengiriman: row.shippingMethod,
-      Pembayaran: row.paymentMethod,
-      Subtotal: row.subtotal,
-      Ongkir: row.shippingCost,
-      Total: row.totalAmount,
-      "Jumlah Item": row.itemCount,
-      Produk: row.itemsSummary,
-    }));
+    try {
+      const XLSX = await import("xlsx");
+      const rows = reportRows.map((row, index) => ({
+        No: index + 1,
+        "Kode Order": row.orderCode,
+        Tanggal: formatDateTime(row.createdAt),
+        Nama: row.customerName,
+        "No. WA": row.customerPhone,
+        Status: mapOrderStatusLabel(row.status),
+        Pengiriman: row.shippingMethod,
+        Pembayaran: row.paymentMethod,
+        Subtotal: row.subtotal,
+        Ongkir: row.shippingCost,
+        Total: row.totalAmount,
+        "Jumlah Item": row.itemCount,
+        Produk: row.itemsSummary,
+      }));
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Pemasukan");
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Pemasukan");
 
-    const startLabel = reportFilters.startDate || "semua";
-    const endLabel = reportFilters.endDate || "semua";
-    XLSX.writeFile(workbook, `laporan-pemasukan-${startLabel}-${endLabel}.xlsx`);
+      const startLabel = reportFilters.startDate || "semua";
+      const endLabel = reportFilters.endDate || "semua";
+      XLSX.writeFile(workbook, `laporan-pemasukan-${startLabel}-${endLabel}.xlsx`);
+    } catch {
+      setSheetSyncInfo({
+        type: "error",
+        text: "Gagal menyiapkan file export. Coba lagi sebentar.",
+      });
+    }
   };
 
   useEffect(() => {

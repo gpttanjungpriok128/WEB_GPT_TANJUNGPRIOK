@@ -1,16 +1,15 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ShopHero from "../components/ShopHero";
-import worshipSmokeImage from "../img/store/made-to-worship.png";
-import lightJohnImage from "../img/store/you-are-the-light.png";
-import hopePsalmImage from "../img/store/for-all-my-hope-is-in-him.png";
+import storePlaceholderImage from "../img/logo1.png";
 import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
 import { clampQuantity, getStockForSize, getTotalStock } from "../utils/storeStock";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const PROMO_VIDEO_URL = "https://youtu.be/oOOdw2ulGIg";
+const INITIAL_EAGER_PRODUCT_IMAGE_COUNT = 2;
 
 const FALLBACK_PRODUCTS = [
   {
@@ -27,7 +26,7 @@ const FALLBACK_PRODUCTS = [
     description:
       "Desain minimalist streetwear dengan nuansa worship modern. Nyaman untuk ibadah, youth service, dan kegiatan komunitas.",
     sizes: ["S", "M", "L", "XL"],
-    imageUrl: worshipSmokeImage,
+    imageUrl: storePlaceholderImage,
     stock: 20,
     isActive: true,
     ratingAverage: 0,
@@ -47,7 +46,7 @@ const FALLBACK_PRODUCTS = [
     description:
       "Visual clean dan kuat dengan statement LIGHT. Cocok untuk look casual harian dengan pesan iman yang jelas.",
     sizes: ["S", "M", "L", "XL"],
-    imageUrl: lightJohnImage,
+    imageUrl: storePlaceholderImage,
     stock: 20,
     isActive: true,
     ratingAverage: 0,
@@ -67,7 +66,7 @@ const FALLBACK_PRODUCTS = [
     description:
       "Potongan basic oversize dengan artwork belakang bertema HOPE. Karakter streetwear simple dan tetap rohani.",
     sizes: ["S", "M", "L", "XL"],
-    imageUrl: hopePsalmImage,
+    imageUrl: storePlaceholderImage,
     stock: 20,
     isActive: true,
     ratingAverage: 0,
@@ -213,7 +212,6 @@ const SORT_LABELS = {
 const PRODUCTS_PER_PAGE = 16;
 const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
-const PREFETCH_IMAGE_COUNT = 6;
 const USE_FALLBACK_PRODUCTS = import.meta.env.MODE === "development";
 
 const normalizeSizeLabel = (value) =>
@@ -271,10 +269,10 @@ function ShopPage() {
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const promoVideoSrc = normalizeYouTubeUrl(PROMO_VIDEO_URL);
+  const [isPromoVideoActive, setIsPromoVideoActive] = useState(false);
   const [hasBootCache, setHasBootCache] = useState(false);
   const [isCacheStale, setIsCacheStale] = useState(false);
   const deferredSearch = useDeferredValue(searchQuery);
-  const prefetchedImagesRef = useRef(new Set());
 
   useEffect(() => {
     try {
@@ -455,23 +453,6 @@ function ShopPage() {
     return nextProducts;
   }, [availabilityFilter, products, deferredSearch, sortBy]);
 
-  useEffect(() => {
-    if (!filteredProducts.length) return;
-
-    filteredProducts.slice(0, PREFETCH_IMAGE_COUNT).forEach((product) => {
-      const imageUrl = resolveStoreImageUrl(product.imageUrl);
-      if (!imageUrl || prefetchedImagesRef.current.has(imageUrl)) return;
-
-      const link = document.createElement("link");
-      link.rel = "preload";
-      link.as = "image";
-      link.href = imageUrl;
-      link.setAttribute("data-prefetch", "shop-catalog");
-      document.head.appendChild(link);
-      prefetchedImagesRef.current.add(imageUrl);
-    });
-  }, [filteredProducts]);
-
   const totalStockAll = useMemo(
     () => products.reduce((sum, product) => sum + getTotalStock(product), 0),
     [products],
@@ -622,14 +603,40 @@ function ShopPage() {
             <div className="relative mt-5 overflow-hidden rounded-2xl border border-brand-200 bg-black shadow-lg dark:border-brand-700 lg:mt-0">
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary/20 via-emerald-400/10 to-primary/20 blur-sm pointer-events-none" />
               <div className="relative aspect-video">
-                <iframe
-                  title="Video GTshirt"
-                  src={promoVideoSrc}
-                  className="h-full w-full"
-                  allowFullScreen
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                />
+                {isPromoVideoActive ? (
+                  <iframe
+                    title="Video GTshirt"
+                    src={promoVideoSrc}
+                    className="h-full w-full"
+                    allowFullScreen
+                    loading="eager"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsPromoVideoActive(true)}
+                    className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 px-6 text-center text-white transition hover:brightness-110"
+                    aria-label="Putar video GTshirt"
+                  >
+                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-900 shadow-lg">
+                      <svg
+                        className="ml-1 h-6 w-6"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path d="M8 6.5v11l9-5.5-9-5.5Z" />
+                      </svg>
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold">Putar video preview GTshirt</p>
+                      <p className="text-xs text-white/75">
+                        Iframe YouTube hanya dimuat saat dibutuhkan.
+                      </p>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
           </section>
@@ -970,8 +977,8 @@ function ShopPage() {
                     <img
                       src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}
-                      loading={index < PREFETCH_IMAGE_COUNT ? "eager" : "lazy"}
-                      fetchPriority={index < PREFETCH_IMAGE_COUNT ? "high" : "low"}
+                      loading={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "eager" : "lazy"}
+                      fetchPriority={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "high" : "low"}
                       decoding="async"
                       className="image-soft h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
                       onLoad={(event) => event.currentTarget.classList.add("is-loaded")}

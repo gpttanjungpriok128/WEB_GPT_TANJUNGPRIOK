@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import {
-  ArrowRightIcon,
   ShieldIcon,
   ShoppingBagIcon,
   SparklesIcon,
@@ -8,21 +7,21 @@ import {
 
 const HIGHLIGHTS = [
   {
-    label: "Catalog Ready",
-    title: "Katalog ringan dan responsif",
-    description: "Grid produk mobile-first dengan fokus ke harga, stok, dan CTA utama.",
+    label: "Signature Drop",
+    title: "Modern Worship Tee, Weekly Production.",
+    description: "Drop utama GTshirt dengan ritme produksi mingguan dan karakter minimalist streetwear.",
     Icon: ShoppingBagIcon,
   },
   {
-    label: "Motion Budget",
-    title: "Animasi halus tanpa library berat",
-    description: "Semua transisi memakai transform dan opacity agar tetap murah dirender.",
+    label: "Order Flow",
+    title: "Fast checkout & tracking.",
+    description: "Alur belanja dibuat cepat dan jelas supaya jemaat bisa checkout tanpa ribet.",
     Icon: SparklesIcon,
   },
   {
-    label: "Checkout Flow",
-    title: "Aman untuk tap target mobile",
-    description: "Aksi penting dibuat lebih besar, jelas, dan cepat dijangkau dengan ibu jari.",
+    label: "Brand Voice",
+    title: "Clean. Bold. Faithful.",
+    description: "Visual GTshirt tetap sederhana, kuat, dan relevan dengan karakter komunitas.",
     Icon: ShieldIcon,
   },
 ];
@@ -47,26 +46,25 @@ function ShopHero() {
 
       <div className="relative grid gap-8 lg:grid-cols-12 lg:items-end">
         <div className="lg:col-span-7">
-          <p className="hero-kicker hero-reveal">GTshirt Store</p>
+          <p className="hero-kicker hero-reveal">GTSHIRT STOREFRONT</p>
           <h1 className="hero-reveal delay-1 max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-white sm:text-4xl lg:text-5xl">
-            Streetwear rohani yang clean, cepat dibuka, dan siap dipakai setiap hari.
+            Streetwear rohani yang clean, bold, dan siap dipakai setiap hari.
           </h1>
           <p className="hero-reveal delay-2 mt-4 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 sm:text-base">
-            Koleksi apparel komunitas dengan katalog ringan, stok yang jelas, dan pengalaman belanja yang tetap nyaman di mobile maupun desktop.
+            Koleksi kaos minimalist dari komunitas gereja. Checkout cepat, status order jelas, dan desain siap tampil.
           </p>
 
           <div className="hero-reveal delay-3 mt-7 flex flex-wrap gap-3">
+            <Link to="/cart" className="btn-primary tap-target">
+              Lihat Keranjang
+            </Link>
             <button
               type="button"
               onClick={handleScrollToCatalog}
-              className="btn-primary tap-target"
+              className="btn-outline tap-target"
             >
               Lihat Katalog
-              <ArrowRightIcon />
             </button>
-            <Link to="/cart" className="btn-outline tap-target">
-              Buka Keranjang
-            </Link>
           </div>
         </div>
 
