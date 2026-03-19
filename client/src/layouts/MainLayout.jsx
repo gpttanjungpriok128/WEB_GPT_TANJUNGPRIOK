@@ -5,12 +5,18 @@ import { useTheme } from "../context/ThemeContext";
 import BrandLogo from "../components/BrandLogo";
 import {
   ArrowRightIcon,
+  BookIcon,
+  CalendarIcon,
   CloseIcon,
+  GalleryIcon,
   MailIcon,
   MapPinIcon,
   MenuIcon,
   MoonIcon,
   PhoneIcon,
+  PlayIcon,
+  ShoppingBagIcon,
+  SparklesIcon,
   SunIcon,
 } from "../components/SiteIcons";
 
@@ -96,6 +102,77 @@ function MainLayout({ children }) {
     { to: "/prayer", label: "Permohonan Doa" },
     { to: "/live", label: "Live Streaming" },
   ];
+
+  const mobileNavMeta = {
+    "/": {
+      description: "Beranda GPT Tanjung Priok",
+      renderIcon: () => <BrandLogo className="h-10 w-10 rounded-xl" />,
+    },
+    "/about": {
+      description: "Tentang gereja, visi, dan perjalanan kami",
+      renderIcon: () => <MapPinIcon className="h-5 w-5" />,
+    },
+    "/schedules": {
+      description: "Jadwal ibadah, agenda, dan persekutuan",
+      renderIcon: () => <CalendarIcon className="h-5 w-5" />,
+    },
+    "/articles": {
+      description: "Renungan dan pembacaan rohani",
+      renderIcon: () => <BookIcon className="h-5 w-5" />,
+    },
+    "/gallery": {
+      description: "Momen pelayanan dan dokumentasi gereja",
+      renderIcon: () => <GalleryIcon className="h-5 w-5" />,
+    },
+    "/shop": {
+      description: "Koleksi GTshirt dan order tracking",
+      renderIcon: () => <ShoppingBagIcon className="h-5 w-5" />,
+    },
+    "/live": {
+      description: "Streaming ibadah dan siaran langsung",
+      renderIcon: () => <PlayIcon className="h-5 w-5" />,
+    },
+    "/prayer": {
+      description: "Permohonan doa dan dukungan rohani",
+      renderIcon: () => <SparklesIcon className="h-5 w-5" />,
+    },
+    "/dashboard/congregation": {
+      description: "Data jemaat dan kebutuhan pelayanan",
+      renderIcon: () => <MapPinIcon className="h-5 w-5" />,
+    },
+    "/contact": {
+      description: "Hubungi tim GPT Tanjung Priok",
+      renderIcon: () => <MailIcon className="h-5 w-5" />,
+    },
+    "/dashboard/articles/manage": {
+      description: "Kelola artikel dan konten CMS",
+      renderIcon: () => <BookIcon className="h-5 w-5" />,
+    },
+  };
+
+  const mobileNavGroups = [
+    { title: "Jelajahi", routes: ["/", "/about", "/contact"] },
+    { title: "Ibadah", routes: ["/schedules", "/articles", "/gallery", "/live", "/prayer"] },
+    { title: "Akses Cepat", routes: ["/shop", "/dashboard/congregation"] },
+  ];
+
+  const mobileNavLookup = new Map(
+    [
+      ...navLinks,
+      ...(user && ["admin", "multimedia"].includes(user.role)
+        ? [{ to: "/dashboard/articles/manage", label: "CMS" }]
+        : []),
+    ].map((link) => [link.to, link]),
+  );
+
+  const groupedMobileLinks = mobileNavGroups
+    .map((group) => ({
+      ...group,
+      links: group.routes
+        .map((route) => mobileNavLookup.get(route))
+        .filter(Boolean),
+    }))
+    .filter((group) => group.links.length > 0);
 
   const handleScroll = useCallback(() => {
     const currentY = window.scrollY;
@@ -404,34 +481,100 @@ function MainLayout({ children }) {
             </div>
 
             <div className="mobile-menu-dialog-body">
-              <nav aria-label="Mobile primary" className="space-y-2">
-                {navLinks.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    end={link.to === "/"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `mobile-nav-link ${isActive ? "active" : ""}`
-                    }
-                  >
-                    <span>{link.label}</span>
-                    <ArrowRightIcon className="h-4 w-4" />
-                  </NavLink>
+              <div className="mobile-menu-brand">
+                <div className="flex items-center gap-3">
+                  <BrandLogo className="h-12 w-12 rounded-2xl" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
+                      GPT Tanjung Priok
+                    </p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Navigasi yang lebih rapi, cepat, dan nyaman dibaca.
+                    </p>
+                  </div>
+                </div>
+                <div className="mobile-menu-badge">
+                  Growing Together
+                </div>
+              </div>
+
+              <div className="mobile-menu-quick-grid">
+                <NavLink
+                  to="/schedules"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="mobile-menu-quick-link"
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  <span>Jadwal</span>
+                </NavLink>
+                <NavLink
+                  to="/shop"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="mobile-menu-quick-link"
+                >
+                  <ShoppingBagIcon className="h-4 w-4" />
+                  <span>GTshirt</span>
+                </NavLink>
+              </div>
+
+              <div className="space-y-4">
+                {groupedMobileLinks.map((group) => (
+                  <section key={group.title} className="space-y-2.5">
+                    <p className="mobile-menu-group-title">{group.title}</p>
+                    <nav aria-label={group.title} className="space-y-2">
+                      {group.links.map((link) => {
+                        const meta = mobileNavMeta[link.to];
+                        return (
+                          <NavLink
+                            key={link.to}
+                            to={link.to}
+                            end={link.to === "/"}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={({ isActive }) =>
+                              `mobile-nav-link ${isActive ? "active" : ""}`
+                            }
+                          >
+                            <span className="mobile-nav-link-main">
+                              <span className="mobile-nav-link-icon">
+                                {meta?.renderIcon ? meta.renderIcon() : <ArrowRightIcon className="h-4 w-4" />}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="mobile-nav-link-label">{link.label}</span>
+                                {meta?.description && (
+                                  <span className="mobile-nav-link-meta">{meta.description}</span>
+                                )}
+                              </span>
+                            </span>
+                            <ArrowRightIcon className="h-4 w-4 shrink-0" />
+                          </NavLink>
+                        );
+                      })}
+                    </nav>
+                  </section>
                 ))}
-                {user && ["admin", "multimedia"].includes(user.role) && (
+              </div>
+
+              {user && ["admin", "multimedia"].includes(user.role) && (
+                <div className="mt-4 space-y-2">
+                  <p className="mobile-menu-group-title">Kontrol</p>
                   <NavLink
                     to="/dashboard/articles/manage"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `mobile-nav-link ${isActive ? "active" : ""}`
-                    }
+                    className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`}
                   >
-                    <span>CMS</span>
-                    <ArrowRightIcon className="h-4 w-4" />
+                    <span className="mobile-nav-link-main">
+                      <span className="mobile-nav-link-icon">
+                        <BookIcon className="h-5 w-5" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="mobile-nav-link-label">CMS</span>
+                        <span className="mobile-nav-link-meta">Kelola artikel dan publikasi gereja</span>
+                      </span>
+                    </span>
+                    <ArrowRightIcon className="h-4 w-4 shrink-0" />
                   </NavLink>
-                )}
-              </nav>
+                </div>
+              )}
 
               <div className="mt-4 grid gap-2 border-t border-zinc-200/80 pt-4 dark:border-zinc-800">
                 {!user && (
