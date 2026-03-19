@@ -335,11 +335,16 @@ function MainLayout({ children }) {
                   ref={mobileMenuToggleRef}
                   type="button"
                   onClick={() => setMobileMenuOpen((prev) => !prev)}
-                  className="tap-target inline-flex items-center justify-center rounded-full border border-zinc-200/80 bg-white/85 text-zinc-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/90 dark:text-zinc-100 dark:hover:bg-zinc-900 lg:hidden"
+                  className={`mobile-menu-toggle tap-target lg:hidden ${mobileMenuOpen ? "is-open" : ""}`}
                   aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
                   aria-expanded={mobileMenuOpen}
                 >
-                  {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+                  <span className="mobile-menu-toggle-label">
+                    {mobileMenuOpen ? "Tutup" : "Menu"}
+                  </span>
+                  <span className="mobile-menu-toggle-icon" aria-hidden="true">
+                    {mobileMenuOpen ? <CloseIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
+                  </span>
                 </button>
               </div>
             </div>

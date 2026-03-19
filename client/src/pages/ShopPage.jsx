@@ -253,6 +253,13 @@ function getDefaultSize(product) {
   return firstAvailable || sizes[0] || "M";
 }
 
+function getAvailableSizes(product) {
+  const sizes = Array.isArray(product?.sizes)
+    ? product.sizes.filter((size) => normalizeSizeLabel(size) !== "XXL")
+    : [];
+  return sizes.filter((size) => getStockForSize(product, size) > 0);
+}
+
 function ShopPage() {
   const { user } = useAuth();
   const [products, setProducts] = useState(USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : []);
@@ -472,6 +479,7 @@ function ShopPage() {
   );
   const availabilityLabel = AVAILABILITY_LABELS[availabilityFilter] || "Semua Produk";
   const sortLabel = SORT_LABELS[sortBy] || "Terbaru";
+  const activeSearchLabel = deferredSearch.trim();
 
   const updateSelection = (productId, key, value) => {
     setSelections((previous) => ({
@@ -743,6 +751,23 @@ function ShopPage() {
           </Link>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center rounded-full border border-brand-200 bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+            {filteredProducts.length} produk tampil
+          </span>
+          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+            {availabilityLabel}
+          </span>
+          <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+            {sortLabel}
+          </span>
+          {activeSearchLabel && (
+            <span className="inline-flex items-center rounded-full border border-brand-200 bg-white/90 px-3 py-1 text-[11px] font-semibold text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+              "{activeSearchLabel}"
+            </span>
+          )}
+        </div>
+
         <div className="grid gap-3 sm:hidden">
           <label className="space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
@@ -966,6 +991,15 @@ function ShopPage() {
               const totalStock = getTotalStock(product);
               const ratingAverage = Number(product.ratingAverage || 0);
               const ratingCount = Number(product.ratingCount || 0);
+              const availableSizes = getAvailableSizes(product).map((size) => normalizeSizeLabel(size));
+              const availableSizePreview = availableSizes.length > 0
+                ? availableSizes.slice(0, 3).join(" / ")
+                : "Restock";
+              const stockToneClass = totalStock <= 0
+                ? "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
+                : totalStock < 6
+                  ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300";
 
               return (
                 <Link
@@ -1016,6 +1050,14 @@ function ShopPage() {
                           : "Belum ada ulasan"}
                       </span>
                     </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs">
+                      <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50/80 px-2 py-1 font-semibold text-brand-600 dark:border-brand-700 dark:bg-brand-900/60 dark:text-brand-300">
+                        Ukuran {availableSizePreview}
+                      </span>
+                      <span className={`inline-flex items-center rounded-full border px-2 py-1 font-semibold ${stockToneClass}`}>
+                        {totalStock <= 0 ? "Restock segera" : totalStock < 6 ? "Stok terbatas" : "Ready stock"}
+                      </span>
+                    </div>
 
                     <div className="mt-auto space-y-3">
                       <div className="flex items-end justify-between gap-2">
@@ -1047,18 +1089,23 @@ function ShopPage() {
                         </p>
                       )}
 
-                      <div className="flex items-center justify-between pt-2 border-t border-brand-100 dark:border-brand-800">
-                        <span className="text-[11px] font-medium text-brand-500 dark:text-brand-400 sm:text-xs">
-                          Stok Tersedia
-                        </span>
-                        <span
-                          className={`text-sm sm:text-base ${
-                            totalStock <= 0
-                              ? "text-rose-500 font-bold"
-                              : "text-brand-700 font-bold dark:text-brand-300"
-                          }`}
-                        >
-                          {totalStock <= 0 ? "Habis" : totalStock}
+                      <div className="flex items-center justify-between gap-3 border-t border-brand-100 pt-2 dark:border-brand-800">
+                        <div>
+                          <p className="text-[11px] font-medium text-brand-500 dark:text-brand-400 sm:text-xs">
+                            Stok Tersedia
+                          </p>
+                          <p
+                            className={`text-sm font-bold sm:text-base ${
+                              totalStock <= 0
+                                ? "text-rose-500"
+                                : "text-brand-700 dark:text-brand-300"
+                            }`}
+                          >
+                            {totalStock <= 0 ? "Habis" : `${totalStock} pcs`}
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-700 transition group-hover:bg-brand-100 dark:bg-brand-800/80 dark:text-brand-200 dark:group-hover:bg-brand-800">
+                          Detail
                         </span>
                       </div>
                     </div>

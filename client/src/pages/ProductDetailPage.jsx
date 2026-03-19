@@ -496,6 +496,9 @@ function ProductDetailPage() {
   const ratingSummaryText = ratingCount > 0
     ? `Rata-rata ${ratingAverage.toFixed(1)} / 5 dari ${ratingCount} ulasan`
     : "Belum ada ulasan untuk produk ini.";
+  const selectedSizeLabel = selectedSize ? normalizeSizeKey(selectedSize) : "-";
+  const readySizeCount = sizes.filter((size) => getStockForSize(product, size) > 0).length;
+  const sizePreview = sizes.slice(0, 4).map((size) => normalizeSizeKey(size)).join(" / ");
   const canSubmitReview =
     reviewForm.orderCode.trim().length > 0 &&
     reviewForm.phone.trim().length > 0 &&
@@ -832,6 +835,23 @@ function ProductDetailPage() {
                   : "Belum ada ulasan"}
               </span>
             </div>
+            <div className="flex flex-wrap gap-2">
+              <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
+                totalStock <= 0
+                  ? "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
+              }`}>
+                {totalStock <= 0 ? "Restock Soon" : "Ready to Order"}
+              </span>
+              {product.color && (
+                <span className="inline-flex items-center rounded-full border border-brand-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+                  {product.color}
+                </span>
+              )}
+              <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+                {readySizeCount}/{sizes.length} ukuran ready
+              </span>
+            </div>
           </div>
 
           {/* Price & Discount */}
@@ -895,48 +915,49 @@ function ProductDetailPage() {
             )}
           </div>
 
-          {/* Stock Info */}
-          <div className="rounded-lg border border-brand-200 bg-white/70 p-3 dark:border-brand-700 dark:bg-brand-900/50">
-            <p className="text-sm">
-              <span className="font-semibold text-brand-700 dark:text-brand-300">
-                Stok:{" "}
-              </span>
-              <span
-                className={
-                  totalStock <= 0
-                    ? "font-bold text-rose-600"
-                    : "font-semibold text-emerald-600 dark:text-emerald-400"
-                }
-              >
-                {totalStock <= 0
-                  ? "Habis"
-                  : `${totalStock} pcs tersedia`}
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
-              Ukuran {normalizeSizeKey(selectedSize)}: {selectedSizeStock} pcs
-            </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                Stok Total
+              </p>
+              <p className={`mt-2 text-lg font-bold ${totalStock <= 0 ? "text-rose-600 dark:text-rose-300" : "text-brand-900 dark:text-white"}`}>
+                {totalStock <= 0 ? "Habis" : `${totalStock} pcs`}
+              </p>
+              <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
+                {totalStock <= 0 ? "Restock sedang disiapkan." : "Siap untuk order harian."}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                Ukuran Aktif
+              </p>
+              <p className="mt-2 text-lg font-bold text-brand-900 dark:text-white">
+                {selectedSizeLabel}
+              </p>
+              <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
+                {selectedSizeStock} pcs tersedia untuk pilihan ini.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                Detail Singkat
+              </p>
+              <p className="mt-2 text-lg font-bold text-brand-900 dark:text-white">
+                {product.color || `${readySizeCount} ukuran ready`}
+              </p>
+              <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
+                {sizePreview}
+              </p>
+            </div>
           </div>
 
           {/* Divider */}
           <div className="h-px bg-brand-200 dark:bg-brand-700" />
 
-          {/* Color Selection */}
-          {product.color && (
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">
-                🎨 Warna:{" "}
-                <span className="text-brand-900 dark:text-white">
-                  {product.color}
-                </span>
-              </p>
-            </div>
-          )}
-
           {/* Size Selection */}
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-brand-700 dark:text-brand-300">
-              📏 Pilih Ukuran
+              Pilih Ukuran
             </label>
             <div className="grid grid-cols-4 gap-2">
               {sizes.map((size) => {
@@ -973,7 +994,7 @@ function ProductDetailPage() {
           {/* Quantity Selection */}
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-brand-700 dark:text-brand-300">
-              📦 Jumlah
+              Jumlah
             </label>
             <div className="flex items-center gap-3">
               <button
@@ -1173,7 +1194,7 @@ function ProductDetailPage() {
           {/* Info Box */}
           <details className="rounded-xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
             <summary className="info-summary flex cursor-pointer items-center justify-between gap-3 text-xs font-semibold text-blue-700 dark:text-blue-300">
-              <span>ℹ️ Informasi Produk</span>
+              <span>Informasi Produk</span>
               <svg
                 className="info-summary-icon h-4 w-4 text-blue-600 dark:text-blue-200"
                 viewBox="0 0 20 20"
@@ -1205,7 +1226,7 @@ function ProductDetailPage() {
               {formatRupiah(effectivePrice)}
             </p>
             <p className="text-[11px] text-brand-500 dark:text-brand-400">
-              Ukuran {selectedSize ? normalizeSizeKey(selectedSize) : "-"} • Stok {selectedSizeStock ?? 0}
+              Ukuran {selectedSizeLabel} • Stok {selectedSizeStock ?? 0}
             </p>
           </div>
           <Link

@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import jsQR from "jsqr";
 import api from "../../services/api";
 import { formatDateTime } from "../../utils/storeFormatters";
 
@@ -87,6 +86,7 @@ export default function ScanTab({ isActive, onGoToOrders }) {
 
   const qrVideoRef = useRef(null);
   const qrCanvasRef = useRef(null);
+  const jsQrDecoderRef = useRef(null);
   const scanIntervalRef = useRef(null);
   const scanStreamRef = useRef(null);
   const hasScannedRef = useRef(false);
@@ -179,6 +179,12 @@ export default function ScanTab({ isActive, onGoToOrders }) {
 
     const useNativeDetector = "BarcodeDetector" in window;
     const detector = useNativeDetector ? new window.BarcodeDetector({ formats: ["qr_code"] }) : null;
+    const loadJsQrDecoder = async () => {
+      if (useNativeDetector || jsQrDecoderRef.current) return jsQrDecoderRef.current;
+      const module = await import("jsqr");
+      jsQrDecoderRef.current = module.default;
+      return jsQrDecoderRef.current;
+    };
 
     const scanFrame = async () => {
       if (!qrVideoRef.current || hasScannedRef.current) return;
@@ -203,9 +209,11 @@ export default function ScanTab({ isActive, onGoToOrders }) {
           if (canvas.height !== targetSize) canvas.height = targetSize;
           const ctx = canvas.getContext("2d", { willReadFrequently: true });
           if (!ctx) return;
+          const decodeQr = jsQrDecoderRef.current;
+          if (!decodeQr) return;
           ctx.drawImage(qrVideoRef.current, sx, sy, cropSize, cropSize, 0, 0, targetSize, targetSize);
           const imageData = ctx.getImageData(0, 0, targetSize, targetSize);
-          const code = jsQR(imageData.data, targetSize, targetSize, { inversionAttempts: "attemptBoth" });
+          const code = decodeQr(imageData.data, targetSize, targetSize, { inversionAttempts: "attemptBoth" });
           rawValue = code?.data || "";
         }
 
@@ -250,10 +258,16 @@ export default function ScanTab({ isActive, onGoToOrders }) {
 
     const startScanner = async () => {
       try {
+        const decoderPromise = useNativeDetector
+          ? Promise.resolve(null)
+          : loadJsQrDecoder().catch(() => {
+            throw new Error("decoder-init");
+          });
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "environment" }, audio: false,
         });
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        await decoderPromise;
         scanStreamRef.current = stream;
         if (qrVideoRef.current) {
           qrVideoRef.current.srcObject = stream;
@@ -264,8 +278,13 @@ export default function ScanTab({ isActive, onGoToOrders }) {
         setTorchSupported(Boolean(capabilities?.torch));
         hasScannedRef.current = false;
         scanIntervalRef.current = window.setInterval(scanFrame, 360);
-      } catch {
-        setScanError("Gagal mengakses kamera. Pastikan izin kamera aktif.");
+      } catch (error) {
+        const isDecoderError = error instanceof Error && error.message === "decoder-init";
+        setScanError(
+          isDecoderError
+            ? "Gagal menyiapkan pembaca QR. Coba muat ulang tab scanner."
+            : "Gagal mengakses kamera. Pastikan izin kamera aktif.",
+        );
       }
     };
 
