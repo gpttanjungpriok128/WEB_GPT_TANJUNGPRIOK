@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-schedules.webp";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 function SchedulesPage() {
@@ -117,7 +116,6 @@ function SchedulesPage() {
     <div className="page-stack space-y-8 sm:space-y-10">
       {/* Hero */}
       <PageHero
-        image={heroImage}
         title="Jadwal"
         titleAccent="Ibadah"
         subtitle="Jadwal ibadah umum dan kategorial di GPT Tanjung Priok dan Volker."

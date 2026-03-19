@@ -1,5 +1,31 @@
 import { Link } from "react-router-dom";
-import gtshirtLogo from "../img/gtshirt-logo.jpeg";
+import {
+  ArrowRightIcon,
+  ShieldIcon,
+  ShoppingBagIcon,
+  SparklesIcon,
+} from "./SiteIcons";
+
+const HIGHLIGHTS = [
+  {
+    label: "Catalog Ready",
+    title: "Katalog ringan dan responsif",
+    description: "Grid produk mobile-first dengan fokus ke harga, stok, dan CTA utama.",
+    Icon: ShoppingBagIcon,
+  },
+  {
+    label: "Motion Budget",
+    title: "Animasi halus tanpa library berat",
+    description: "Semua transisi memakai transform dan opacity agar tetap murah dirender.",
+    Icon: SparklesIcon,
+  },
+  {
+    label: "Checkout Flow",
+    title: "Aman untuk tap target mobile",
+    description: "Aksi penting dibuat lebih besar, jelas, dan cepat dijangkau dengan ibu jari.",
+    Icon: ShieldIcon,
+  },
+];
 
 function ShopHero() {
   const handleScrollToCatalog = () => {
@@ -12,107 +38,62 @@ function ShopHero() {
   };
 
   return (
-    <section className="relative overflow-hidden rounded-[24px] border border-emerald-900/30 bg-[#0b1712] shadow-[0_28px_70px_rgba(3,12,8,0.55)] sm:rounded-[28px]">
-      <div className="absolute inset-0">
-        <div className="absolute right-0 top-0 h-full w-full sm:w-[58%]">
-          <div
-            className="absolute inset-0 bg-no-repeat opacity-55 sm:opacity-90"
-            style={{
-              backgroundImage: `url(${gtshirtLogo})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              filter: "saturate(0.9) brightness(0.75)"
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1712] via-[#0b1712]/80 to-transparent sm:from-[#0b1712] sm:via-[#0b1712]/78" />
-          <div className="absolute inset-0 bg-black/20 sm:bg-black/10" />
-        </div>
-        <div className="absolute -left-20 -top-24 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
-        <div className="absolute bottom-0 right-10 h-64 w-64 rounded-full bg-teal-400/15 blur-3xl" />
+    <section className="relative overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white px-6 py-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:border-zinc-800 dark:bg-zinc-950 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-10 top-0 h-48 w-48 rounded-full bg-emerald-100 blur-3xl dark:bg-emerald-950/60" />
+        <div className="absolute right-0 top-6 h-40 w-40 rounded-full bg-zinc-100 blur-3xl dark:bg-zinc-900" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent dark:via-emerald-500/30" />
       </div>
 
-      <div className="relative z-10 grid gap-6 px-6 py-8 sm:gap-8 sm:px-10 sm:py-10 lg:grid-cols-[1.05fr_0.95fr] lg:py-12">
-        <div className="space-y-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-200/80">
-            GTSHIRT STOREFRONT
-          </p>
-          <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
-            Streetwear rohani yang clean, bold, dan siap dipakai setiap hari.
+      <div className="relative grid gap-8 lg:grid-cols-12 lg:items-end">
+        <div className="lg:col-span-7">
+          <p className="hero-kicker hero-reveal">GTshirt Store</p>
+          <h1 className="hero-reveal delay-1 max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-white sm:text-4xl lg:text-5xl">
+            Streetwear rohani yang clean, cepat dibuka, dan siap dipakai setiap hari.
           </h1>
-          <p className="max-w-xl text-sm leading-relaxed text-emerald-100/80 sm:text-base">
-            Koleksi kaos minimalist dari komunitas gereja. Checkout cepat, status order jelas, dan desain siap tampil.
+          <p className="hero-reveal delay-2 mt-4 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 sm:text-base">
+            Koleksi apparel komunitas dengan katalog ringan, stok yang jelas, dan pengalaman belanja yang tetap nyaman di mobile maupun desktop.
           </p>
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Link
-              to="/cart"
-              className="rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-300"
-            >
-              Lihat Keranjang
-            </Link>
+
+          <div className="hero-reveal delay-3 mt-7 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={handleScrollToCatalog}
-              className="rounded-full border border-emerald-200/40 px-5 py-2.5 text-sm font-semibold text-emerald-100 transition hover:border-emerald-200 hover:text-white"
+              className="btn-primary tap-target"
             >
               Lihat Katalog
+              <ArrowRightIcon />
             </button>
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:hidden">
-            <div className="rounded-2xl border border-emerald-200/30 bg-black/50 px-4 py-3 text-xs backdrop-blur">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
-                Signature Drop
-              </p>
-              <p className="mt-1 text-sm font-semibold text-white">
-                Modern Worship Tee, Weekly Production.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-emerald-200/30 bg-black/50 px-4 py-3 text-xs backdrop-blur">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
-                Order Flow
-              </p>
-              <p className="mt-1 text-sm font-semibold text-white">
-                Fast checkout & tracking.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-emerald-200/30 bg-black/50 px-4 py-3 text-xs backdrop-blur">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
-                Brand Voice
-              </p>
-              <p className="mt-1 text-sm font-semibold text-white">
-                Clean. Bold. Faithful.
-              </p>
-            </div>
+            <Link to="/cart" className="btn-outline tap-target">
+              Buka Keranjang
+            </Link>
           </div>
         </div>
 
-        <div className="relative hidden lg:block min-h-[360px]">
-          <div className="absolute left-6 top-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
-              Signature Drop
-            </p>
-            <p className="mt-1 text-sm font-semibold text-white">
-              Modern Worship Tee, Weekly Production.
-            </p>
-          </div>
-
-          <div className="absolute bottom-6 left-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
-              Order Flow
-            </p>
-            <p className="mt-1 text-sm font-semibold text-white">
-              Fast checkout & tracking.
-            </p>
-          </div>
-
-          <div className="absolute bottom-6 right-6 rounded-2xl border border-emerald-200/30 bg-black/55 px-4 py-3 text-xs backdrop-blur">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">
-              Brand Voice
-            </p>
-            <p className="mt-1 text-sm font-semibold text-white">
-              Clean. Bold. Faithful.
-            </p>
-          </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:col-span-5 lg:grid-cols-1">
+          {HIGHLIGHTS.map(({ label, title, description, Icon }) => (
+            <article
+              key={label}
+              className="hero-reveal rounded-[1.5rem] border border-zinc-200/80 bg-zinc-50/90 p-4 dark:border-zinc-800 dark:bg-zinc-900/80"
+            >
+              <div className="flex items-start gap-3">
+                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-zinc-900 shadow-[0_10px_24px_rgba(15,23,42,0.06)] dark:bg-zinc-950 dark:text-zinc-100">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
+                    {label}
+                  </p>
+                  <h2 className="mt-2 text-base font-semibold text-zinc-950 dark:text-white">
+                    {title}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                    {description}
+                  </p>
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
     </section>

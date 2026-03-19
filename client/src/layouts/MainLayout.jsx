@@ -1,8 +1,18 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import BrandLogo from "../components/BrandLogo";
+import {
+  ArrowRightIcon,
+  CloseIcon,
+  MailIcon,
+  MapPinIcon,
+  MenuIcon,
+  MoonIcon,
+  PhoneIcon,
+  SunIcon,
+} from "../components/SiteIcons";
 
 function resolveApiOrigin() {
   const raw = import.meta.env.VITE_API_URL || "";
@@ -32,7 +42,7 @@ function ensureHintLink({ rel, href, crossOrigin }) {
 
 function MainLayout({ children }) {
   const contactEmail = "gpt.tanjungpriok128@gmail.com";
-  const whatsappNumber = "6282118223784"; // Format: +62 821-1822-3784
+  const whatsappNumber = "6282118223784";
   const whatsappMessage = encodeURIComponent(
     "Shalom GPT Tanjung Priok, saya ingin bertanya mengenai pelayanan gereja.",
   );
@@ -47,16 +57,13 @@ function MainLayout({ children }) {
   const canAccessDashboard = ["admin", "multimedia"].includes(user?.role);
   const isAdminSidebarPage =
     user?.role === "admin" &&
-    (
-      location.pathname.startsWith("/dashboard")
-      || location.pathname === "/prayer"
-      || location.pathname === "/live"
-      || location.pathname === "/gallery"
-    );
+    (location.pathname.startsWith("/dashboard") ||
+      location.pathname === "/prayer" ||
+      location.pathname === "/live" ||
+      location.pathname === "/gallery");
+
   const mainRef = useRef(null);
   const lastScrollY = useRef(0);
-  const navHiddenRef = useRef(false);
-  const scrollRafRef = useRef(null);
   const profileMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const mobileMenuToggleRef = useRef(null);
@@ -64,7 +71,6 @@ function MainLayout({ children }) {
   const profileInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "U";
   const isDarkMode = theme === "dark";
   const themeActionLabel = isDarkMode ? "Ubah ke Mode Terang" : "Ubah ke Mode Gelap";
-  const themeIconSrc = isDarkMode ? "/img/theme-light.svg" : "/img/theme-dark.svg";
 
   const navLinks = [
     { to: "/", label: "Home" },
@@ -91,41 +97,19 @@ function MainLayout({ children }) {
     { to: "/live", label: "Live Streaming" },
   ];
 
-  // Auto-hide nav on scroll
   const handleScroll = useCallback(() => {
-    if (scrollRafRef.current) return;
-    scrollRafRef.current = window.requestAnimationFrame(() => {
-      const currentY = window.scrollY || 0;
-      const delta = currentY - lastScrollY.current;
-      let nextHidden = navHiddenRef.current;
-
-      if (currentY <= 64) {
-        nextHidden = false;
-      } else if (delta > 10) {
-        nextHidden = true;
-      } else if (delta < -8) {
-        nextHidden = false;
-      }
-
-      if (nextHidden !== navHiddenRef.current) {
-        navHiddenRef.current = nextHidden;
-        setNavHidden(nextHidden);
-      }
-
-      lastScrollY.current = currentY;
-      scrollRafRef.current = null;
-    });
-  }, []);
+    const currentY = window.scrollY;
+    if (currentY > 96 && currentY > lastScrollY.current && !mobileMenuOpen) {
+      setNavHidden(true);
+    } else {
+      setNavHidden(false);
+    }
+    lastScrollY.current = currentY;
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollRafRef.current) {
-        window.cancelAnimationFrame(scrollRafRef.current);
-        scrollRafRef.current = null;
-      }
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
   useEffect(() => {
@@ -136,7 +120,6 @@ function MainLayout({ children }) {
     ensureHintLink({ rel: "dns-prefetch", href: apiOrigin });
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
     setProfileMenuOpen(false);
@@ -187,15 +170,12 @@ function MainLayout({ children }) {
     };
   }, [mobileMenuOpen, isAdminSidebarPage]);
 
-  // Always return to top when navigating between pages
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     setNavHidden(false);
-    navHiddenRef.current = false;
     lastScrollY.current = 0;
   }, [location.pathname]);
 
-  // Page enter animation
   useEffect(() => {
     const mainElement = mainRef.current;
     if (!mainElement) return;
@@ -204,7 +184,6 @@ function MainLayout({ children }) {
     mainElement.classList.add("motion-page-enter");
   }, [location.pathname]);
 
-  // Scroll reveal observer
   useEffect(() => {
     const mainElement = mainRef.current;
     if (!mainElement) return;
@@ -216,7 +195,7 @@ function MainLayout({ children }) {
     if (!targets.length) return;
 
     targets.forEach((target, index) => {
-      const delay = `${Math.min((index % 8) * 60, 360)}ms`;
+      const delay = `${Math.min((index % 8) * 50, 280)}ms`;
       target.classList.add("motion-reveal");
       target.style.setProperty("--motion-delay", delay);
     });
@@ -230,141 +209,120 @@ function MainLayout({ children }) {
           }
         });
       },
-      { threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
     );
 
     targets.forEach((target) => observer.observe(target));
     return () => observer.disconnect();
   }, [location.pathname]);
 
+  const themeButton = (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="tap-target inline-flex items-center justify-center rounded-full border border-zinc-200/80 bg-white/85 text-zinc-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/90 dark:text-zinc-100 dark:hover:bg-zinc-900"
+      title={themeActionLabel}
+      aria-label={themeActionLabel}
+    >
+      {isDarkMode ? <SunIcon /> : <MoonIcon />}
+    </button>
+  );
+
   return (
-    <div className="app-shell min-h-screen flex flex-col">
-      {/* Navigation */}
+    <div className="app-shell min-h-screen">
       {!isAdminSidebarPage && (
-        <nav
-          className={`nav-glass sticky top-0 z-50 transition-all duration-300 ${
-            navHidden && !mobileMenuOpen
-              ? "nav-hidden"
-              : "nav-visible"
+        <header
+          className={`nav-glass sticky top-0 z-50 transition-transform duration-300 ${
+            navHidden ? "nav-hidden" : "nav-visible"
           }`}
         >
-          <div className="container-custom relative">
-            <div className="flex items-center justify-between gap-3 h-14 sm:h-16">
-              {/* Logo */}
-              <Link
-                to="/"
-                className="flex items-center gap-3 group"
-              >
+          <div className="container-custom">
+            <div className="flex min-h-[72px] items-center justify-between gap-3 py-3">
+              <Link to="/" className="flex min-w-0 items-center gap-3">
                 <BrandLogo />
-                <div className="hidden sm:block">
-                  <p className="text-base font-bold text-brand-800 dark:text-white group-hover:text-primary transition-colors">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold tracking-[-0.02em] text-zinc-950 dark:text-white sm:text-base">
                     GPT Tanjung Priok
                   </p>
-                  <p className="text-xs text-brand-500 dark:text-brand-400 font-medium">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
                     Growing Together
                   </p>
                 </div>
               </Link>
 
-              {/* Desktop Nav */}
-              <div className="hidden lg:flex items-center gap-0.5">
-                {navLinks.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    end={link.to === "/"}
-                    className={({ isActive }) =>
-                      `nav-link-modern ${
-                        isActive
-                          ? "active"
-                          : "text-brand-700 dark:text-brand-200 hover:text-primary"
-                      }`
-                    }
-                  >
-                    {link.label}
-                  </NavLink>
-                ))}
-                {user && ["admin", "multimedia"].includes(user.role) && (
-                  <NavLink
-                    to="/dashboard/articles/manage"
-                    className={({ isActive }) =>
-                      `nav-link-modern ${
-                        isActive
-                          ? "active"
-                          : "text-brand-700 dark:text-brand-200 hover:text-primary"
-                      }`
-                    }
-                  >
-                    CMS
-                  </NavLink>
-                )}
-              </div>
+              <nav aria-label="Primary" className="hidden lg:block">
+                <div className="flex items-center gap-1 rounded-full border border-zinc-200/80 bg-white/80 p-1 shadow-[0_8px_24px_rgba(15,23,42,0.04)] dark:border-zinc-800 dark:bg-zinc-950/80">
+                  {navLinks.map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      end={link.to === "/"}
+                      className={({ isActive }) =>
+                        `nav-link-modern tap-target ${isActive ? "active" : ""}`
+                      }
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))}
+                  {user && ["admin", "multimedia"].includes(user.role) && (
+                    <NavLink
+                      to="/dashboard/articles/manage"
+                      className={({ isActive }) =>
+                        `nav-link-modern tap-target ${isActive ? "active" : ""}`
+                      }
+                    >
+                      CMS
+                    </NavLink>
+                  )}
+                </div>
+              </nav>
 
-              {/* Right Actions */}
               <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleTheme}
-                  className="inline-flex items-center gap-2 rounded-xl px-2.5 py-2 sm:px-3 hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
-                  title={themeActionLabel}
-                  aria-label={themeActionLabel}
-                >
-                  <img
-                    src={themeIconSrc}
-                    alt={themeActionLabel}
-                    className="h-5 w-5"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </button>
+                <div className="hidden sm:flex">{themeButton}</div>
 
                 {!user && (
-                  <div className="hidden sm:flex gap-2">
-                    <NavLink
-                      to="/login"
-                      className="btn-primary text-sm !px-5 !py-2"
-                    >
-                      Login
-                    </NavLink>
-                  </div>
+                  <Link to="/login" className="btn-primary hidden sm:inline-flex tap-target">
+                    Login
+                  </Link>
+                )}
+
+                {user && canAccessDashboard && (
+                  <NavLink
+                    to="/dashboard"
+                    className="btn-outline hidden md:inline-flex tap-target"
+                  >
+                    Dashboard
+                  </NavLink>
                 )}
 
                 {user && (
-                  <div className="hidden md:flex items-center gap-2">
-                    {canAccessDashboard && (
-                      <NavLink
-                        to="/dashboard"
-                        className="rounded-xl border border-brand-200 dark:border-brand-700 px-4 py-2 text-sm font-medium hover:bg-brand-50 dark:hover:bg-brand-800/50 transition-all duration-300"
-                      >
-                        Dashboard
-                      </NavLink>
-                    )}
-                  </div>
-                )}
-
-                {user && (
-                  <div ref={profileMenuRef} className="relative">
+                  <div ref={profileMenuRef} className="relative hidden sm:block">
                     <button
+                      type="button"
                       onClick={() => setProfileMenuOpen((prev) => !prev)}
-                      className="relative h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-full border border-brand-200 bg-white shadow-sm transition-all hover:scale-[1.03] hover:border-brand-300 dark:border-brand-700 dark:bg-brand-900"
-                      title="Profil"
+                      className="tap-target inline-flex h-12 w-12 items-center justify-center rounded-full border border-zinc-200/80 bg-white text-sm font-semibold text-zinc-800 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+                      aria-label="Buka menu profil"
+                      aria-expanded={profileMenuOpen}
                     >
-                      <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-brand-700 dark:text-brand-200">
-                        {profileInitial}
-                      </span>
+                      {profileInitial}
                     </button>
 
                     {profileMenuOpen && (
-                      <div className="absolute right-0 top-12 z-[70] w-64 rounded-2xl border border-brand-200 bg-white p-3 shadow-xl dark:border-brand-700 dark:bg-brand-900">
-                        <p className="truncate text-sm font-semibold text-brand-900 dark:text-white">
+                      <div className="absolute right-0 top-[calc(100%+0.75rem)] z-[70] w-64 rounded-[1.5rem] border border-zinc-200/80 bg-white p-3 shadow-[0_24px_64px_rgba(15,23,42,0.12)] dark:border-zinc-800 dark:bg-zinc-950">
+                        <p className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
                           {user?.name || "Pengguna"}
                         </p>
+                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          {user?.role || "jemaat"}
+                        </p>
                         <button
+                          type="button"
                           onClick={() => {
                             logout();
                             setProfileMenuOpen(false);
                             setMobileMenuOpen(false);
                           }}
-                          className="mt-3 w-full rounded-xl bg-rose-500/90 px-3 py-2 text-sm font-medium text-white transition hover:bg-rose-600"
+                          className="tap-target mt-3 inline-flex w-full items-center justify-center rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-600"
                         >
                           Logout
                         </button>
@@ -373,133 +331,135 @@ function MainLayout({ children }) {
                   </div>
                 )}
 
-                {/* Mobile Menu Toggle */}
                 <button
                   ref={mobileMenuToggleRef}
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="rounded-xl p-2 sm:p-2.5 lg:hidden hover:bg-brand-100/80 dark:hover:bg-brand-800/50 transition-all duration-300"
+                  type="button"
+                  onClick={() => setMobileMenuOpen((prev) => !prev)}
+                  className="tap-target inline-flex items-center justify-center rounded-full border border-zinc-200/80 bg-white/85 text-zinc-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/90 dark:text-zinc-100 dark:hover:bg-zinc-900 lg:hidden"
                   aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
+                  aria-expanded={mobileMenuOpen}
                 >
-                  <div className="w-5 h-4 relative flex flex-col justify-between">
-                    <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 origin-center ${mobileMenuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
-                    <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 ${mobileMenuOpen ? "opacity-0 scale-x-0" : ""}`} />
-                    <span className={`block w-full h-0.5 bg-brand-700 dark:bg-brand-200 rounded-full transition-all duration-300 origin-center ${mobileMenuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
-                  </div>
+                  {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
                 </button>
               </div>
             </div>
 
-            {/* Mobile Menu */}
-            <div ref={mobileMenuRef} className="lg:hidden relative">
+            <div ref={mobileMenuRef} className="relative lg:hidden">
               <div className={`mobile-menu-float ${mobileMenuOpen ? "open" : ""}`}>
-                <div className="mobile-menu-panel space-y-1 rounded-2xl bg-brand-50/95 dark:bg-brand-900/95 p-3 shadow-lg">
-                {user && (
-                  <div className="mb-2 flex items-center gap-3 rounded-xl border border-brand-200/80 bg-white/70 px-3 py-2.5 dark:border-brand-700 dark:bg-brand-900/50">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-300 bg-brand-100 text-sm font-semibold text-brand-800 dark:border-brand-600 dark:bg-brand-800 dark:text-brand-200">
-                      {profileInitial}
-                    </div>
-                    <p className="truncate text-sm font-semibold text-brand-900 dark:text-white">
-                      {user?.name || "Pengguna"}
-                    </p>
+                <div className="mobile-menu-panel rounded-[1.75rem] border border-zinc-200/80 bg-white/96 p-3 shadow-[0_24px_64px_rgba(15,23,42,0.12)] dark:border-zinc-800 dark:bg-zinc-950/96">
+                  <div className="mb-3 flex items-center justify-between gap-3 rounded-[1.25rem] border border-zinc-200/80 bg-zinc-50/80 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900/80">
+                    {user ? (
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
+                          {user?.name || "Pengguna"}
+                        </p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">{user?.role || "jemaat"}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-950 dark:text-white">Menu Navigasi</p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">Cepat, ringan, dan mobile-first.</p>
+                      </div>
+                    )}
+                    {themeButton}
                   </div>
-                )}
-                {navLinks.map((link, i) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    end={link.to === "/"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `block px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                        isActive
-                          ? "bg-primary text-white shadow-sm"
-                          : "text-brand-700 dark:text-brand-200 hover:bg-brand-100 dark:hover:bg-brand-800/50"
-                      }`
-                    }
-                    style={{ animationDelay: `${i * 50}ms` }}
-                  >
-                    {link.label}
-                  </NavLink>
-                ))}
-                {user && ["admin", "multimedia"].includes(user.role) && (
-                  <NavLink
-                    to="/dashboard/articles/manage"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `block px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                        isActive
-                          ? "bg-primary text-white shadow-sm"
-                          : "text-brand-700 dark:text-brand-200 hover:bg-brand-100 dark:hover:bg-brand-800/50"
-                      }`
-                    }
-                  >
-                    CMS Renungan
-                  </NavLink>
-                )}
 
-                <div className="border-t border-brand-200 dark:border-brand-700 mt-2 pt-2">
-                  {!user && (
-                    <NavLink
-                      to="/login"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block btn-primary text-sm text-center"
-                    >
-                      Login
-                    </NavLink>
-                  )}
-                  {user && (
-                    <div className="space-y-1">
-                      {canAccessDashboard && (
-                        <NavLink
-                          to="/dashboard"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block px-4 py-2.5 rounded-xl text-sm font-medium border border-brand-200 dark:border-brand-700 text-center hover:bg-brand-100 dark:hover:bg-brand-800/50 transition"
-                        >
-                          Dashboard
-                        </NavLink>
-                      )}
-                    </div>
-                  )}
-                </div>
+                  <nav aria-label="Mobile primary" className="space-y-1.5">
+                    {navLinks.map((link) => (
+                      <NavLink
+                        key={link.to}
+                        to={link.to}
+                        end={link.to === "/"}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={({ isActive }) =>
+                          `mobile-nav-link ${isActive ? "active" : ""}`
+                        }
+                      >
+                        <span>{link.label}</span>
+                        <ArrowRightIcon className="h-4 w-4" />
+                      </NavLink>
+                    ))}
+                    {user && ["admin", "multimedia"].includes(user.role) && (
+                      <NavLink
+                        to="/dashboard/articles/manage"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={({ isActive }) =>
+                          `mobile-nav-link ${isActive ? "active" : ""}`
+                        }
+                      >
+                        <span>CMS</span>
+                        <ArrowRightIcon className="h-4 w-4" />
+                      </NavLink>
+                    )}
+                  </nav>
+
+                  <div className="mt-3 grid gap-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-800">
+                    {!user && (
+                      <Link
+                        to="/login"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="btn-primary tap-target"
+                      >
+                        Login
+                      </Link>
+                    )}
+                    {user && canAccessDashboard && (
+                      <NavLink
+                        to="/dashboard"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="btn-outline tap-target"
+                      >
+                        Dashboard
+                      </NavLink>
+                    )}
+                    {user && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logout();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="tap-target inline-flex items-center justify-center rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-600"
+                      >
+                        Logout
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </nav>
+        </header>
       )}
 
-      {/* Main Content */}
-      <main ref={mainRef} className="organic-main container-custom py-8 sm:py-10 lg:py-12 flex-1">
+      <main ref={mainRef} className="organic-main container-custom flex-1 py-6 sm:py-8 lg:py-10">
         {isAdminSidebarPage ? (
           <>
             <div className="admin-mobile-top lg:hidden">
               <button
+                type="button"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
                 className="admin-mobile-menu-btn"
                 aria-label="Toggle admin menu"
               >
-                <span className={`block h-0.5 w-5 rounded-full bg-brand-700 dark:bg-brand-200 transition-all ${mobileMenuOpen ? "translate-y-[6px] rotate-45" : ""}`} />
-                <span className={`mt-1.5 block h-0.5 w-5 rounded-full bg-brand-700 dark:bg-brand-200 transition-all ${mobileMenuOpen ? "opacity-0" : ""}`} />
-                <span className={`mt-1.5 block h-0.5 w-5 rounded-full bg-brand-700 dark:bg-brand-200 transition-all ${mobileMenuOpen ? "-translate-y-[6px] -rotate-45" : ""}`} />
+                {mobileMenuOpen ? <CloseIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
               </button>
               <p className="text-sm font-semibold text-brand-900 dark:text-white">Admin Workspace</p>
               <button
+                type="button"
                 onClick={toggleTheme}
-                className="inline-flex items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-all duration-300 hover:bg-brand-100/80 dark:hover:bg-brand-800/60"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200/80 bg-white text-zinc-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
                 title={themeActionLabel}
                 aria-label={themeActionLabel}
               >
-                <img
-                  src={themeIconSrc}
-                  alt={themeActionLabel}
-                  className="h-5 w-5"
-                  loading="lazy"
-                  decoding="async"
-                />
+                {isDarkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
               </button>
             </div>
 
-            <div className={`admin-mobile-drawer-backdrop lg:hidden ${mobileMenuOpen ? "open" : ""}`} onClick={() => setMobileMenuOpen(false)}>
+            <div
+              className={`admin-mobile-drawer-backdrop lg:hidden ${mobileMenuOpen ? "open" : ""}`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
               <aside className="admin-mobile-drawer" onClick={(event) => event.stopPropagation()}>
                 <div className="admin-sidebar-head">
                   <Link to="/" className="flex items-center gap-3" onClick={() => setMobileMenuOpen(false)}>
@@ -520,11 +480,7 @@ function MainLayout({ children }) {
                       to={link.to}
                       end={Boolean(link.end)}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `admin-sidebar-link ${
-                          isActive ? "active" : ""
-                        }`
-                      }
+                      className={({ isActive }) => `admin-sidebar-link ${isActive ? "active" : ""}`}
                     >
                       {link.label}
                     </NavLink>
@@ -532,6 +488,7 @@ function MainLayout({ children }) {
                 </div>
                 <div className="mt-5 border-t border-brand-200/80 pt-4 dark:border-brand-700/80">
                   <button
+                    type="button"
                     onClick={() => {
                       logout();
                       setMobileMenuOpen(false);
@@ -557,18 +514,13 @@ function MainLayout({ children }) {
                     </div>
                   </Link>
                   <button
+                    type="button"
                     onClick={toggleTheme}
-                    className="inline-flex items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-all duration-300 hover:bg-brand-100/80 dark:hover:bg-brand-800/60"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200/80 bg-white text-zinc-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
                     title={themeActionLabel}
                     aria-label={themeActionLabel}
                   >
-                    <img
-                      src={themeIconSrc}
-                      alt={themeActionLabel}
-                      className="h-5 w-5"
-                      loading="lazy"
-                      decoding="async"
-                    />
+                    {isDarkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
                   </button>
                 </div>
                 <p className="admin-sidebar-title">Menu Admin</p>
@@ -578,11 +530,7 @@ function MainLayout({ children }) {
                       key={link.to}
                       to={link.to}
                       end={Boolean(link.end)}
-                      className={({ isActive }) =>
-                        `admin-sidebar-link ${
-                          isActive ? "active" : ""
-                        }`
-                      }
+                      className={({ isActive }) => `admin-sidebar-link ${isActive ? "active" : ""}`}
                     >
                       {link.label}
                     </NavLink>
@@ -590,6 +538,7 @@ function MainLayout({ children }) {
                 </div>
                 <div className="mt-5 border-t border-brand-200/80 pt-4 dark:border-brand-700/80">
                   <button
+                    type="button"
                     onClick={logout}
                     className="w-full rounded-xl bg-rose-500/90 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-rose-600"
                   >
@@ -598,9 +547,7 @@ function MainLayout({ children }) {
                 </div>
               </aside>
 
-              <div className="min-w-0">
-                {children}
-              </div>
+              <div className="min-w-0">{children}</div>
             </div>
           </>
         ) : (
@@ -608,43 +555,34 @@ function MainLayout({ children }) {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="organic-footer mt-16 border-t border-brand-200 dark:border-brand-700">
-        <div className="container-custom py-10">
-          <div className="organic-footer-card relative overflow-hidden rounded-3xl border border-brand-200/80 bg-white/85 p-6 shadow-sm backdrop-blur md:p-10 dark:border-brand-800 dark:bg-brand-950/75">
-            <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-brand-200/35 blur-3xl dark:bg-brand-700/20" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-primary/20 blur-3xl dark:bg-primary/10" />
-
-            <div className="relative grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.9fr]">
+      <footer className="border-t border-zinc-200/80 py-10 dark:border-zinc-800">
+        <div className="container-custom">
+          <div className="rounded-[2rem] border border-zinc-200/80 bg-white px-6 py-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:border-zinc-800 dark:bg-zinc-950 sm:px-8 lg:px-10 lg:py-10">
+            <div className="grid gap-8 lg:grid-cols-[1.3fr_0.8fr_0.9fr]">
               <div>
-                <div className="mb-4 flex items-center gap-3">
+                <div className="flex items-center gap-3">
                   <BrandLogo />
                   <div>
-                    <p className="text-lg font-bold text-brand-900 dark:text-white">
+                    <p className="text-lg font-semibold tracking-[-0.03em] text-zinc-950 dark:text-white">
                       GPT Tanjung Priok
                     </p>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-brand-500 dark:text-brand-400">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
                       Growing Together
                     </p>
                   </div>
                 </div>
-                <p className="max-w-xl text-sm leading-relaxed text-brand-700 dark:text-brand-300">
-                  Komunitas yang berakar dalam Kristus, bertumbuh dalam kasih,
-                  dan berjalan bersama melalui ibadah, renungan, serta pelayanan
-                  yang saling menguatkan.
+                <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+                  Komunitas yang berakar dalam Kristus, bertumbuh dalam kasih, dan hadir dengan pengalaman digital yang cepat untuk ibadah, renungan, galeri, dan pelayanan.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Link
-                    to="/schedules"
-                    className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
-                  >
-                    Lihat Jadwal Ibadah
+                  <Link to="/schedules" className="btn-primary tap-target">
+                    Lihat Jadwal
                   </Link>
                   <a
                     href={whatsappLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-xl border border-brand-300 px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-500 hover:text-brand-900 dark:border-brand-700 dark:text-brand-300 dark:hover:border-brand-500 dark:hover:text-white"
+                    className="btn-outline tap-target"
                   >
                     Hubungi via WhatsApp
                   </a>
@@ -652,23 +590,23 @@ function MainLayout({ children }) {
               </div>
 
               <div>
-                <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-brand-900 dark:text-white">
-                  Jelajahi
-                </h3>
-                <ul className="space-y-2.5 text-sm">
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
+                  Navigasi
+                </h2>
+                <ul className="mt-4 space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
                   {[
                     { to: "/about", label: "Tentang Gereja" },
-                    { to: "/articles", label: "Renungan Harian" },
-                    { to: "/gallery", label: "Galeri Kegiatan" },
+                    { to: "/articles", label: "Renungan" },
+                    { to: "/gallery", label: "Galeri" },
                     { to: "/shop", label: "GTshirt" },
-                    { to: "/prayer", label: "Permohonan Doa" },
-                    { to: "/contact", label: "Kontak & Lokasi" },
+                    { to: "/contact", label: "Kontak" },
                   ].map((link) => (
                     <li key={link.to}>
                       <Link
                         to={link.to}
-                        className="text-brand-700 transition hover:text-primary dark:text-brand-300 dark:hover:text-primary-light"
+                        className="inline-flex items-center gap-2 transition-colors hover:text-emerald-700 dark:hover:text-emerald-300"
                       >
+                        <ArrowRightIcon className="h-3.5 w-3.5" />
                         {link.label}
                       </Link>
                     </li>
@@ -677,36 +615,37 @@ function MainLayout({ children }) {
               </div>
 
               <div>
-                <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-brand-900 dark:text-white">
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
                   Kontak
-                </h3>
-                <div className="space-y-3 text-sm text-brand-700 dark:text-brand-300">
+                </h2>
+                <div className="mt-4 space-y-4 text-sm text-zinc-600 dark:text-zinc-300">
                   <a
                     href={`mailto:${contactEmail}?subject=${encodeURIComponent("Pertanyaan dari Website GPT Tanjung Priok")}`}
-                    className="block transition hover:text-primary dark:hover:text-primary-light"
+                    className="inline-flex items-start gap-3 transition-colors hover:text-emerald-700 dark:hover:text-emerald-300"
                   >
-                    {contactEmail}
+                    <MailIcon className="mt-0.5 h-4 w-4" />
+                    <span>{contactEmail}</span>
                   </a>
                   <a
                     href={whatsappLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block transition hover:text-primary dark:hover:text-primary-light"
+                    className="inline-flex items-start gap-3 transition-colors hover:text-emerald-700 dark:hover:text-emerald-300"
                   >
-                    +62 821-1822-3784
+                    <PhoneIcon className="mt-0.5 h-4 w-4" />
+                    <span>+62 821-1822-3784</span>
                   </a>
-                  <p className="leading-relaxed text-brand-600 dark:text-brand-400">
-                    Jl. Bugis No.128, Kebon Bawang, Tanjung Priok, Jakarta
-                    Utara 14320
-                  </p>
+                  <div className="inline-flex items-start gap-3">
+                    <MapPinIcon className="mt-0.5 h-4 w-4" />
+                    <span>Jl. Bugis No.128, Kebon Bawang, Tanjung Priok, Jakarta Utara 14320</span>
+                  </div>
                 </div>
-
               </div>
             </div>
 
-            <div className="relative mt-8 flex flex-col gap-2 border-t border-brand-200/80 pt-5 text-xs text-brand-500 sm:flex-row sm:items-center sm:justify-between dark:border-brand-800 dark:text-brand-400">
+            <div className="mt-8 border-t border-zinc-200/80 pt-5 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex sm:items-center sm:justify-between">
               <p>&copy; 2026 GPT Tanjung Priok</p>
-              <p>Website komunitas untuk ibadah, renungan, dan pelayanan</p>
+              <p className="mt-2 sm:mt-0">Modern minimalist UI with performance-first delivery.</p>
             </div>
           </div>
         </div>

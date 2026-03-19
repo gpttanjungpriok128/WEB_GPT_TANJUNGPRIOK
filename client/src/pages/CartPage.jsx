@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
-import cartHeroImage from "../img/store/made-to-worship.png";
 import {
   collectCartImageCandidates,
   normalizeStoreImagePath,
@@ -315,7 +314,7 @@ function CartPage() {
   if (cartItems.length === 0) {
     return (
       <div>
-        <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" image={cartHeroImage} tone="dense" />
+        <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" tone="dense" />
         <div className="page-stack space-y-5 sm:space-y-6">
           <div className="rounded-2xl border border-brand-200 bg-brand-50 p-8 sm:p-12 text-center dark:border-brand-700 dark:bg-brand-900/30">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm dark:bg-brand-900 dark:text-brand-300">
@@ -355,7 +354,7 @@ function CartPage() {
 
   return (
     <div className="pb-24 sm:pb-0">
-      <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" image={cartHeroImage} tone="dense" />
+      <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" tone="dense" />
 
       <div className="page-stack grid gap-5 sm:gap-6 lg:grid-cols-[1fr_380px]">
         {/* ── Left: Cart Items ──────────────────── */}

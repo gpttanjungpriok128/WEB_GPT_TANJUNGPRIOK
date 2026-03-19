@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-prayer.webp";
 
 function PrayerPage() {
   const { user } = useAuth();
@@ -106,7 +105,6 @@ function PrayerPage() {
     <div className="page-stack space-y-8 sm:space-y-10">
       {/* Hero */}
       <PageHero
-        image={heroImage}
         title="Permohonan"
         titleAccent="Doa"
         subtitle="Bagikan kebutuhan doa Anda dengan komunitas kami. Kami akan mendoakan Anda dengan sepenuh hati."

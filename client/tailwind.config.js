@@ -5,7 +5,15 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Inter"', "system-ui", "-apple-system", "sans-serif"],
+        sans: [
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          '"Segoe UI"',
+          "Roboto",
+          "sans-serif",
+        ],
       },
       colors: {
         brand: {
@@ -31,7 +39,7 @@ export default {
       boxShadow: {
         glow: "0 0 20px rgba(20, 132, 88, 0.15)",
         "glow-lg": "0 0 40px rgba(20, 132, 88, 0.2)",
-        "glass": "0 8px 32px rgba(0, 0, 0, 0.06)",
+        glass: "0 8px 32px rgba(0, 0, 0, 0.06)",
         "glass-lg": "0 16px 48px rgba(0, 0, 0, 0.08)",
       },
     },

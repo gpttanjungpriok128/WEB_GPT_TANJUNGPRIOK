@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-about.webp";
 import { buildCacheKey, getCacheSnapshot, setCacheData, swrGet } from "../utils/swrCache";
 
 function LivePage() {
@@ -95,7 +94,6 @@ function LivePage() {
     <div className="page-stack space-y-8 sm:space-y-10">
       {/* Hero */}
       <PageHero
-        image={heroImage}
         title="Ibadah"
         titleAccent="Live Streaming"
         subtitle="Tetap dan selalu Beribadah, Memuji, dan Menyembah Tuhan bersama kami dari mana saja."

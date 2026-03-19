@@ -4,7 +4,6 @@ import api from "../services/api";
 import PageHero from "../components/PageHero";
 import StoreOrderProgress from "../components/StoreOrderProgress";
 import StoreOrderInvoice from "../components/StoreOrderInvoice";
-import heroImage from "../img/store/you-are-the-light.png";
 import { ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
 
 function formatRupiah(amount) {
@@ -77,7 +76,6 @@ function MyOrdersPage() {
       <PageHero
         title="Pesanan Saya"
         subtitle="Riwayat pesanan Anda dan status konfirmasi admin"
-        image={heroImage}
       />
 
       <div className="page-stack space-y-4 sm:space-y-5">

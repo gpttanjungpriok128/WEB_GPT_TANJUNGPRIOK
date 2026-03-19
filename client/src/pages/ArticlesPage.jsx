@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-articles.webp";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 function ArticlesPage() {
@@ -80,7 +79,6 @@ function ArticlesPage() {
     <div className="page-stack space-y-6 sm:space-y-8">
       {/* Hero */}
       <PageHero
-        image={heroImage}
         titleAccent="Renungan"
         subtitle="Membaca renungan harian sebagai penguatan iman dan pengaharapan kita"
       />

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-gallery.webp";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 function GalleryPage() {
@@ -296,7 +295,6 @@ function GalleryPage() {
   return (
     <div className="page-stack space-y-6 sm:space-y-8">
       <PageHero
-        image={heroImage}
         title="Galeri"
         titleAccent="Kegiatan"
         subtitle="Dokumentasi momen berharga dari kegiatan dan acara gereja kami"

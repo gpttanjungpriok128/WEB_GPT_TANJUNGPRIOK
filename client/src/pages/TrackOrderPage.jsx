@@ -5,7 +5,6 @@ import PageHero from "../components/PageHero";
 import StoreOrderProgress from "../components/StoreOrderProgress";
 import StoreOrderInvoice from "../components/StoreOrderInvoice";
 import { ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
-import heroImage from "../img/store/for-all-my-hope-is-in-him.png";
 
 const TRACKING_STORAGE_KEY = "gpt_tanjungpriok_last_order_tracking_v1";
 
@@ -90,7 +89,6 @@ function TrackOrderPage() {
       <PageHero
         title="Lacak Pesanan"
         subtitle="Masukkan kode pesanan dan nomor WhatsApp untuk melihat progres order GTshirt"
-        image={heroImage}
       />
 
       <div className="page-stack grid gap-5 sm:gap-6 lg:grid-cols-[0.9fr_1.1fr]">

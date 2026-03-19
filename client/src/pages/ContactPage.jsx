@@ -1,6 +1,5 @@
 import { useState } from "react";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-contact.webp";
 
 function ContactPage() {
   const contactEmail = "gpt.tanjungpriok128@gmail.com";
@@ -76,7 +75,6 @@ function ContactPage() {
     <div className="page-stack space-y-8 sm:space-y-12">
       {/* Hero */}
       <PageHero
-        image={heroImage}
         title="Hubungi"
         titleAccent="Kami"
         subtitle="Kami senang mendengar dari Anda. Silakan hubungi kami dengan pertanyaan atau kebutuhan apapun."

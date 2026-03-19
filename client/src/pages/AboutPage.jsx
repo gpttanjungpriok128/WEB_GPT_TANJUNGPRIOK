@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
-import heroImage from "../img/hero-about.webp";
 
 function AboutPage() {
   const { user } = useAuth();
@@ -10,7 +9,6 @@ function AboutPage() {
     <div className="page-stack space-y-10 sm:space-y-12 lg:space-y-14">
       {/* Hero */}
       <PageHero
-        image={heroImage}
         title="Tentang"
         titleAccent="GPT Tanjung Priok"
         subtitle='Mengenal komunitas kami, visi, misi, dan perjalanan iman bersama dengan semangat "Growing Together"'
