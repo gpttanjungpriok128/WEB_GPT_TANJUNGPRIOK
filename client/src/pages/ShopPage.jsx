@@ -170,6 +170,33 @@ const GTSHIRT_SOCIALS = [
   },
 ];
 
+const STORE_PILLARS = [
+  {
+    key: "production",
+    label: "Pilar 01",
+    title: "Produksi Berkala",
+    description:
+      "Batch produksi setiap minggu agar kualitas sablon dan bahan tetap konsisten.",
+    glow: "from-emerald-400/20 via-emerald-400/5 to-transparent",
+  },
+  {
+    key: "support",
+    label: "Pilar 02",
+    title: "Support Pelayanan",
+    description:
+      "Setiap pembelian mendukung kegiatan pemuda, multimedia, dan pelayanan gereja.",
+    glow: "from-amber-400/20 via-amber-400/5 to-transparent",
+  },
+  {
+    key: "brand",
+    label: "Pilar 03",
+    title: "Brand GTshirt",
+    description:
+      "Brand apparel rohani dari komunitas gereja dengan karakter minimalist streetwear.",
+    glow: "from-sky-400/20 via-sky-400/5 to-transparent",
+  },
+];
+
 const AVAILABILITY_LABELS = {
   all: "Semua Produk",
   ready: "Stok Tersedia",
@@ -564,76 +591,103 @@ function ShopPage() {
   // Cart page is now a separate route at /cart
 
   return (
-    <div className="page-stack space-y-6 sm:space-y-8">
-      <ShopHero />
+    <div className="relative">
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(circle,rgba(16,185,129,0.16),transparent_60%)] blur-2xl" />
+      <div className="pointer-events-none absolute -right-20 top-40 h-60 w-60 rounded-full bg-emerald-200/30 blur-[120px] dark:bg-emerald-500/10" />
+      <div className="page-stack space-y-6 sm:space-y-8 relative">
+        <ShopHero />
 
-      {promoVideoSrc && (
-        <section className="grid gap-6 rounded-3xl border border-brand-200 bg-white/90 p-4 shadow-sm dark:border-brand-700 dark:bg-brand-900/40 sm:p-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-              Video Promo
-            </p>
-            <h2 className="text-xl font-bold text-brand-900 dark:text-white sm:text-2xl">
-              Lihat vibe GTshirt sebelum kamu checkout
-            </h2>
-            <p className="text-sm leading-relaxed text-brand-600 dark:text-brand-300">
-              Cuplikan singkat tentang bahan, detail sablon, dan gaya streetwear rohani terbaru dari GTshirt.
-            </p>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
-              <span className="rounded-full bg-brand-100 px-3 py-1 text-brand-700 dark:bg-brand-800/60 dark:text-brand-200">
-                Ready to watch
-              </span>
-              <span className="rounded-full bg-brand-100 px-3 py-1 text-brand-700 dark:bg-brand-800/60 dark:text-brand-200">
-                Official GTshirt
-              </span>
-            </div>
-          </div>
-          <div className="relative overflow-hidden rounded-2xl border border-brand-200 bg-black shadow-lg dark:border-brand-700">
-            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary/20 via-emerald-400/10 to-primary/20 blur-sm pointer-events-none" />
-            <div className="relative aspect-video">
-              <iframe
-                title="Video Promosi GTshirt"
-                src={promoVideoSrc}
-                className="h-full w-full"
-                allowFullScreen
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              />
-            </div>
-          </div>
-        </section>
-      )}
-
-      <section className="grid gap-6">
-        <div className="grid gap-4 rounded-3xl border border-brand-200 bg-white/80 p-4 shadow-sm md:grid-cols-[1.2fr_0.8fr] dark:border-brand-700 dark:bg-brand-900/40 sm:p-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
-              Order Center
-            </p>
-            <h2 className="mt-2 text-xl font-bold text-brand-900 dark:text-white sm:text-2xl">
-              Pantau pesanan langsung dari area toko
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-brand-600 dark:text-brand-300">
-              Setelah checkout, pembeli bisa kembali ke halaman toko untuk membuka riwayat order atau melacak status pesanan dengan kode order dan WhatsApp.
-            </p>
-          </div>
-          <div className="flex flex-col justify-center gap-3">
-            {user && (
-              <Link
-                to="/my-orders"
-                className="btn-primary inline-flex items-center justify-center !rounded-2xl !py-2.5 sm:!py-3"
-              >
-                Buka Pesanan Saya
-              </Link>
-            )}
-            <Link
-              to="/track-order"
-              className="btn-outline inline-flex items-center justify-center !rounded-2xl !py-2.5 sm:!py-3"
+        <section className="grid gap-4 sm:grid-cols-3">
+          {STORE_PILLARS.map((item) => (
+            <article
+              key={item.key}
+              className="group relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-white/85 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-emerald-700/40 dark:bg-brand-900/50 sm:p-5"
             >
-              Lacak Pesanan
-            </Link>
+              <div
+                className={`pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100 bg-gradient-to-br ${item.glow}`}
+              />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-emerald-500/80 dark:text-emerald-200/70">
+                {item.label}
+              </p>
+              <h3 className="mt-2 text-base font-bold text-brand-900 dark:text-white">
+                {item.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-brand-600 dark:text-brand-300">
+                {item.description}
+              </p>
+            </article>
+          ))}
+        </section>
+
+        {promoVideoSrc && (
+          <section className="relative overflow-hidden rounded-3xl border border-brand-200 bg-white/90 p-4 shadow-sm dark:border-brand-700 dark:bg-brand-900/40 sm:p-6 lg:grid lg:grid-cols-[0.95fr_1.05fr] lg:gap-6">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-50/70 via-white/50 to-transparent dark:from-emerald-900/20 dark:via-brand-900/30 dark:to-transparent" />
+            <div className="relative space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500/80 dark:text-emerald-200/70">
+                Video Promo
+              </p>
+              <h2 className="text-xl font-bold text-brand-900 dark:text-white sm:text-2xl">
+                Lihat vibe GTshirt sebelum kamu checkout
+              </h2>
+              <p className="text-sm leading-relaxed text-brand-600 dark:text-brand-300">
+                Cuplikan singkat tentang bahan, detail sablon, dan gaya streetwear rohani terbaru dari GTshirt.
+              </p>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-800/60 dark:text-emerald-200">
+                  Ready to watch
+                </span>
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-800/60 dark:text-emerald-200">
+                  Official GTshirt
+                </span>
+              </div>
+            </div>
+            <div className="relative mt-5 overflow-hidden rounded-2xl border border-brand-200 bg-black shadow-lg dark:border-brand-700 lg:mt-0">
+              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary/20 via-emerald-400/10 to-primary/20 blur-sm pointer-events-none" />
+              <div className="relative aspect-video">
+                <iframe
+                  title="Video Promosi GTshirt"
+                  src={promoVideoSrc}
+                  className="h-full w-full"
+                  allowFullScreen
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section className="grid gap-6">
+          <div className="relative overflow-hidden rounded-3xl border border-brand-200 bg-white/85 p-4 shadow-sm md:grid md:grid-cols-[1.2fr_0.8fr] md:items-center dark:border-brand-700 dark:bg-brand-900/40 sm:p-5">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-50/70 via-white/40 to-transparent dark:from-emerald-900/20 dark:via-brand-900/30 dark:to-transparent" />
+            <div className="relative">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                Order Center
+              </p>
+              <h2 className="mt-2 text-xl font-bold text-brand-900 dark:text-white sm:text-2xl">
+                Pantau pesanan langsung dari area toko
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-brand-600 dark:text-brand-300">
+                Setelah checkout, pembeli bisa kembali ke halaman toko untuk membuka riwayat order atau melacak status pesanan dengan kode order dan WhatsApp.
+              </p>
+            </div>
+            <div className="relative mt-4 flex flex-col justify-center gap-3 md:mt-0">
+              {user && (
+                <Link
+                  to="/my-orders"
+                  className="btn-primary inline-flex items-center justify-center !rounded-2xl !py-2.5 sm:!py-3"
+                >
+                  Buka Pesanan Saya
+                </Link>
+              )}
+              <Link
+                to="/track-order"
+                className="btn-outline inline-flex items-center justify-center !rounded-2xl !py-2.5 sm:!py-3"
+              >
+                Lacak Pesanan
+              </Link>
+            </div>
           </div>
-        </div>
 
         <div id="catalog-section" className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -1034,87 +1088,71 @@ function ShopPage() {
         )}
       </section>
 
-      {/* Product detail page and cart page are now separate routes */}
+        {/* Product detail page and cart page are now separate routes */}
 
-      <section className="glass-card p-5 sm:p-6 md:p-8">
-        <div className="grid gap-5 md:grid-cols-3">
-          {[
-            {
-              title: "Produksi Berkala",
-              description:
-                "Batch produksi setiap minggu agar kualitas sablon dan bahan tetap konsisten.",
-            },
-            {
-              title: "Support Pelayanan",
-              description:
-                "Setiap pembelian mendukung kegiatan pemuda, multimedia, dan pelayanan gereja.",
-            },
-            {
-              title: "Brand GTshirt",
-              description:
-                "Brand apparel rohani dari komunitas gereja dengan karakter minimalist streetwear.",
-            },
-          ].map((item) => (
-            <article
-              key={item.title}
-              className="rounded-2xl border border-brand-200/80 bg-white/70 p-3 sm:p-4 dark:border-brand-700/80 dark:bg-brand-900/50"
-            >
-              <h3 className="text-sm font-bold uppercase tracking-[0.13em] text-brand-700 dark:text-brand-200">
-                {item.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-brand-600 dark:text-brand-300">
-                {item.description}
+        <section className="relative overflow-hidden rounded-3xl border border-emerald-200/70 bg-white/85 p-5 shadow-sm dark:border-emerald-900/40 dark:bg-brand-900/50 sm:p-6 md:p-8">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-50/70 via-white/40 to-transparent dark:from-emerald-900/20 dark:via-brand-900/40 dark:to-transparent" />
+          <div className="relative grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-500/80 dark:text-emerald-200/70">
+                Butuh Bantuan?
               </p>
-            </article>
-          ))}
-        </div>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Link
-            to="/contact"
-            className="btn-outline !rounded-xl !px-5 !py-2.5 text-sm"
-          >
-            Tanya Tim Toko
-          </Link>
-          <Link
-            to="/schedules"
-            className="rounded-xl border border-brand-200 px-5 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
-          >
-            Cek Jadwal Ibadah
-          </Link>
-        </div>
+              <h3 className="mt-2 text-2xl font-bold text-brand-900 dark:text-white">
+                Tim GTshirt siap bantu pilihan ukuran & promo
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-brand-600 dark:text-brand-300">
+                Konsultasikan kebutuhan order, size chart, atau event komunitas langsung ke tim kami.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <Link
+                  to="/contact"
+                  className="btn-outline !rounded-xl !px-5 !py-2.5 text-sm"
+                >
+                  Tanya Tim Toko
+                </Link>
+                <Link
+                  to="/schedules"
+                  className="rounded-xl border border-brand-200 px-5 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                >
+                  Cek Jadwal Ibadah
+                </Link>
+              </div>
+            </div>
 
-        <div className="mt-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-500 dark:text-brand-400">
-            Ikuti GTshirtwear
-          </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            {GTSHIRT_SOCIALS.map(({ key, label, handle, href, accent, Icon }) => (
-              <a
-                key={key}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center gap-3 rounded-2xl border border-brand-200 bg-white/70 px-4 py-3 text-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-white dark:border-brand-700 dark:bg-brand-900/40 dark:hover:bg-brand-900/60"
-              >
-                <span className={`flex h-10 w-10 items-center justify-center rounded-full text-white ${accent}`}>
-                  <Icon className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                    {label}
-                  </p>
-                  <p className="truncate text-sm font-semibold text-brand-900 dark:text-white">
-                    {handle}
-                  </p>
-                </div>
-                <span className="ml-auto text-[11px] font-semibold text-brand-500 dark:text-brand-400">
-                  Buka
-                </span>
-              </a>
-            ))}
+            <div className="relative">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-500 dark:text-brand-400">
+                Ikuti GTshirtwear
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                {GTSHIRT_SOCIALS.map(({ key, label, handle, href, accent, Icon }) => (
+                  <a
+                    key={key}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center gap-3 rounded-2xl border border-brand-200 bg-white/80 px-4 py-3 text-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-white dark:border-brand-700 dark:bg-brand-900/40 dark:hover:bg-brand-900/60"
+                  >
+                    <span className={`flex h-10 w-10 items-center justify-center rounded-full text-white ${accent}`}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                        {label}
+                      </p>
+                      <p className="truncate text-sm font-semibold text-brand-900 dark:text-white">
+                        {handle}
+                      </p>
+                    </div>
+                    <span className="ml-auto text-[11px] font-semibold text-brand-500 dark:text-brand-400">
+                      Buka
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
