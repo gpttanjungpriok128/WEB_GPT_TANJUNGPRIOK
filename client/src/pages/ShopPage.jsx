@@ -597,6 +597,44 @@ function ShopPage() {
       <div className="page-stack space-y-6 sm:space-y-8 relative">
         <ShopHero />
 
+        {promoVideoSrc && (
+          <section className="relative overflow-hidden rounded-3xl border border-brand-200 bg-white/90 p-4 shadow-sm dark:border-brand-700 dark:bg-brand-900/40 sm:p-6 lg:grid lg:grid-cols-[0.95fr_1.05fr] lg:gap-6">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-50/70 via-white/50 to-transparent dark:from-emerald-900/20 dark:via-brand-900/30 dark:to-transparent" />
+            <div className="relative space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500/80 dark:text-emerald-200/70">
+                Highlight GTshirt
+              </p>
+              <h2 className="text-xl font-bold text-brand-900 dark:text-white sm:text-2xl">
+                Rasakan vibe GTshirt sebelum kamu checkout
+              </h2>
+              <p className="text-sm leading-relaxed text-brand-600 dark:text-brand-300">
+                Cuplikan singkat tentang bahan, detail sablon, dan gaya streetwear rohani terbaru dari GTshirt.
+              </p>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-800/60 dark:text-emerald-200">
+                  Siap ditonton
+                </span>
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-800/60 dark:text-emerald-200">
+                  Official GTshirt
+                </span>
+              </div>
+            </div>
+            <div className="relative mt-5 overflow-hidden rounded-2xl border border-brand-200 bg-black shadow-lg dark:border-brand-700 lg:mt-0">
+              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary/20 via-emerald-400/10 to-primary/20 blur-sm pointer-events-none" />
+              <div className="relative aspect-video">
+                <iframe
+                  title="Video GTshirt"
+                  src={promoVideoSrc}
+                  className="h-full w-full"
+                  allowFullScreen
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="grid gap-4 sm:grid-cols-3">
           {STORE_PILLARS.map((item) => (
             <article
@@ -618,44 +656,6 @@ function ShopPage() {
             </article>
           ))}
         </section>
-
-        {promoVideoSrc && (
-          <section className="relative overflow-hidden rounded-3xl border border-brand-200 bg-white/90 p-4 shadow-sm dark:border-brand-700 dark:bg-brand-900/40 sm:p-6 lg:grid lg:grid-cols-[0.95fr_1.05fr] lg:gap-6">
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-50/70 via-white/50 to-transparent dark:from-emerald-900/20 dark:via-brand-900/30 dark:to-transparent" />
-            <div className="relative space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500/80 dark:text-emerald-200/70">
-                Video Promo
-              </p>
-              <h2 className="text-xl font-bold text-brand-900 dark:text-white sm:text-2xl">
-                Lihat vibe GTshirt sebelum kamu checkout
-              </h2>
-              <p className="text-sm leading-relaxed text-brand-600 dark:text-brand-300">
-                Cuplikan singkat tentang bahan, detail sablon, dan gaya streetwear rohani terbaru dari GTshirt.
-              </p>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-800/60 dark:text-emerald-200">
-                  Ready to watch
-                </span>
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-800/60 dark:text-emerald-200">
-                  Official GTshirt
-                </span>
-              </div>
-            </div>
-            <div className="relative mt-5 overflow-hidden rounded-2xl border border-brand-200 bg-black shadow-lg dark:border-brand-700 lg:mt-0">
-              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary/20 via-emerald-400/10 to-primary/20 blur-sm pointer-events-none" />
-              <div className="relative aspect-video">
-                <iframe
-                  title="Video Promosi GTshirt"
-                  src={promoVideoSrc}
-                  className="h-full w-full"
-                  allowFullScreen
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                />
-              </div>
-            </div>
-          </section>
-        )}
 
         <section className="grid gap-6">
           <div className="relative overflow-hidden rounded-3xl border border-brand-200 bg-white/85 p-4 shadow-sm md:grid md:grid-cols-[1.2fr_0.8fr] md:items-center dark:border-brand-700 dark:bg-brand-900/40 sm:p-5">
