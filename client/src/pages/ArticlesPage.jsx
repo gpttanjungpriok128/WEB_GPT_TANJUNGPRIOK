@@ -3,6 +3,22 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import PageHero from "../components/PageHero";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
+const SearchIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m16 16 4 4" />
+  </svg>
+);
+
 function ArticlesPage() {
   const [articles, setArticles] = useState([]);
   const [search, setSearch] = useState("");
@@ -84,8 +100,8 @@ function ArticlesPage() {
       />
 
       {/* Search */}
-      <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-400">🔍</span>
+      <div className="input-leading-shell">
+        <SearchIcon className="input-leading-icon" />
         <input
           value={search}
           onChange={(e) => {
@@ -93,7 +109,7 @@ function ArticlesPage() {
             setSearch(e.target.value);
           }}
           placeholder="Cari renungan..."
-          className="input-modern !pl-11"
+          className="input-modern"
         />
       </div>
 

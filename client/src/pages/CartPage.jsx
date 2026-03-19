@@ -13,6 +13,8 @@ import { clampQuantity, getStockForSize } from "../utils/storeStock";
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const TRACKING_STORAGE_KEY = "gpt_tanjungpriok_last_order_tracking_v1";
 const DEFAULT_SHIPPING_COST = 15000;
+const CART_SECTION_SHELL = "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
+const CART_LABEL = "text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600/80 dark:text-emerald-200/70";
 
 const formatRupiah = (amount) =>
   new Intl.NumberFormat("id-ID", {
@@ -34,6 +36,119 @@ const isAboveXL = (value) => {
   if (match) return Number(match[1]) >= 2;
   return false;
 };
+
+const NameFieldIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+    <path d="M5 20a7 7 0 0 1 14 0" />
+  </svg>
+);
+
+const PhoneFieldIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M6.8 3.8h2.5l1.4 3.8-1.8 1.8a14.2 14.2 0 0 0 5.7 5.7l1.8-1.8 3.8 1.4v2.5a1.8 1.8 0 0 1-1.9 1.8A15.5 15.5 0 0 1 5 5.7a1.8 1.8 0 0 1 1.8-1.9Z" />
+  </svg>
+);
+
+const AddressFieldIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 21s6-4.35 6-10a6 6 0 1 0-12 0c0 5.65 6 10 6 10Z" />
+    <circle cx="12" cy="11" r="2.3" />
+  </svg>
+);
+
+const ShippingFieldIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 7h11v8H3z" />
+    <path d="M14 10h3l3 3v2h-6z" />
+    <circle cx="8" cy="18" r="1.8" />
+    <circle cx="18" cy="18" r="1.8" />
+  </svg>
+);
+
+const PaymentFieldIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="6" width="18" height="12" rx="2.5" />
+    <path d="M3 10h18" />
+    <path d="M7 14h3" />
+  </svg>
+);
+
+const NoteFieldIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M8 7h8" />
+    <path d="M8 11h8" />
+    <path d="M8 15h5" />
+    <path d="M6 4h12a2 2 0 0 1 2 2v12l-4-3H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+  </svg>
+);
+
+const SelectChevronIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.6}
+    aria-hidden="true"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
+  </svg>
+);
 
 function normalizeCartItem(item = {}) {
   const normalizedImage = normalizeStoreImagePath(item.image);
@@ -125,6 +240,7 @@ function CartPage() {
   const isPickupAtChurch = checkoutForm.shippingMethod.toLowerCase().includes("ambil");
   const shipping = selectedItemsList.length > 0 ? (isPickupAtChurch ? 0 : shippingCost) : 0;
   const grandTotal = subtotal + shipping;
+  const selectedCount = selectedItemsList.length;
 
   // Toggle item selection
   const toggleItemSelect = (index) => {
@@ -313,65 +429,84 @@ function CartPage() {
 
   if (cartItems.length === 0) {
     return (
-      <div>
-        <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" tone="dense" />
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(circle,rgba(16,185,129,0.16),transparent_60%)] blur-2xl" />
         <div className="page-stack space-y-5 sm:space-y-6">
-          <div className="rounded-2xl border border-brand-200 bg-brand-50 p-8 sm:p-12 text-center dark:border-brand-700 dark:bg-brand-900/30">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm dark:bg-brand-900 dark:text-brand-300">
-              <svg
-                className="h-7 w-7"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.8}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                />
-              </svg>
+          <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" tone="dense" />
+          <section className={CART_SECTION_SHELL}>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_35%),linear-gradient(145deg,rgba(255,255,255,0.06),transparent_58%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(52,211,153,0.08),transparent_35%),linear-gradient(145deg,rgba(255,255,255,0.03),transparent_58%)]" />
+            <div className="relative grid gap-6 lg:grid-cols-[0.94fr_1.06fr] lg:items-center">
+              <div>
+                <p className={CART_LABEL}>Cart Overview</p>
+                <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-brand-900 dark:text-white sm:text-[2.6rem]">
+                  Keranjang masih kosong, tapi flow belanjanya sudah siap.
+                </h2>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-brand-600 dark:text-brand-300 sm:text-base">
+                  Pilih produk GTshirt, tentukan ukuran, lalu kembali ke sini untuk checkout dan lanjut konfirmasi via WhatsApp dengan alur yang tetap ringan.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Link to="/shop" className="btn-primary !rounded-[1.2rem] !px-5 !py-3">
+                    Lanjut Belanja
+                  </Link>
+                  <Link to="/track-order" className="btn-outline !rounded-[1.2rem] !px-5 !py-3">
+                    Lacak Pesanan
+                  </Link>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                <div className="rounded-[1.5rem] border border-emerald-950/10 bg-white/[0.72] px-4 py-4 dark:border-emerald-900/30 dark:bg-white/[0.03]">
+                  <p className={CART_LABEL}>Step 01</p>
+                  <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">Tambahkan item favorit</p>
+                  <p className="mt-2 text-sm leading-6 text-brand-600 dark:text-brand-300">
+                    Semua produk GTshirt bisa langsung dibawa ke keranjang dari katalog atau detail produk.
+                  </p>
+                </div>
+                <div className="rounded-[1.5rem] border border-emerald-950/10 bg-white/[0.72] px-4 py-4 dark:border-emerald-900/30 dark:bg-white/[0.03]">
+                  <p className={CART_LABEL}>Step 02</p>
+                  <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">Isi data checkout</p>
+                  <p className="mt-2 text-sm leading-6 text-brand-600 dark:text-brand-300">
+                    Nama, WhatsApp, alamat, pengiriman, dan catatan akan menyimpan order dengan rapi.
+                  </p>
+                </div>
+                <div className="rounded-[1.5rem] border border-emerald-950/10 bg-white/[0.72] px-4 py-4 dark:border-emerald-900/30 dark:bg-white/[0.03]">
+                  <p className={CART_LABEL}>Step 03</p>
+                  <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">Konfirmasi via WhatsApp</p>
+                  <p className="mt-2 text-sm leading-6 text-brand-600 dark:text-brand-300">
+                    Setelah checkout, kamu akan diarahkan untuk lanjut konfirmasi pesanan dengan cepat.
+                  </p>
+                </div>
+              </div>
             </div>
-            <p className="mt-4 text-lg font-semibold text-brand-600 dark:text-brand-300">
-              Keranjang belanja kosong
-            </p>
-            <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
-              Mulai belanja dan tambahkan produk ke keranjang
-            </p>
-            <Link to="/shop" className="btn-primary mt-6 inline-block">
-              ← Lanjut Belanja
-            </Link>
-          </div>
+          </section>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="pb-24 sm:pb-0">
+    <div className="relative pb-36 sm:pb-6">
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(circle,rgba(16,185,129,0.16),transparent_60%)] blur-2xl" />
+      <div className="pointer-events-none absolute -right-20 top-40 h-60 w-60 rounded-full bg-emerald-200/30 blur-[120px] dark:bg-emerald-500/10" />
       <PageHero title="Keranjang Belanja" subtitle="Lihat dan kelola pesanan Anda" tone="dense" />
 
-      <div className="page-stack grid gap-5 sm:gap-6 lg:grid-cols-[1fr_380px]">
-        {/* ── Left: Cart Items ──────────────────── */}
-        <section className="space-y-4">
-          {/* Header */}
-          <div className="rounded-2xl border border-brand-200 bg-white/90 p-3 sm:p-4 dark:border-brand-700 dark:bg-brand-900/50">
-            <div className="flex items-center justify-between gap-4">
-              <label className="flex items-center gap-3 cursor-pointer">
+      <div className="page-stack grid gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1.16fr)_minmax(320px,0.84fr)]">
+        <section className="space-y-4 sm:space-y-5">
+          <article className={`${CART_SECTION_SHELL} !p-4 sm:!p-5`}>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.1),transparent_34%)]" />
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <label className="flex cursor-pointer items-center gap-3">
                 <input
                   type="checkbox"
                   checked={selectedItems.size === cartItems.length && cartItems.length > 0}
                   onChange={toggleAllItems}
-                  className="h-5 w-5 rounded border-brand-300 text-primary"
+                  className="h-5 w-5 rounded-md border-brand-300 text-primary focus:ring-primary"
                 />
-                <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">
-                  Pilih Semua ({selectedItems.size}/{cartItems.length})
-                </span>
+                <div>
+                  <p className={CART_LABEL}>Selection</p>
+                  <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">
+                    Pilih Semua ({selectedItems.size}/{cartItems.length})
+                  </p>
+                </div>
               </label>
               <button
                 onClick={() => {
@@ -382,14 +517,13 @@ function CartPage() {
                   toRemove.forEach((i) => removeItem(i));
                 }}
                 disabled={selectedItems.size === 0}
-                className="min-h-[44px] px-2 text-xs font-semibold text-rose-500 transition hover:text-rose-600 disabled:opacity-50"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-[1rem] px-3 py-2 text-sm font-semibold text-rose-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 dark:hover:bg-rose-500/10"
               >
                 Hapus Terpilih
               </button>
             </div>
-          </div>
+          </article>
 
-          {/* Cart Items */}
           <div className="space-y-4">
             {cartItems.map((item, index) => {
               const imageCandidates = collectCartImageCandidates(item);
@@ -399,314 +533,460 @@ function CartPage() {
               const isImageBroken = failedImageKeys.has(item.variantKey);
 
               return (
-                <div
+                <article
                   key={item.variantKey}
-                  className="rounded-2xl border border-brand-200 bg-white/90 p-3 sm:p-4 dark:border-brand-700 dark:bg-brand-900/50"
+                  className={`${CART_SECTION_SHELL} !p-4 sm:!p-5`}
                 >
-                  <div className="flex gap-4">
-                    {/* Checkbox */}
-                    <label className="flex items-start pt-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.has(index)}
-                        onChange={() => toggleItemSelect(index)}
-                        className="h-5 w-5 rounded border-brand-300 text-primary mt-1"
-                      />
-                    </label>
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.08),transparent_34%)]" />
+                  <div className="relative">
+                    <div className="flex gap-3">
+                      <label className="flex cursor-pointer items-start pt-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.has(index)}
+                          onChange={() => toggleItemSelect(index)}
+                          className="mt-1 h-5 w-5 rounded-md border-brand-300 text-primary focus:ring-primary"
+                        />
+                      </label>
 
-                    {/* Image */}
-                    <div className="flex-shrink-0">
-                      <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border border-brand-200 bg-brand-50 dark:border-brand-700 dark:bg-brand-800/40">
-                        {imageSrc && !isImageBroken ? (
-                          <img
-                            src={imageSrc}
-                            alt={item.name}
-                            onError={(event) => {
-                              event.currentTarget.classList.add("is-loaded");
-                              if (activeImageIndex < imageCandidates.length - 1) {
-                                setImageIndexByKey((previous) => ({
-                                  ...previous,
-                                  [item.variantKey]: activeImageIndex + 1,
-                                }));
-                                return;
-                              }
+                      <div className="min-w-0 flex-1 space-y-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex gap-3 sm:gap-4">
+                            <div className="flex-shrink-0">
+                              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[1.35rem] border border-brand-200 bg-[linear-gradient(180deg,rgba(244,247,246,0.96),rgba(235,243,239,0.96))] shadow-[0_16px_34px_rgba(15,23,42,0.05)] dark:border-brand-700 dark:bg-[linear-gradient(180deg,rgba(15,22,18,0.94),rgba(10,15,12,0.92))] sm:h-28 sm:w-28">
+                                {imageSrc && !isImageBroken ? (
+                                  <img
+                                    src={imageSrc}
+                                    alt={item.name}
+                                    onError={(event) => {
+                                      event.currentTarget.classList.add("is-loaded");
+                                      if (activeImageIndex < imageCandidates.length - 1) {
+                                        setImageIndexByKey((previous) => ({
+                                          ...previous,
+                                          [item.variantKey]: activeImageIndex + 1,
+                                        }));
+                                        return;
+                                      }
 
-                              setFailedImageKeys((previous) => {
-                                const next = new Set(previous);
-                                next.add(item.variantKey);
-                                return next;
-                              });
-                            }}
-                            loading="lazy"
-                            decoding="async"
-                            className="image-soft h-full w-full object-cover"
-                            onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
-                          />
-                        ) : (
-                          <span className="px-2 text-center text-[11px] font-semibold uppercase tracking-wide text-brand-400 dark:text-brand-500">
-                            No Image
-                          </span>
-                        )}
+                                      setFailedImageKeys((previous) => {
+                                        const next = new Set(previous);
+                                        next.add(item.variantKey);
+                                        return next;
+                                      });
+                                    }}
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="image-soft h-full w-full object-cover"
+                                    onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
+                                  />
+                                ) : (
+                                  <span className="px-2 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-400 dark:text-brand-500">
+                                    No Image
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className={CART_LABEL}>Cart Item</p>
+                              <h3 className="mt-1 line-clamp-2 text-lg font-semibold tracking-[-0.03em] text-brand-900 dark:text-white">
+                                {item.name}
+                              </h3>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <span className="rounded-full border border-brand-200 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-700 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+                                  Size {item.size}
+                                </span>
+                                <span className="rounded-full border border-brand-200 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+                                  {item.color}
+                                </span>
+                              </div>
+                              {isAboveXL(item.size) && (
+                                <p className="mt-2 text-[11px] font-semibold text-amber-600 dark:text-amber-300">
+                                  Ukuran di atas XL preorder.
+                                </p>
+                              )}
+                              <p className="mt-3 text-sm font-bold text-primary">
+                                {formatRupiah(item.price)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-3 rounded-[1.3rem] border border-brand-200/80 bg-white/[0.72] px-4 py-3 dark:border-brand-700 dark:bg-white/[0.03] sm:min-w-[164px] sm:flex-col sm:items-end sm:text-right">
+                            <div>
+                              <p className={CART_LABEL}>Line Total</p>
+                              <p className="mt-1 text-lg font-semibold tracking-[-0.03em] text-brand-900 dark:text-white">
+                                {formatRupiah(item.price * item.quantity)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => removeItem(index)}
+                              className="inline-flex min-h-[40px] items-center justify-center rounded-[0.95rem] px-2 text-sm font-semibold text-rose-500 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="rounded-[1.4rem] border border-brand-200/80 bg-white/[0.72] p-3 dark:border-brand-700 dark:bg-white/[0.03]">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className={CART_LABEL}>Quantity</p>
+                              <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">
+                                Atur jumlah item di keranjang
+                              </p>
+                              <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                                Maks {item.stock || 0} pcs untuk varian ini
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => updateQuantity(index, item.quantity - 1)}
+                                className="min-h-[44px] min-w-[44px] rounded-[1rem] border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                                aria-label={`Kurangi jumlah ${item.name}`}
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                max={item.stock || 99}
+                                className="input-modern !w-[78px] !rounded-[1rem] !px-3 text-center text-sm font-semibold"
+                                value={item.quantity}
+                                onChange={(e) => updateQuantity(index, e.target.value)}
+                              />
+                              <button
+                                onClick={() => updateQuantity(index, item.quantity + 1)}
+                                className="min-h-[44px] min-w-[44px] rounded-[1rem] border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                                aria-label={`Tambah jumlah ${item.name}`}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Details */}
-                    <div className="min-w-0 flex-1">
-                      <h3 className="line-clamp-2 font-semibold text-brand-900 dark:text-white">
-                        {item.name}
-                      </h3>
-                      <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                        Size <span className="font-semibold">{item.size}</span> · {item.color}
-                      </p>
-                      {isAboveXL(item.size) && (
-                        <p className="mt-1 text-[11px] font-semibold text-amber-600 dark:text-amber-300">
-                          Ukuran di atas XL preorder.
-                        </p>
-                      )}
-                      <p className="mt-2 text-sm font-bold text-primary">
-                        {formatRupiah(item.price)}
-                      </p>
-                    </div>
-
-                    {/* Price & Remove */}
-                    <div className="flex flex-col items-end gap-3">
-                      <p className="text-sm font-bold text-brand-900 dark:text-white">
-                        {formatRupiah(item.price * item.quantity)}
-                      </p>
-                      <button
-                        onClick={() => removeItem(index)}
-                        className="min-h-[44px] px-2 text-xs font-semibold text-rose-500 transition hover:text-rose-600"
-                      >
-                        Hapus
-                      </button>
-                    </div>
                   </div>
-
-                  {/* Quantity Selector */}
-                  <div className="mt-4 flex items-center justify-between border-t border-brand-200 pt-4 dark:border-brand-700">
-                    <span className="text-xs text-brand-600 dark:text-brand-400">Jumlah</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => updateQuantity(index, item.quantity - 1)}
-                        className="min-h-[44px] min-w-[44px] rounded-lg border border-brand-200 px-3 py-2 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
-                      >
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        min="1"
-                        max={item.stock || 99}
-                        className="input-modern !w-16 !py-2.5 text-center text-sm"
-                        value={item.quantity}
-                        onChange={(e) => updateQuantity(index, e.target.value)}
-                      />
-                      <button
-                        onClick={() => updateQuantity(index, item.quantity + 1)}
-                        className="min-h-[44px] min-w-[44px] rounded-lg border border-brand-200 px-3 py-2 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-800/40"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                </article>
               );
             })}
           </div>
 
-          {/* GTshirt Info */}
-          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-              ℹ️ Toko GTshirt Official
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-blue-600 dark:text-blue-400">
-              Cotton Combed 24s • Unisex fit • High-quality printing • Sistem pre-order • Estimasi 5 hari kerja
-            </p>
-          </div>
-
-          {/* Checkout Form */}
-          <div
-            id="checkout-form"
-            className="checkout-compact rounded-2xl border border-brand-200 bg-white/90 p-3 sm:p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-3"
-          >
-            <h4 className="font-bold text-brand-900 dark:text-white">Lengkapi Data Checkout</h4>
-            <p className="text-xs text-brand-600 dark:text-brand-400 hidden sm:block">
-              Setelah cek produk di keranjang, isi data pemesan untuk simpan order lalu lanjut konfirmasi via WhatsApp.
-            </p>
-            <p className="text-xs text-brand-600 dark:text-brand-400 sm:hidden">
-              Isi data lalu lanjut konfirmasi WA.
-            </p>
-
-            {checkoutError && (
-              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900/80 dark:bg-rose-900/30 dark:text-rose-300">
-                {checkoutError}
+          <article className={`${CART_SECTION_SHELL} !p-4 sm:!p-5`}>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_34%)]" />
+            <div className="relative">
+              <p className={CART_LABEL}>GTshirt Notes</p>
+              <h3 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-brand-900 dark:text-white">
+                Cotton Combed 24s, unisex fit, dan ritme preorder yang rapi.
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-brand-600 dark:text-brand-300">
+                Katalog GTshirt disiapkan dengan bahan nyaman, sablon berkualitas, dan alur konfirmasi yang jelas supaya pembelian tetap terasa ringan dari pilih produk sampai order tersimpan.
               </p>
-            )}
-
-            {checkoutInfo && (
-              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
-                {checkoutInfo}
-              </p>
-            )}
-
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Nama lengkap"
-                ref={nameInputRef}
-                className={`input-modern ${checkoutFieldErrors.name ? "input-error" : ""}`}
-                value={checkoutForm.name}
-                onChange={(e) => handleCheckoutField("name", e.target.value)}
-                aria-invalid={Boolean(checkoutFieldErrors.name)}
-              />
-              {checkoutFieldErrors.name && (
-                <p className="text-[11px] font-semibold text-rose-500">
-                  {checkoutFieldErrors.name}
-                </p>
-              )}
-              <input
-                type="tel"
-                placeholder="No. WhatsApp"
-                ref={phoneInputRef}
-                className={`input-modern ${checkoutFieldErrors.phone ? "input-error" : ""}`}
-                value={checkoutForm.phone}
-                onChange={(e) => handleCheckoutField("phone", e.target.value)}
-                aria-invalid={Boolean(checkoutFieldErrors.phone)}
-              />
-              {checkoutFieldErrors.phone && (
-                <p className="text-[11px] font-semibold text-rose-500">
-                  {checkoutFieldErrors.phone}
-                </p>
-              )}
-              <textarea
-                placeholder="Alamat lengkap pengiriman"
-                ref={addressInputRef}
-                className={`input-modern min-h-[80px] resize-y ${checkoutFieldErrors.address ? "input-error" : ""}`}
-                value={checkoutForm.address}
-                onChange={(e) => handleCheckoutField("address", e.target.value)}
-                aria-invalid={Boolean(checkoutFieldErrors.address)}
-              />
-              {checkoutFieldErrors.address && (
-                <p className="text-[11px] font-semibold text-rose-500">
-                  {checkoutFieldErrors.address}
-                </p>
-              )}
-              <select
-                className="input-modern"
-                value={checkoutForm.shippingMethod}
-                onChange={(e) => handleCheckoutField("shippingMethod", e.target.value)}
-              >
-                <option>Kurir Jabodetabek</option>
-                <option>Ambil di Gereja</option>
-              </select>
-              <select
-                className="input-modern"
-                value={checkoutForm.paymentMethod}
-                onChange={(e) => handleCheckoutField("paymentMethod", e.target.value)}
-              >
-                <option>Transfer Bank</option>
-                <option>QRIS</option>
-                <option>Bayar Tunai di Gereja</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Catatan (opsional)"
-                className="input-modern text-sm"
-                value={checkoutForm.notes}
-                onChange={(e) => handleCheckoutField("notes", e.target.value)}
-              />
             </div>
+          </article>
 
-            <button
-              onClick={proceedCheckout}
-              disabled={isSubmittingOrder || selectedItemsList.length === 0}
-              className="checkout-desktop hidden sm:inline-flex w-full items-center justify-center bg-primary px-4 py-2.5 rounded-lg text-white font-semibold transition hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isSubmittingOrder ? "Processing..." : "Checkout & Konfirmasi WhatsApp"}
-            </button>
-            <p className="text-[11px] text-brand-500 dark:text-brand-400 sm:hidden">
-              Gunakan tombol Checkout di bar bawah untuk melanjutkan.
-            </p>
+          <article id="checkout-form" className={`${CART_SECTION_SHELL} checkout-compact !p-4 sm:!p-5`}>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_35%),linear-gradient(145deg,rgba(255,255,255,0.06),transparent_58%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(52,211,153,0.08),transparent_35%),linear-gradient(145deg,rgba(255,255,255,0.03),transparent_58%)]" />
+            <div className="relative">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className={CART_LABEL}>Checkout Form</p>
+                  <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
+                    Lengkapi data checkout
+                  </h3>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-brand-600 dark:text-brand-300">
+                    Setelah item di keranjang siap, isi data pemesan untuk menyimpan order lalu lanjut konfirmasi melalui WhatsApp.
+                  </p>
+                </div>
+                <div className="rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
+                  Ready to Checkout
+                </div>
+              </div>
 
-            {user && (
-              <Link
-                to="/my-orders"
-                className="inline-flex w-full items-center justify-center rounded-lg border border-brand-300 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+              {checkoutError && (
+                <p className="mt-5 rounded-[1.1rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 dark:border-rose-900/80 dark:bg-rose-900/30 dark:text-rose-300">
+                  {checkoutError}
+                </p>
+              )}
+
+              {checkoutInfo && (
+                <p className="mt-5 rounded-[1.1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-900/30 dark:text-emerald-300">
+                  {checkoutInfo}
+                </p>
+              )}
+
+              <div className="mt-5 grid gap-4">
+                <label className="space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    Nama Lengkap
+                  </span>
+                  <div className="input-leading-shell">
+                    <NameFieldIcon className="input-leading-icon" />
+                    <input
+                      type="text"
+                      placeholder="Nama lengkap"
+                      ref={nameInputRef}
+                      className={`input-modern ${checkoutFieldErrors.name ? "input-error" : ""}`}
+                      value={checkoutForm.name}
+                      onChange={(e) => handleCheckoutField("name", e.target.value)}
+                      aria-invalid={Boolean(checkoutFieldErrors.name)}
+                    />
+                  </div>
+                  {checkoutFieldErrors.name && (
+                    <p className="text-[11px] font-semibold text-rose-500">
+                      {checkoutFieldErrors.name}
+                    </p>
+                  )}
+                </label>
+
+                <label className="space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    WhatsApp
+                  </span>
+                  <div className="input-leading-shell">
+                    <PhoneFieldIcon className="input-leading-icon" />
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="No. WhatsApp"
+                      ref={phoneInputRef}
+                      className={`input-modern ${checkoutFieldErrors.phone ? "input-error" : ""}`}
+                      value={checkoutForm.phone}
+                      onChange={(e) => handleCheckoutField("phone", e.target.value)}
+                      aria-invalid={Boolean(checkoutFieldErrors.phone)}
+                    />
+                  </div>
+                  {checkoutFieldErrors.phone && (
+                    <p className="text-[11px] font-semibold text-rose-500">
+                      {checkoutFieldErrors.phone}
+                    </p>
+                  )}
+                </label>
+
+                <label className="space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    Alamat Pengiriman
+                  </span>
+                  <div className="input-leading-shell input-leading-shell-textarea">
+                    <AddressFieldIcon className="input-leading-icon" />
+                    <textarea
+                      placeholder="Alamat lengkap pengiriman"
+                      ref={addressInputRef}
+                      className={`input-modern min-h-[120px] resize-y ${checkoutFieldErrors.address ? "input-error" : ""}`}
+                      value={checkoutForm.address}
+                      onChange={(e) => handleCheckoutField("address", e.target.value)}
+                      aria-invalid={Boolean(checkoutFieldErrors.address)}
+                    />
+                  </div>
+                  {checkoutFieldErrors.address && (
+                    <p className="text-[11px] font-semibold text-rose-500">
+                      {checkoutFieldErrors.address}
+                    </p>
+                  )}
+                </label>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                      Pengiriman
+                    </span>
+                    <div className="input-leading-shell input-select-shell">
+                      <ShippingFieldIcon className="input-leading-icon" />
+                      <select
+                        className="input-modern appearance-none"
+                        value={checkoutForm.shippingMethod}
+                        onChange={(e) => handleCheckoutField("shippingMethod", e.target.value)}
+                      >
+                        <option>Kurir Jabodetabek</option>
+                        <option>Ambil di Gereja</option>
+                      </select>
+                      <SelectChevronIcon className="input-trailing-icon" />
+                    </div>
+                  </label>
+
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                      Pembayaran
+                    </span>
+                    <div className="input-leading-shell input-select-shell">
+                      <PaymentFieldIcon className="input-leading-icon" />
+                      <select
+                        className="input-modern appearance-none"
+                        value={checkoutForm.paymentMethod}
+                        onChange={(e) => handleCheckoutField("paymentMethod", e.target.value)}
+                      >
+                        <option>Transfer Bank</option>
+                        <option>QRIS</option>
+                        <option>Bayar Tunai di Gereja</option>
+                      </select>
+                      <SelectChevronIcon className="input-trailing-icon" />
+                    </div>
+                  </label>
+                </div>
+
+                <label className="space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    Catatan Tambahan
+                  </span>
+                  <div className="input-leading-shell">
+                    <NoteFieldIcon className="input-leading-icon" />
+                    <input
+                      type="text"
+                      placeholder="Catatan (opsional)"
+                      className="input-modern text-sm"
+                      value={checkoutForm.notes}
+                      onChange={(e) => handleCheckoutField("notes", e.target.value)}
+                    />
+                  </div>
+                </label>
+              </div>
+
+              <button
+                onClick={proceedCheckout}
+                disabled={isSubmittingOrder || selectedCount === 0}
+                className="checkout-desktop btn-primary mt-5 hidden w-full items-center justify-center !rounded-[1.2rem] !px-4 !py-3 text-white disabled:opacity-50 sm:inline-flex"
               >
-                Lihat Pesanan Saya
-              </Link>
-            )}
+                {isSubmittingOrder ? "Processing..." : "Checkout & Konfirmasi WhatsApp"}
+              </button>
+              <p className="mt-3 text-[11px] text-brand-500 dark:text-brand-400 sm:hidden">
+                Gunakan tombol checkout di bar bawah untuk menyimpan order dan lanjut ke WhatsApp.
+              </p>
 
-            {latestOrderCode && (
-              <Link
-                to={`/track-order?orderCode=${encodeURIComponent(latestOrderCode)}`}
-                className="inline-flex w-full items-center justify-center rounded-lg border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-primary/15"
-              >
-                Lacak Status Pesanan
-              </Link>
-            )}
-          </div>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                {user && (
+                  <Link
+                    to="/my-orders"
+                    className="btn-outline inline-flex w-full items-center justify-center !rounded-[1.1rem] !px-4 !py-3 text-sm sm:w-auto"
+                  >
+                    Lihat Pesanan Saya
+                  </Link>
+                )}
+
+                {latestOrderCode && (
+                  <Link
+                    to={`/track-order?orderCode=${encodeURIComponent(latestOrderCode)}`}
+                    className="inline-flex w-full items-center justify-center rounded-[1.1rem] border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/15 sm:w-auto"
+                  >
+                    Lacak Status Pesanan
+                  </Link>
+                )}
+              </div>
+            </div>
+          </article>
         </section>
 
-        {/* ── Right: Checkout Summary ──────────────────── */}
-        <aside className="sticky top-24 h-fit">
-          {/* Summary Card */}
-          <div className="rounded-2xl border border-brand-200 bg-white/90 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/50 space-y-4">
-            <h3 className="font-bold text-brand-900 dark:text-white">Ringkasan Pesanan</h3>
-
-            <div className="space-y-3 border-b border-brand-200 pb-4 dark:border-brand-700">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-brand-600 dark:text-brand-300">Subtotal ({selectedItemsList.length} item)</span>
-                <span className="font-semibold text-brand-900 dark:text-white">
-                  {formatRupiah(subtotal)}
-                </span>
+        <aside className="h-fit space-y-4 xl:sticky xl:top-24">
+          <article className={CART_SECTION_SHELL}>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.1),transparent_34%)]" />
+            <div className="relative space-y-5">
+              <div>
+                <p className={CART_LABEL}>Order Summary</p>
+                <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
+                  Ringkasan pesanan
+                </h3>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-brand-600 dark:text-brand-300">Ongkir</span>
-                <span className="font-semibold text-brand-900 dark:text-white">
-                  {shipping > 0 ? formatRupiah(shipping) : "Gratis"}
-                </span>
+
+              <div className="space-y-3 rounded-[1.5rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-brand-600 dark:text-brand-300">Subtotal ({selectedCount} item)</span>
+                  <span className="font-semibold text-brand-900 dark:text-white">
+                    {formatRupiah(subtotal)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-brand-600 dark:text-brand-300">Ongkir</span>
+                  <span className="font-semibold text-brand-900 dark:text-white">
+                    {shipping > 0 ? formatRupiah(shipping) : "Gratis"}
+                  </span>
+                </div>
+                <div className="h-px bg-brand-200 dark:bg-brand-700" />
+                <div className="flex items-end justify-between gap-3">
+                  <span className="text-base font-semibold text-brand-900 dark:text-white">Total</span>
+                  <span className="text-[2rem] font-semibold tracking-[-0.04em] text-primary">
+                    {formatRupiah(grandTotal)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="rounded-[1.2rem] border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm leading-6 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
+                  Lengkapi data checkout di bawah daftar produk, lalu lanjutkan ke konfirmasi WhatsApp.
+                </p>
+
+                <div className="grid gap-3">
+                  <Link
+                    to="/shop"
+                    className="btn-outline inline-flex w-full items-center justify-center !rounded-[1.15rem] !px-4 !py-3 text-sm"
+                  >
+                    Lanjut Belanja
+                  </Link>
+                  <Link
+                    to="/track-order"
+                    className="inline-flex w-full items-center justify-center rounded-[1.15rem] border border-brand-300 bg-white/[0.78] px-4 py-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                  >
+                    Buka Lacak Pesanan
+                  </Link>
+                </div>
               </div>
             </div>
+          </article>
 
-            <div className="flex items-center justify-between text-base font-bold">
-              <span className="text-brand-900 dark:text-white">Total</span>
-              <span className="text-2xl text-primary">{formatRupiah(grandTotal)}</span>
+          <article className={`${CART_SECTION_SHELL} !p-4 sm:!p-5`}>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_34%)]" />
+            <div className="relative">
+              <p className={CART_LABEL}>Order Flow</p>
+              <h3 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-brand-900 dark:text-white">
+                Cepat, jelas, dan siap dilanjutkan.
+              </h3>
+              <div className="mt-4 grid gap-3">
+                <div className="rounded-[1.2rem] border border-brand-200/80 bg-white/[0.72] px-4 py-3 dark:border-brand-700 dark:bg-white/[0.03]">
+                  <p className={CART_LABEL}>01</p>
+                  <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">Periksa item dan jumlah</p>
+                </div>
+                <div className="rounded-[1.2rem] border border-brand-200/80 bg-white/[0.72] px-4 py-3 dark:border-brand-700 dark:bg-white/[0.03]">
+                  <p className={CART_LABEL}>02</p>
+                  <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">Isi data checkout dengan rapi</p>
+                </div>
+                <div className="rounded-[1.2rem] border border-brand-200/80 bg-white/[0.72] px-4 py-3 dark:border-brand-700 dark:bg-white/[0.03]">
+                  <p className={CART_LABEL}>03</p>
+                  <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">Konfirmasi dan pantau status order</p>
+                </div>
+              </div>
             </div>
-
-            <div className="space-y-2">
-              <p className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
-                Lengkapi data checkout di bagian bawah daftar produk.
-              </p>
-
-              <Link
-                to="/shop"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-brand-300 bg-white/50 px-4 py-2.5 text-center text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/30 dark:text-brand-300 dark:hover:bg-brand-800/40"
-              >
-                ← Lanjut Belanja
-              </Link>
-            </div>
-          </div>
+          </article>
         </aside>
       </div>
 
-      {/* ── Sticky Mobile Summary ──────────────────── */}
       <div className="sticky-mobile-bar sm:hidden">
-        <div className="sticky-mobile-surface flex items-center justify-between gap-3 p-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-              Total ({selectedItemsList.length} item)
-            </p>
-            <p className="text-base font-bold text-brand-900 dark:text-white">
-              {formatRupiah(grandTotal)}
-            </p>
+        <div className="sticky-mobile-surface space-y-3 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                Total ({selectedCount} item)
+              </p>
+              <p className="text-lg font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
+                {formatRupiah(grandTotal)}
+              </p>
+              <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                Ongkir {shipping > 0 ? formatRupiah(shipping) : "Gratis"}
+              </p>
+            </div>
+            <div className="rounded-[1rem] border border-emerald-200/80 bg-emerald-50/90 px-3 py-2 text-right dark:border-emerald-900/40 dark:bg-emerald-900/20">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
+                Checkout
+              </p>
+              <p className="mt-1 text-sm font-semibold text-emerald-800 dark:text-emerald-100">
+                {selectedCount} item
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={proceedCheckout}
-            disabled={isSubmittingOrder || selectedItemsList.length === 0}
-            className="btn-primary min-h-[44px] !px-4 !py-3 text-sm disabled:opacity-60"
+            disabled={isSubmittingOrder || selectedCount === 0}
+            className="btn-primary min-h-[48px] w-full !rounded-[1.05rem] !px-4 !py-3 text-sm font-semibold disabled:opacity-60"
           >
-            {isSubmittingOrder ? "Processing..." : "Checkout"}
+            {isSubmittingOrder ? "Processing..." : "Checkout & Konfirmasi WhatsApp"}
           </button>
         </div>
       </div>

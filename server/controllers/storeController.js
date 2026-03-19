@@ -491,30 +491,13 @@ function normalizeReviewerName(name) {
   return `${parts[0]} ${parts[1].slice(0, 1)}.`;
 }
 
-function normalizeReviewImages(value) {
-  if (Array.isArray(value)) {
-    return value.filter(Boolean);
-  }
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) {
-        return parsed.filter(Boolean);
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return [];
-}
-
 function serializeReview(review) {
   return {
     id: review.id,
     rating: Number(review.rating) || 0,
     reviewText: review.reviewText || '',
+    imageUrls: Array.isArray(review.imageUrls) ? review.imageUrls.filter(Boolean) : [],
     reviewerName: normalizeReviewerName(review.reviewerName),
-    imageUrls: normalizeReviewImages(review.imageUrls),
     createdAt: review.createdAt
   };
 }
@@ -888,10 +871,11 @@ async function getProductReviews(req, res, next) {
 }
 
 async function createProductReview(req, res, next) {
-  const uploadedFiles = getUploadedFiles(req);
-  const uploadedPaths = uploadedFiles.map(toPublicImagePath);
+  let uploadedPaths = [];
 
   try {
+    const uploadedFiles = getUploadedFiles(req);
+    uploadedPaths = uploadedFiles.map(toPublicImagePath).filter(Boolean);
     const { slug } = req.params;
     const product = await StoreProduct.findOne({
       where: { slug: String(slug).toLowerCase().trim(), isActive: true }
@@ -959,6 +943,7 @@ async function createProductReview(req, res, next) {
       imageUrls: uploadedPaths,
       isApproved: true
     });
+    uploadedPaths = [];
 
     return res.status(201).json({
       message: 'Ulasan berhasil dikirim',
@@ -1474,11 +1459,9 @@ async function deleteAdminReview(req, res, next) {
       return res.status(404).json({ message: 'Ulasan tidak ditemukan' });
     }
 
-    const imageUrls = normalizeReviewImages(review.imageUrls);
-    if (imageUrls.length) {
-      await removeImageFiles(imageUrls);
-    }
+    const oldImages = Array.isArray(review.imageUrls) ? review.imageUrls.filter(Boolean) : [];
     await review.destroy();
+    await removeImageFiles(oldImages);
     return res.status(200).json({ message: 'Ulasan berhasil dihapus' });
   } catch (error) {
     return next(error);

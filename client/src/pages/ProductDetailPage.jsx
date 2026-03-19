@@ -11,6 +11,8 @@ import {
 } from "../utils/storeStock";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
+const REVIEW_IMAGE_LIMIT = 3;
+const REVIEW_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const FALLBACK_PRODUCTS = [
   {
@@ -123,6 +125,101 @@ const isAboveXL = (value) => {
   return false;
 };
 
+const OrderCodeFieldIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="4" y="5" width="16" height="14" rx="3" />
+    <path d="M8 9h8" />
+    <path d="M8 13h5" />
+  </svg>
+);
+
+const PhoneReviewFieldIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M6.8 3.8h2.5l1.4 3.8-1.8 1.8a14.2 14.2 0 0 0 5.7 5.7l1.8-1.8 3.8 1.4v2.5a1.8 1.8 0 0 1-1.9 1.8A15.5 15.5 0 0 1 5 5.7a1.8 1.8 0 0 1 1.8-1.9Z" />
+  </svg>
+);
+
+const StarFieldIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="m12 3 2.8 5.68 6.27.91-4.54 4.43 1.07 6.25L12 17.32 6.4 20.27l1.07-6.25L2.93 9.6l6.27-.91L12 3Z" />
+  </svg>
+);
+
+const ReviewTextIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M8 7h8" />
+    <path d="M8 11h8" />
+    <path d="M8 15h5" />
+    <path d="M6 4h12a2 2 0 0 1 2 2v12l-4-3H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+  </svg>
+);
+
+const UploadImageIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="4" width="18" height="16" rx="2.5" />
+    <path d="m8 13 2.5 2.5L16 10l3 4" />
+    <circle cx="9" cy="9" r="1.1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+const SelectChevronIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.6}
+    aria-hidden="true"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
+  </svg>
+);
+
 function getImageWithFallback(product, fallbackProducts) {
   if (!product) return storePlaceholderImage;
 
@@ -181,6 +278,9 @@ function ProductDetailPage() {
     phone: "",
     reviewText: "",
   });
+  const [reviewImages, setReviewImages] = useState([]);
+  const [reviewImagePreviews, setReviewImagePreviews] = useState([]);
+  const [reviewUploadInputKey, setReviewUploadInputKey] = useState(0);
   const [reviewFeedback, setReviewFeedback] = useState({ type: "", text: "" });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
@@ -208,6 +308,23 @@ function ProductDetailPage() {
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
+
+  useEffect(() => {
+    if (!reviewImages.length) {
+      setReviewImagePreviews([]);
+      return undefined;
+    }
+
+    const previews = reviewImages.map((file) => ({
+      fileName: file.name,
+      url: URL.createObjectURL(file),
+    }));
+    setReviewImagePreviews(previews);
+
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, [reviewImages]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -309,6 +426,53 @@ function ProductDetailPage() {
     }));
   };
 
+  const handleReviewImagesChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    setReviewUploadInputKey((previous) => previous + 1);
+
+    if (!selectedFiles.length) return;
+
+    const validFiles = selectedFiles.filter((file) => REVIEW_IMAGE_TYPES.has(file.type));
+    const invalidCount = selectedFiles.length - validFiles.length;
+    const remainingSlots = Math.max(0, REVIEW_IMAGE_LIMIT - reviewImages.length);
+    const acceptedFiles = validFiles.slice(0, remainingSlots);
+
+    if (acceptedFiles.length > 0) {
+      setReviewImages((previous) => [...previous, ...acceptedFiles]);
+    }
+
+    if (invalidCount > 0) {
+      setReviewFeedback({
+        type: "error",
+        text: "Format foto harus JPG, PNG, atau WebP.",
+      });
+      return;
+    }
+
+    if (validFiles.length > remainingSlots) {
+      setReviewFeedback({
+        type: "error",
+        text: `Maksimal ${REVIEW_IMAGE_LIMIT} foto untuk satu ulasan.`,
+      });
+      return;
+    }
+
+    setReviewFeedback((previous) =>
+      previous.type === "error" && previous.text.toLowerCase().includes("foto")
+        ? { type: "", text: "" }
+        : previous,
+    );
+  };
+
+  const handleRemoveReviewImage = (index) => {
+    setReviewImages((previous) => previous.filter((_, fileIndex) => fileIndex !== index));
+    setReviewFeedback((previous) =>
+      previous.type === "error" && previous.text.toLowerCase().includes("foto")
+        ? { type: "", text: "" }
+        : previous,
+    );
+  };
+
   const submitReview = async () => {
     if (isSubmittingReview) return;
     if (!canSubmitReview) {
@@ -321,13 +485,22 @@ function ProductDetailPage() {
     setIsSubmittingReview(true);
     setReviewFeedback({ type: "", text: "" });
     try {
-      const payload = {
-        rating: Number(reviewForm.rating),
-        orderCode: reviewForm.orderCode.trim(),
-        phone: reviewForm.phone.trim(),
-        reviewText: reviewForm.reviewText.trim(),
-      };
-      await api.post(`/store/products/${slug}/reviews`, payload);
+      const payload = new FormData();
+      payload.append("rating", String(Number(reviewForm.rating)));
+      payload.append("orderCode", reviewForm.orderCode.trim());
+      payload.append("phone", reviewForm.phone.trim());
+      if (reviewForm.reviewText.trim()) {
+        payload.append("reviewText", reviewForm.reviewText.trim());
+      }
+      reviewImages.forEach((file) => {
+        payload.append("images", file);
+      });
+
+      await api.post(`/store/products/${slug}/reviews`, payload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       setReviewFeedback({
         type: "success",
         text: "Terima kasih! Ulasan kamu sudah tercatat.",
@@ -337,7 +510,13 @@ function ProductDetailPage() {
         rating: 5,
         reviewText: "",
       }));
-      const { data } = await api.get(`/store/products/${slug}/reviews`);
+      setReviewImages([]);
+      setReviewUploadInputKey((previous) => previous + 1);
+      const { data } = await api.get(`/store/products/${slug}/reviews`, {
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      });
       const reviewList = Array.isArray(data?.data) ? data.data : [];
       const meta = data?.meta || {};
       setReviews(reviewList);
@@ -612,52 +791,125 @@ function ProductDetailPage() {
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
               Kode Pesanan
             </span>
-            <input
-              className="input-modern"
-              placeholder="Contoh: GTS-20260310-0001"
-              value={reviewForm.orderCode}
-              onChange={(event) => updateReviewField("orderCode", event.target.value)}
-            />
+            <div className="input-leading-shell">
+              <OrderCodeFieldIcon className="input-leading-icon" />
+              <input
+                className="input-modern"
+                placeholder="Contoh: GTS-20260310-0001"
+                value={reviewForm.orderCode}
+                onChange={(event) => updateReviewField("orderCode", event.target.value.toUpperCase())}
+              />
+            </div>
           </label>
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
               Nomor WhatsApp
             </span>
-            <input
-              className="input-modern"
-              placeholder="08xx atau +62xx"
-              value={reviewForm.phone}
-              onChange={(event) => updateReviewField("phone", event.target.value)}
-            />
+            <div className="input-leading-shell">
+              <PhoneReviewFieldIcon className="input-leading-icon" />
+              <input
+                className="input-modern"
+                placeholder="08xx atau +62xx"
+                inputMode="tel"
+                value={reviewForm.phone}
+                onChange={(event) => updateReviewField("phone", event.target.value)}
+              />
+            </div>
           </label>
         </div>
         <label className="space-y-1">
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
             Rating
           </span>
-          <select
-            className="input-modern"
-            value={reviewForm.rating}
-            onChange={(event) => updateReviewField("rating", event.target.value)}
-          >
-            <option value={5}>5 - Sangat Suka</option>
-            <option value={4}>4 - Suka</option>
-            <option value={3}>3 - Cukup</option>
-            <option value={2}>2 - Kurang</option>
-            <option value={1}>1 - Tidak Suka</option>
-          </select>
+          <div className="input-leading-shell input-select-shell">
+            <StarFieldIcon className="input-leading-icon" />
+            <select
+              className="input-modern appearance-none"
+              value={reviewForm.rating}
+              onChange={(event) => updateReviewField("rating", event.target.value)}
+            >
+              <option value={5}>5 - Sangat Suka</option>
+              <option value={4}>4 - Suka</option>
+              <option value={3}>3 - Cukup</option>
+              <option value={2}>2 - Kurang</option>
+              <option value={1}>1 - Tidak Suka</option>
+            </select>
+            <SelectChevronIcon className="input-trailing-icon" />
+          </div>
         </label>
         <label className="space-y-1">
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
             Ceritakan pengalamanmu (opsional)
           </span>
-          <textarea
-            className="input-modern min-h-[110px] resize-none"
-            placeholder="Contoh: Bahan adem, ukuran pas, sablon rapi."
-            value={reviewForm.reviewText}
-            onChange={(event) => updateReviewField("reviewText", event.target.value)}
-          />
+          <div className="input-leading-shell input-leading-shell-textarea">
+            <ReviewTextIcon className="input-leading-icon" />
+            <textarea
+              className="input-modern min-h-[110px] resize-none"
+              placeholder="Contoh: Bahan adem, ukuran pas, sablon rapi."
+              value={reviewForm.reviewText}
+              onChange={(event) => updateReviewField("reviewText", event.target.value)}
+            />
+          </div>
         </label>
+        <div className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+            Foto Produk (opsional)
+          </span>
+          <input
+            key={reviewUploadInputKey}
+            id="review-images"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="sr-only"
+            onChange={handleReviewImagesChange}
+          />
+          <label
+            htmlFor="review-images"
+            className="flex min-h-[56px] cursor-pointer items-center justify-between gap-3 rounded-[1.1rem] border border-dashed border-brand-300 bg-white/80 px-4 py-3 text-sm text-brand-600 transition hover:border-primary hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-900/60"
+          >
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-800/60 dark:text-brand-200">
+                <UploadImageIcon className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-semibold text-brand-900 dark:text-white">
+                  Upload foto produk yang kamu terima
+                </p>
+                <p className="text-xs text-brand-500 dark:text-brand-400">
+                  JPG, PNG, WebP • maks 3 foto • 5MB/foto
+                </p>
+              </div>
+            </div>
+            <span className="rounded-full border border-brand-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/60 dark:text-brand-300">
+              Pilih Foto
+            </span>
+          </label>
+          {reviewImagePreviews.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {reviewImagePreviews.map((preview, index) => (
+                <div
+                  key={`${preview.fileName}-${index}`}
+                  className="relative overflow-hidden rounded-[1rem] border border-brand-200 bg-white dark:border-brand-700 dark:bg-brand-900/50"
+                >
+                  <img
+                    src={preview.url}
+                    alt={`Preview ulasan ${index + 1}`}
+                    className="aspect-square h-full w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveReviewImage(index)}
+                    className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-sm font-bold text-white transition hover:bg-black/80"
+                    aria-label={`Hapus foto ${index + 1}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         {reviewFeedback.text && (
           <div
             className={`rounded-lg border px-3 py-2 text-sm font-medium ${
@@ -711,6 +963,30 @@ function ProductDetailPage() {
                   {review.reviewText}
                 </p>
               )}
+              {Array.isArray(review.imageUrls) && review.imageUrls.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {review.imageUrls.map((image, index) => {
+                    const resolvedImage = resolveStoreImageUrl(image);
+                    return (
+                      <a
+                        key={`${review.id}-image-${index}`}
+                        href={resolvedImage}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block overflow-hidden rounded-[1rem] border border-brand-200 bg-white dark:border-brand-700 dark:bg-brand-900/50"
+                      >
+                        <img
+                          src={resolvedImage}
+                          alt={`Foto ulasan ${index + 1}`}
+                          loading="lazy"
+                          decoding="async"
+                          className="aspect-square h-full w-full object-cover"
+                        />
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ))
         )}
@@ -719,7 +995,7 @@ function ProductDetailPage() {
   );
 
   return (
-    <div className="page-stack space-y-6 sm:space-y-8 pb-24 sm:pb-8">
+    <div className="page-stack space-y-6 pb-32 sm:space-y-8 sm:pb-8">
       {/* ── Breadcrumb ──────────────────────── */}
       <nav className="flex flex-wrap items-center justify-between gap-3 text-sm text-brand-600 dark:text-brand-400">
         <div className="flex min-w-0 items-center gap-2">
@@ -993,13 +1269,19 @@ function ProductDetailPage() {
 
           {/* Quantity Selection */}
           <div className="space-y-3">
-            <label className="block text-sm font-semibold text-brand-700 dark:text-brand-300">
-              Jumlah
-            </label>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <label className="block text-sm font-semibold text-brand-700 dark:text-brand-300">
+                Jumlah
+              </label>
+              <span className="inline-flex items-center rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
+                Max {selectedSizeStock || 0} pcs
+              </span>
+            </div>
+            <div className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3 rounded-[1.35rem] border border-brand-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,249,0.9))] p-3 shadow-[0_14px_32px_rgba(15,23,42,0.04)] dark:border-brand-700/80 dark:bg-[linear-gradient(180deg,rgba(11,18,14,0.94),rgba(8,13,11,0.92))]">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="flex h-11 w-11 items-center justify-center rounded-lg border border-brand-200 bg-white font-bold transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:hover:bg-brand-900"
+                className="flex h-12 w-12 items-center justify-center rounded-[1rem] border border-brand-200 bg-white font-bold text-brand-800 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-100 dark:hover:bg-brand-900"
+                aria-label="Kurangi jumlah"
               >
                 −
               </button>
@@ -1011,7 +1293,7 @@ function ProductDetailPage() {
                 onChange={(e) =>
                   setQuantity(clampQuantity(e.target.value, selectedSizeStock || 1))
                 }
-                className="input-modern w-20 text-center"
+                className="input-modern !h-12 !rounded-[1rem] !px-3 text-center text-base font-semibold"
               />
               <button
                 onClick={() =>
@@ -1019,13 +1301,11 @@ function ProductDetailPage() {
                     clampQuantity(quantity + 1, selectedSizeStock || 1),
                   )
                 }
-                className="flex h-11 w-11 items-center justify-center rounded-lg border border-brand-200 bg-white font-bold transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:hover:bg-brand-900"
+                className="flex h-12 w-12 items-center justify-center rounded-[1rem] border border-brand-200 bg-white font-bold text-brand-800 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-100 dark:hover:bg-brand-900"
+                aria-label="Tambah jumlah"
               >
                 +
               </button>
-              <span className="text-sm text-brand-600 dark:text-brand-400">
-                Max: {selectedSizeStock || 0} pcs
-              </span>
             </div>
           </div>
 
@@ -1217,55 +1497,67 @@ function ProductDetailPage() {
 
       {/* ── Sticky Mobile CTA ─────────────────────── */}
       <div className="sticky-mobile-bar sm:hidden">
-        <div className="sticky-mobile-surface flex items-center gap-3 p-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-              Harga
-            </p>
-            <p className="text-base font-bold text-brand-900 dark:text-white">
-              {formatRupiah(effectivePrice)}
-            </p>
-            <p className="text-[11px] text-brand-500 dark:text-brand-400">
-              Ukuran {selectedSizeLabel} • Stok {selectedSizeStock ?? 0}
-            </p>
+        <div className="sticky-mobile-surface space-y-3 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                Harga
+              </p>
+              <p className="text-lg font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
+                {formatRupiah(effectivePrice)}
+              </p>
+              <p className="text-[11px] leading-5 text-brand-500 dark:text-brand-400">
+                Ukuran {selectedSizeLabel} • Qty {quantity} • Stok {selectedSizeStock ?? 0}
+              </p>
+            </div>
+            <div className="shrink-0 rounded-[1rem] border border-emerald-200/80 bg-emerald-50/90 px-3 py-2 text-right dark:border-emerald-900/40 dark:bg-emerald-900/20">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
+                Ready
+              </p>
+              <p className="mt-1 text-sm font-semibold text-emerald-800 dark:text-emerald-100">
+                {selectedSizeStock ?? 0} pcs
+              </p>
+            </div>
           </div>
-          <Link
-            to="/cart"
-            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-300 bg-white text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-800/60"
-            aria-label="Buka keranjang belanja"
-            title="Keranjang"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.8}
+          <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-2">
+            <Link
+              to="/cart"
+              className="relative inline-flex h-12 w-full items-center justify-center rounded-[1.05rem] border border-brand-300 bg-white text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-800/60"
+              aria-label="Buka keranjang belanja"
+              title="Keranjang"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-              />
-            </svg>
-            {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-          <button
-            onClick={addToCart}
-            disabled={selectedSizeStock <= 0}
-            className="btn-primary min-h-[44px] !px-4 !py-3 text-sm disabled:opacity-60"
-          >
-            Tambah
-          </button>
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+                />
+              </svg>
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+            <button
+              onClick={addToCart}
+              disabled={selectedSizeStock <= 0}
+              className="btn-primary min-h-[48px] w-full !rounded-[1.05rem] !px-4 !py-3 text-sm font-semibold disabled:opacity-60"
+            >
+              Tambah ke Keranjang
+            </button>
+          </div>
         </div>
       </div>
 
