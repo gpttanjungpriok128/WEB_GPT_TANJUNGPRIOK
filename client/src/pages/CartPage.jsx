@@ -439,7 +439,7 @@ function CartPage() {
               <div>
                 <p className={CART_LABEL}>Cart Overview</p>
                 <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-brand-900 dark:text-white sm:text-[2.6rem]">
-                  Keranjang masih kosong, tapi flow belanjanya sudah siap.
+                  Keranjang masih kosong, tapi kamu bisa mulai pilih produk.
                 </h2>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-brand-600 dark:text-brand-300 sm:text-base">
                   Pilih produk GTshirt, tentukan ukuran, lalu kembali ke sini untuk checkout dan lanjut konfirmasi via WhatsApp dengan alur yang tetap ringan.
@@ -934,9 +934,9 @@ function CartPage() {
           <article className={`${CART_SECTION_SHELL} !p-4 sm:!p-5`}>
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_34%)]" />
             <div className="relative">
-              <p className={CART_LABEL}>Order Flow</p>
+              <p className={CART_LABEL}>Langkah Pesanan</p>
               <h3 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-brand-900 dark:text-white">
-                Cepat, jelas, dan siap dilanjutkan.
+                Selesaikan pesanan dengan urutan yang jelas.
               </h3>
               <div className="mt-4 grid gap-3">
                 <div className="rounded-[1.2rem] border border-brand-200/80 bg-white/[0.72] px-4 py-3 dark:border-brand-700 dark:bg-white/[0.03]">

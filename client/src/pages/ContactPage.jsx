@@ -34,7 +34,7 @@ function ContactPage() {
       icon: "📧",
       title: "Email",
       content: (
-        <a href={`mailto:${contactEmail}?subject=${encodeURIComponent("Pertanyaan dari Website GPT Tanjung Priok")}`} className="text-primary hover:text-primary-light transition-colors text-sm">
+        <a href={`mailto:${contactEmail}?subject=${encodeURIComponent("Pertanyaan untuk GPT Tanjung Priok")}`} className="text-primary hover:text-primary-light transition-colors text-sm">
           {contactEmail}
         </a>
       ),

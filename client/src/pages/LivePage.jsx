@@ -111,12 +111,12 @@ function LivePage() {
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-xl font-bold text-brand-900 dark:text-white">Input Link Live Streaming</h2>
           <p className="text-sm text-brand-600 dark:text-brand-400">
-            Kelola link live streaming untuk seluruh jemaat.
+            Tempel link siaran YouTube yang ingin ditampilkan untuk jemaat.
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-2 block text-sm font-semibold text-brand-700 dark:text-brand-300">
-                Link YouTube (embed / watch / youtu.be)
+                Link YouTube
               </label>
               <input
                 type="text"
@@ -129,7 +129,7 @@ function LivePage() {
                 className="input-modern"
               />
               <p className="mt-2 text-xs text-brand-500 dark:text-brand-400">
-                Sistem otomatis mengubah link watch/share ke format embed.
+                Gunakan link video atau siaran YouTube yang akan ditampilkan di halaman live.
               </p>
             </div>
             {message.text && (
@@ -190,8 +190,8 @@ function LivePage() {
         <ul className="space-y-3 text-sm text-brand-700 dark:text-brand-300">
           {[
             { icon: "📅", text: <><strong>Minggu:</strong> 09:00 WIB</> },
-            { icon: "💡", text: "Live streaming dimulai 15 menit sebelum ibadah dimulai" },
-            { icon: "🔄", text: "Koneksi internet stabil diperlukan untuk pengalaman terbaik" },
+            { icon: "💡", text: "Siaran dimulai sekitar 15 menit sebelum ibadah dimulai" },
+            { icon: "🔄", text: "Silakan siapkan waktu lebih awal agar bisa mengikuti ibadah dengan tenang" },
           ].map((item, i) => (
             <li key={i} className="flex items-center gap-3">
               <span className="text-lg">{item.icon}</span>

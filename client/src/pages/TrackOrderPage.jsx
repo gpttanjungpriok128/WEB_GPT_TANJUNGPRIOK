@@ -234,13 +234,13 @@ function TrackOrderPage() {
               </ul>
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[1.35rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
-                <p className={TRACK_LABEL}>Flow</p>
-                <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
-                  Checkout cepat, tracking jelas.
-                </p>
-              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[1.35rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
+                  <p className={TRACK_LABEL}>Pesanan</p>
+                  <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
+                    Pantau status pesanan dengan mudah.
+                  </p>
+                </div>
               <div className="rounded-[1.35rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
                 <p className={TRACK_LABEL}>Support</p>
                 <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">

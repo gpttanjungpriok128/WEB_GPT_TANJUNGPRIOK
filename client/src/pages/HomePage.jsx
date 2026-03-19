@@ -9,7 +9,6 @@ import {
   PlayIcon,
   ShieldIcon,
   ShoppingBagIcon,
-  SparklesIcon,
   UsersIcon,
 } from "../components/SiteIcons";
 import { swrGet } from "../utils/swrCache";
@@ -25,7 +24,7 @@ const COMMUNITY_LINKS = [
   },
   {
     title: "Renungan",
-    description: "Akses bacaan terbaru dengan layout bersih dan cepat dibaca di mobile.",
+    description: "Baca renungan terbaru untuk menguatkan iman dan pengharapan setiap hari.",
     link: "/articles",
     cta: "Buka renungan",
     Icon: BookIcon,
@@ -33,7 +32,7 @@ const COMMUNITY_LINKS = [
   },
   {
     title: "Galeri",
-    description: "Album kegiatan gereja ditata dengan grid ringan dan native lazy loading.",
+    description: "Lihat dokumentasi ibadah, pelayanan, dan kebersamaan jemaat dalam satu galeri.",
     link: "/gallery",
     cta: "Lihat galeri",
     Icon: GalleryIcon,
@@ -41,7 +40,7 @@ const COMMUNITY_LINKS = [
   },
   {
     title: "GTshirt Store",
-    description: "Katalog produk dengan fokus ke gambar, stok, dan CTA yang jelas.",
+    description: "Temukan koleksi GTshirt untuk jemaat, komunitas, dan berbagai kegiatan pelayanan.",
     link: "/shop",
     cta: "Belanja sekarang",
     Icon: ShoppingBagIcon,
@@ -49,7 +48,7 @@ const COMMUNITY_LINKS = [
   },
   {
     title: "Konten Live",
-    description: "Streaming dan update pelayanan tersedia cepat tanpa elemen visual yang berat.",
+    description: "Ikuti siaran dan update pelayanan yang sedang berlangsung bersama komunitas.",
     link: "/live",
     cta: "Tonton live",
     Icon: PlayIcon,
@@ -58,21 +57,21 @@ const COMMUNITY_LINKS = [
   },
 ];
 
-const DESIGN_PRINCIPLES = [
+const COMMUNITY_VALUES = [
   {
-    title: "Mobile-first layout",
-    description: "Semua section dimulai dari satu kolom, lalu berkembang ke grid 12 kolom di desktop.",
-    Icon: SparklesIcon,
+    title: "Bertumbuh dalam firman",
+    description: "Renungan dan pengajaran membantu jemaat terus dikuatkan dalam perjalanan iman.",
+    Icon: BookIcon,
   },
   {
-    title: "Cheap animations",
-    description: "Reveal dan hover hanya memakai transform dan opacity untuk menjaga frame rate tetap stabil.",
-    Icon: ShieldIcon,
-  },
-  {
-    title: "Content clarity",
-    description: "Whitespace lebih lega, hierarchy lebih tajam, dan CTA dibuat mudah dipindai dalam beberapa detik.",
+    title: "Hadir dalam persekutuan",
+    description: "Jadwal, galeri, dan informasi kegiatan menolong jemaat tetap terhubung satu sama lain.",
     Icon: UsersIcon,
+  },
+  {
+    title: "Melayani bersama",
+    description: "Setiap bagian dihadirkan untuk mendukung pelayanan dan kebutuhan komunitas gereja.",
+    Icon: ShieldIcon,
   },
 ];
 
@@ -186,7 +185,7 @@ function HomePage() {
                 <Icon className="h-5 w-5" />
               </div>
               <span className="text-xs font-medium uppercase tracking-[0.22em] text-zinc-400">
-                Quick Access
+                Jelajahi
               </span>
             </div>
             <h2 className="mt-5 text-xl font-semibold tracking-[-0.03em] text-zinc-950 dark:text-white">
@@ -209,18 +208,18 @@ function HomePage() {
       <section className="grid gap-4 lg:grid-cols-12 lg:items-start">
         <header className="rounded-[1.75rem] border border-zinc-200/80 bg-white p-6 shadow-[0_14px_36px_rgba(15,23,42,0.04)] dark:border-zinc-800 dark:bg-zinc-950 lg:col-span-4 lg:p-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
-            Design Direction
+            Nilai Komunitas
           </p>
           <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-white">
-            Minimal, cepat, dan tetap terasa hangat.
+            Bertumbuh, bersekutu, dan melayani bersama.
           </h2>
           <p className="mt-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-            Kami menjaga tampilan tetap modern dengan whitespace lega, border tipis, dan motion halus yang tidak membebani render pipeline.
+            Kami rindu halaman ini menolong jemaat menemukan informasi, penguatan iman, dan kebutuhan pelayanan dalam satu tempat.
           </p>
         </header>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:col-span-8 xl:grid-cols-3">
-          {DESIGN_PRINCIPLES.map(({ title, description, Icon }, index) => (
+          {COMMUNITY_VALUES.map(({ title, description, Icon }, index) => (
             <article
               key={title}
               className="motion-item rounded-[1.5rem] border border-zinc-200/80 bg-zinc-50/80 p-6 dark:border-zinc-800 dark:bg-zinc-900/70"

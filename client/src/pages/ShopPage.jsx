@@ -256,9 +256,9 @@ const STORE_PILLARS = [
   {
     key: "brand",
     label: "Pilar 03",
-    title: "Brand GTshirt",
+    title: "Koleksi Jemaat",
     description:
-      "Brand apparel rohani dari komunitas gereja dengan karakter minimalist streetwear.",
+      "GTshirt hadir dari kebersamaan komunitas gereja untuk dipakai dalam berbagai kegiatan.",
     glow: "from-sky-400/20 via-sky-400/5 to-transparent",
   },
 ];
@@ -677,10 +677,10 @@ function ShopPage() {
               <div className="relative space-y-4">
                 <p className={SHOP_SECTION_LABEL}>Highlight GTshirt</p>
                 <h2 className="max-w-xl text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white sm:text-[2.15rem]">
-                  Rasakan vibe GTshirt sebelum kamu checkout.
+                  Lihat koleksi GTshirt lebih dekat.
                 </h2>
                 <p className="max-w-xl text-sm leading-7 text-brand-600 dark:text-brand-300 sm:text-base">
-                  Cuplikan singkat tentang bahan, detail sablon, dan gaya streetwear rohani terbaru dari GTshirt.
+                  Cuplikan singkat tentang bahan, detail sablon, dan penggunaan GTshirt di tengah komunitas.
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
                   <span className="rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1.5 font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
@@ -723,18 +723,18 @@ function ShopPage() {
                       )}
                       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,12,9,0.04),rgba(5,12,9,0.58)_68%,rgba(5,12,9,0.9))]" />
                       <div className="absolute left-5 top-5 inline-flex items-center rounded-full border border-white/20 bg-[rgba(8,18,13,0.48)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/85 backdrop-blur">
-                        GTshirt Preview
+                        Video GTshirt
                       </div>
                       <div className="relative z-[1] flex w-full items-end justify-between gap-4">
                         <div className="max-w-md space-y-1.5">
                           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100/75">
-                            Official Highlight
+                            Cuplikan Singkat
                           </p>
                           <p className="text-lg font-semibold tracking-[-0.03em] text-white sm:text-xl">
-                            Preview bahan, detail sablon, dan vibe GTshirt terbaru.
+                            Lihat bahan, detail sablon, dan suasana GTshirt di komunitas.
                           </p>
                           <p className="text-xs leading-6 text-white/75 sm:text-sm">
-                            Thumbnail tampil langsung, video baru dimuat saat kamu play.
+                            Tonton cuplikan singkat sebelum memilih produk yang ingin dipesan.
                           </p>
                         </div>
                         <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white text-brand-900 shadow-[0_18px_36px_rgba(0,0,0,0.24)] transition-transform duration-300 group-hover:scale-105">
@@ -757,12 +757,12 @@ function ShopPage() {
 
           <section className={`${SHOP_SECTION_SHELL} flex flex-col`}>
             <div className="space-y-3">
-              <p className={SHOP_SECTION_LABEL}>Store Direction</p>
+              <p className={SHOP_SECTION_LABEL}>Tentang GTshirt</p>
               <h2 className="text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
-                Fondasi visual dan ritme GTshirt.
+                Tiga hal yang kami jaga dalam setiap koleksi GTshirt.
               </h2>
               <p className="text-sm leading-7 text-brand-600 dark:text-brand-300">
-                Pilar ini menjaga GTshirt tetap clean, relevan, dan terasa seperti extension dari komunitas yang membangunnya.
+                GTshirt lahir dari komunitas gereja dan dipersiapkan untuk kebutuhan jemaat, pelayanan, dan kegiatan bersama.
               </p>
             </div>
             <div className="mt-5 grid gap-3">
@@ -790,7 +790,7 @@ function ShopPage() {
         <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.72fr)_minmax(0,1.28fr)]">
           <section className={`${SHOP_SECTION_SHELL} flex flex-col justify-between`}>
             <div className="space-y-3">
-              <p className={SHOP_SECTION_LABEL}>Order Center</p>
+              <p className={SHOP_SECTION_LABEL}>Pesanan</p>
               <h2 className="text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white sm:text-[2rem]">
                 Pantau pesanan langsung dari area toko.
               </h2>
@@ -819,12 +819,12 @@ function ShopPage() {
           <section id="catalog-section" className={`${SHOP_SECTION_SHELL} space-y-5`}>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-2xl">
-                <p className={SHOP_SECTION_LABEL}>Catalog</p>
+                <p className={SHOP_SECTION_LABEL}>Koleksi</p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white sm:text-[2rem]">
-                  Katalog produk yang lebih lapang dan enak dijelajahi.
+                  Pilih produk GTshirt yang tersedia untuk jemaat dan komunitas.
                 </h2>
                 <p className="mt-2 text-sm leading-7 text-brand-600 dark:text-brand-300 sm:text-base">
-                  Klik produk untuk melihat detail, pilih ukuran, lalu tambahkan ke keranjang dengan alur yang tetap ringan.
+                  Klik produk untuk melihat detail, pilih ukuran, lalu tambahkan ke keranjang.
                 </p>
               </div>
               <Link
@@ -1258,7 +1258,7 @@ function ShopPage() {
                           )}
                         </div>
                         <span className="rounded-lg bg-[rgba(16,185,129,0.08)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 sm:text-xs">
-                          {product.color || "Signature Tone"}
+                          {product.color || "Pilihan Warna"}
                         </span>
                       </div>
 

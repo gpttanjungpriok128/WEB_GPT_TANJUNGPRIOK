@@ -463,7 +463,7 @@ function MainLayout({ children }) {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-zinc-950 dark:text-white">Menu Navigasi</p>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Navigasi cepat yang lebih nyaman untuk mobile.
+                    Pilih halaman yang ingin Anda buka.
                   </p>
                 </div>
               )}
@@ -489,7 +489,7 @@ function MainLayout({ children }) {
                       GPT Tanjung Priok
                     </p>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Navigasi yang lebih rapi, cepat, dan nyaman dibaca.
+                      Informasi gereja dan GTshirt dalam satu tempat.
                     </p>
                   </div>
                 </div>
@@ -753,7 +753,7 @@ function MainLayout({ children }) {
                   </div>
                 </div>
                 <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                  Komunitas yang berakar dalam Kristus, bertumbuh dalam kasih, dan hadir dengan pengalaman digital yang cepat untuk ibadah, renungan, galeri, dan pelayanan.
+                  Komunitas yang berakar dalam Kristus, bertumbuh dalam kasih, dan hadir untuk ibadah, renungan, galeri, serta pelayanan bersama.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Link to="/schedules" className="btn-primary tap-target">
@@ -801,7 +801,7 @@ function MainLayout({ children }) {
                 </h2>
                 <div className="mt-4 space-y-4 text-sm text-zinc-600 dark:text-zinc-300">
                   <a
-                    href={`mailto:${contactEmail}?subject=${encodeURIComponent("Pertanyaan dari Website GPT Tanjung Priok")}`}
+                    href={`mailto:${contactEmail}?subject=${encodeURIComponent("Pertanyaan untuk GPT Tanjung Priok")}`}
                     className="inline-flex items-start gap-3 transition-colors hover:text-emerald-700 dark:hover:text-emerald-300"
                   >
                     <MailIcon className="mt-0.5 h-4 w-4" />
@@ -826,7 +826,7 @@ function MainLayout({ children }) {
 
             <div className="mt-8 border-t border-zinc-200/80 pt-5 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex sm:items-center sm:justify-between">
               <p>&copy; 2026 GPT Tanjung Priok</p>
-              <p className="mt-2 sm:mt-0">Modern minimalist UI with performance-first delivery.</p>
+              <p className="mt-2 sm:mt-0">Bertumbuh bersama dalam iman dan pelayanan.</p>
             </div>
           </div>
         </div>

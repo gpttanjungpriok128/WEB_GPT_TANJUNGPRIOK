@@ -53,10 +53,10 @@ function SettingsPage() {
     <div className="page-stack space-y-8 sm:space-y-10">
       <section className="space-y-4">
         <h1 className="text-4xl md:text-5xl font-extrabold text-brand-900 dark:text-white">
-          Pengaturan <span className="gradient-text">Website</span>
+          Pengaturan <span className="gradient-text">Live Streaming</span>
         </h1>
         <p className="text-lg text-brand-600 dark:text-brand-400">
-          Kelola pengaturan umum website GPT Tanjung Priok
+          Kelola link siaran yang akan ditampilkan kepada jemaat
         </p>
       </section>
 
@@ -72,17 +72,17 @@ function SettingsPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-semibold mb-2 text-brand-700 dark:text-brand-300">
-                Link Embed YouTube
+                Link YouTube
               </label>
               <input
                 type="text"
                 value={liveStreamUrl}
                 onChange={(e) => setLiveStreamUrl(e.target.value)}
-                placeholder="https://www.youtube.com/embed/..."
+                placeholder="Tempel link siaran YouTube"
                 className="input-modern"
               />
               <p className="text-sm text-brand-500 dark:text-brand-400 mt-2">
-                Contoh: https://www.youtube.com/embed/dQw4w9WgXcQ
+                Gunakan link video atau siaran yang ingin ditampilkan pada halaman live.
               </p>
             </div>
             {message.text && (
@@ -103,15 +103,11 @@ function SettingsPage() {
 
       <section className="glass-card p-6">
         <h3 className="font-semibold mb-3 text-brand-800 dark:text-white">
-          Cara Mendapatkan Link Embed:
+          Catatan
         </h3>
-        <ol className="list-decimal list-inside space-y-2 text-sm text-brand-700 dark:text-brand-300">
-          <li>Buka video YouTube yang ingin disiarkan</li>
-          <li>Klik tombol "Share" (Bagikan)</li>
-          <li>Pilih opsi "Embed"</li>
-          <li>Copy URL dari atribut src pada kode embed</li>
-          <li>Contoh: https://www.youtube.com/embed/VIDEO_ID</li>
-        </ol>
+        <p className="text-sm leading-7 text-brand-700 dark:text-brand-300">
+          Pastikan link yang dipakai adalah siaran atau video YouTube yang benar agar jemaat dapat menontonnya tanpa kendala.
+        </p>
       </section>
     </div>
   );

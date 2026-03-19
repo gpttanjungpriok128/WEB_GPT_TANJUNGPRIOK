@@ -8,29 +8,29 @@ import {
 
 const HIGHLIGHTS = [
   {
-    label: "Signature Drop",
-    title: "Modern Worship Tee, Weekly Production.",
-    description: "Drop utama GTshirt dengan ritme produksi mingguan dan karakter minimalist streetwear.",
+    label: "Koleksi",
+    title: "Kaos komunitas untuk ibadah dan keseharian.",
+    description: "Pilihan utama GTshirt untuk jemaat yang ingin pakaian sederhana dan nyaman dipakai.",
     Icon: ShoppingBagIcon,
   },
   {
-    label: "Order Flow",
-    title: "Fast checkout & tracking.",
-    description: "Alur belanja dibuat cepat dan jelas supaya jemaat bisa checkout tanpa ribet.",
+    label: "Pemesanan",
+    title: "Pesan dan pantau dengan mudah.",
+    description: "Setelah checkout, status pesanan bisa dicek kembali kapan saja dengan lebih praktis.",
     Icon: SparklesIcon,
   },
   {
-    label: "Brand Voice",
-    title: "Clean. Bold. Faithful.",
-    description: "Visual GTshirt tetap sederhana, kuat, dan relevan dengan karakter komunitas.",
+    label: "Pelayanan",
+    title: "Setiap pembelian mendukung komunitas.",
+    description: "GTshirt hadir sebagai bagian dari karya bersama dan kebutuhan pelayanan jemaat.",
     Icon: ShieldIcon,
   },
 ];
 
 const HERO_NOTES = [
-  { label: "Release", value: "Weekly Drop" },
-  { label: "Tone", value: "Clean Streetwear" },
-  { label: "Flow", value: "Fast Checkout" },
+  { label: "Produksi", value: "Berkala" },
+  { label: "Bahan", value: "Nyaman Dipakai" },
+  { label: "Pesanan", value: "Mudah Dilacak" },
 ];
 
 function ShopHero() {
@@ -76,28 +76,28 @@ function ShopHero() {
               />
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald-100/80">
-                  Official Brand
+                  Komunitas GTshirt
                 </p>
                 <p className="truncate text-sm font-semibold text-white">GTshirtwear</p>
               </div>
             </div>
-            <p className="hero-kicker hero-reveal mt-4 text-emerald-200/90">GTSHIRT STOREFRONT</p>
+            <p className="hero-kicker hero-reveal mt-4 text-emerald-200/90">KOLEKSI GTSHIRT</p>
             <h1 className="hero-reveal delay-1 max-w-4xl text-[2.45rem] font-semibold leading-[0.96] tracking-[-0.05em] text-white drop-shadow-[0_12px_32px_rgba(0,0,0,0.32)] sm:text-4xl sm:leading-[0.96] lg:text-[3.7rem] lg:leading-[0.94] xl:text-[4.1rem]">
-              Streetwear rohani yang clean, bold, dan siap dipakai setiap hari.
+              Kaos komunitas yang nyaman dan siap dipakai setiap hari.
             </h1>
             <p className="hero-reveal delay-2 mt-4 max-w-2xl text-sm leading-6 text-emerald-50/90 sm:mt-5 sm:text-base sm:leading-7">
-              Koleksi kaos minimalist dari komunitas gereja. Checkout cepat, status order jelas, dan desain siap tampil.
+              Koleksi kaos dari komunitas gereja untuk ibadah, pelayanan, dan kegiatan sehari-hari.
             </p>
 
             <div className="hero-reveal delay-2 mt-4 flex flex-wrap gap-2 sm:mt-5">
               <span className="rounded-full border border-emerald-200/20 bg-white/[0.08] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/[0.85]">
-                Checkout cepat
+                Nyaman dipakai
               </span>
               <span className="rounded-full border border-emerald-200/20 bg-white/[0.08] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/[0.85]">
-                Tracking jelas
+                Mudah dipesan
               </span>
               <span className="rounded-full border border-emerald-200/20 bg-white/[0.08] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/[0.85]">
-                Desain clean
+                Lacak pesanan
               </span>
             </div>
 
@@ -152,13 +152,13 @@ function ShopHero() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[rgba(8,18,13,0.22)] via-transparent to-transparent" />
                 <div className="absolute left-4 top-4 rounded-full border border-white/[0.14] bg-[rgba(8,18,13,0.42)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-50/80 backdrop-blur">
-                  Official Drop
+                  Koleksi Unggulan
                 </div>
                 <div className="absolute bottom-4 left-4 rounded-2xl border border-white/[0.14] bg-[rgba(8,18,13,0.38)] px-4 py-3 backdrop-blur">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-100/70">
-                    GTshirt Signature
+                    GTshirt Pilihan
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-white">Streetwear yang clean dan relevan</p>
+                  <p className="mt-1 text-sm font-semibold text-white">Siap dipakai untuk ibadah dan keseharian</p>
                 </div>
               </div>
             </div>
