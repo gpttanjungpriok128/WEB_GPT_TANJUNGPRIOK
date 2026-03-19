@@ -171,6 +171,24 @@ function MainLayout({ children }) {
   }, [mobileMenuOpen, isAdminSidebarPage]);
 
   useEffect(() => {
+    if (typeof document === "undefined" || isAdminSidebarPage) return undefined;
+
+    const { documentElement, body } = document;
+    const previousHtmlOverflow = documentElement.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+
+    if (mobileMenuOpen) {
+      documentElement.style.overflow = "hidden";
+      body.style.overflow = "hidden";
+    }
+
+    return () => {
+      documentElement.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+    };
+  }, [mobileMenuOpen, isAdminSidebarPage]);
+
+  useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     setNavHidden(false);
     lastScrollY.current = 0;
@@ -238,13 +256,13 @@ function MainLayout({ children }) {
         >
           <div className="container-custom">
             <div className="flex min-h-[72px] items-center justify-between gap-3 py-3">
-              <Link to="/" className="flex min-w-0 items-center gap-3">
+              <Link to="/" className="flex min-w-0 flex-1 items-center gap-3">
                 <BrandLogo />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold tracking-[-0.02em] text-zinc-950 dark:text-white sm:text-base">
+                  <p className="truncate text-[0.95rem] font-semibold tracking-[-0.02em] text-zinc-950 dark:text-white sm:text-base">
                     GPT Tanjung Priok
                   </p>
-                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
+                  <p className="hidden text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400 sm:block">
                     Growing Together
                   </p>
                 </div>
@@ -277,11 +295,11 @@ function MainLayout({ children }) {
                 </div>
               </nav>
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <div className="hidden sm:flex">{themeButton}</div>
 
                 {!user && (
-                  <Link to="/login" className="btn-primary hidden sm:inline-flex tap-target">
+                  <Link to="/login" className="btn-primary hidden lg:inline-flex tap-target">
                     Login
                   </Link>
                 )}
@@ -350,9 +368,14 @@ function MainLayout({ children }) {
             </div>
 
             <div ref={mobileMenuRef} className="relative lg:hidden">
+              <div
+                className={`mobile-menu-backdrop ${mobileMenuOpen ? "open" : ""}`}
+                aria-hidden="true"
+                onClick={() => setMobileMenuOpen(false)}
+              />
               <div className={`mobile-menu-float ${mobileMenuOpen ? "open" : ""}`}>
                 <div className="mobile-menu-panel rounded-[1.75rem] border border-zinc-200/80 bg-white/96 p-3 shadow-[0_24px_64px_rgba(15,23,42,0.12)] dark:border-zinc-800 dark:bg-zinc-950/96">
-                  <div className="mb-3 flex items-center justify-between gap-3 rounded-[1.25rem] border border-zinc-200/80 bg-zinc-50/80 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900/80">
+                  <div className="mobile-menu-head mb-3 flex items-center justify-between gap-3 rounded-[1.25rem] border border-zinc-200/80 bg-zinc-50/80 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900/80">
                     {user ? (
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
