@@ -154,19 +154,34 @@ function MainLayout({ children }) {
   useEffect(() => {
     if (!mobileMenuOpen || isAdminSidebarPage) return;
 
-    const closeOnOutsideClick = (event) => {
-      const target = event.target;
-      if (mobileMenuRef.current?.contains(target)) return;
-      if (mobileMenuToggleRef.current?.contains(target)) return;
-      setMobileMenuOpen(false);
+    const closeOnEsc = (event) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
     };
 
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    document.addEventListener("touchstart", closeOnOutsideClick);
+    window.addEventListener("keydown", closeOnEsc);
 
     return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-      document.removeEventListener("touchstart", closeOnOutsideClick);
+      window.removeEventListener("keydown", closeOnEsc);
+    };
+  }, [mobileMenuOpen, isAdminSidebarPage]);
+
+  useEffect(() => {
+    if (typeof document === "undefined" || isAdminSidebarPage) return undefined;
+
+    const { body, documentElement } = document;
+    const previousBodyOverflow = body.style.overflow;
+    const previousHtmlOverflow = documentElement.style.overflow;
+
+    if (mobileMenuOpen) {
+      body.style.overflow = "hidden";
+      documentElement.style.overflow = "hidden";
+    }
+
+    return () => {
+      body.style.overflow = previousBodyOverflow;
+      documentElement.style.overflow = previousHtmlOverflow;
     };
   }, [mobileMenuOpen, isAdminSidebarPage]);
 
@@ -344,92 +359,115 @@ function MainLayout({ children }) {
               </div>
             </div>
 
-            <div ref={mobileMenuRef} className="relative lg:hidden">
-              <div className={`mobile-menu-float ${mobileMenuOpen ? "open" : ""}`}>
-                <div className="mobile-menu-panel rounded-[1.75rem] border border-zinc-200/80 bg-white/96 p-3 shadow-[0_24px_64px_rgba(15,23,42,0.12)] dark:border-zinc-800 dark:bg-zinc-950/96">
-                  <div className="mb-3 flex items-center justify-between gap-3 rounded-[1.25rem] border border-zinc-200/80 bg-zinc-50/80 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900/80">
-                    {user ? (
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
-                          {user?.name || "Pengguna"}
-                        </p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">{user?.role || "jemaat"}</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-sm font-semibold text-zinc-950 dark:text-white">Menu Navigasi</p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">Cepat, ringan, dan mobile-first.</p>
-                      </div>
-                    )}
-                    {themeButton}
-                  </div>
+          </div>
+        </header>
+      )}
 
-                  <nav aria-label="Mobile primary" className="space-y-1.5">
-                    {navLinks.map((link) => (
-                      <NavLink
-                        key={link.to}
-                        to={link.to}
-                        end={link.to === "/"}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={({ isActive }) =>
-                          `mobile-nav-link ${isActive ? "active" : ""}`
-                        }
-                      >
-                        <span>{link.label}</span>
-                        <ArrowRightIcon className="h-4 w-4" />
-                      </NavLink>
-                    ))}
-                    {user && ["admin", "multimedia"].includes(user.role) && (
-                      <NavLink
-                        to="/dashboard/articles/manage"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={({ isActive }) =>
-                          `mobile-nav-link ${isActive ? "active" : ""}`
-                        }
-                      >
-                        <span>CMS</span>
-                        <ArrowRightIcon className="h-4 w-4" />
-                      </NavLink>
-                    )}
-                  </nav>
-
-                  <div className="mt-3 grid gap-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-800">
-                    {!user && (
-                      <Link
-                        to="/login"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="btn-primary tap-target"
-                      >
-                        Login
-                      </Link>
-                    )}
-                    {user && canAccessDashboard && (
-                      <NavLink
-                        to="/dashboard"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="btn-outline tap-target"
-                      >
-                        Dashboard
-                      </NavLink>
-                    )}
-                    {user && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          logout();
-                          setMobileMenuOpen(false);
-                        }}
-                        className="tap-target inline-flex items-center justify-center rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-600"
-                      >
-                        Logout
-                      </button>
-                    )}
-                  </div>
+      {!isAdminSidebarPage && mobileMenuOpen && (
+        <div ref={mobileMenuRef} className="lg:hidden">
+          <button
+            type="button"
+            aria-label="Tutup menu mobile"
+            className="mobile-menu-backdrop"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="mobile-menu-dialog">
+            <div className="mobile-menu-dialog-head">
+              {user ? (
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-zinc-950 dark:text-white">
+                    {user?.name || "Pengguna"}
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {user?.role || "jemaat"}
+                  </p>
                 </div>
+              ) : (
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-zinc-950 dark:text-white">Menu Navigasi</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Navigasi cepat yang lebih nyaman untuk mobile.
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                {themeButton}
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="tap-target inline-flex items-center justify-center rounded-full border border-zinc-200/80 bg-white text-zinc-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+                  aria-label="Tutup menu"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+            </div>
+
+            <div className="mobile-menu-dialog-body">
+              <nav aria-label="Mobile primary" className="space-y-2">
+                {navLinks.map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={link.to === "/"}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `mobile-nav-link ${isActive ? "active" : ""}`
+                    }
+                  >
+                    <span>{link.label}</span>
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </NavLink>
+                ))}
+                {user && ["admin", "multimedia"].includes(user.role) && (
+                  <NavLink
+                    to="/dashboard/articles/manage"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `mobile-nav-link ${isActive ? "active" : ""}`
+                    }
+                  >
+                    <span>CMS</span>
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </NavLink>
+                )}
+              </nav>
+
+              <div className="mt-4 grid gap-2 border-t border-zinc-200/80 pt-4 dark:border-zinc-800">
+                {!user && (
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="btn-primary tap-target"
+                  >
+                    Login
+                  </Link>
+                )}
+                {user && canAccessDashboard && (
+                  <NavLink
+                    to="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="btn-outline tap-target"
+                  >
+                    Dashboard
+                  </NavLink>
+                )}
+                {user && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="tap-target inline-flex items-center justify-center rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-600"
+                  >
+                    Logout
+                  </button>
+                )}
               </div>
             </div>
           </div>
-        </header>
+        </div>
       )}
 
       <main ref={mainRef} className="organic-main container-custom flex-1 py-6 sm:py-8 lg:py-10">
