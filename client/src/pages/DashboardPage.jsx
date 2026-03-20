@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
 import api from "../services/api";
+import "../styles.admin.css";
 
 function DashboardPage() {
   const { user } = useAuth();

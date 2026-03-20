@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../services/api";
 import DOMPurify from "dompurify";
+import "../styles.article-detail.css";
 
 function ArticleDetailPage() {
   const { id } = useParams();

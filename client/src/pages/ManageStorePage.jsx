@@ -4,6 +4,7 @@ import api from "../services/api";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 import { formatRupiah } from "../utils/storeFormatters";
 import AdminStoreTabs from "../components/store-admin/AdminStoreTabs";
+import "../styles.admin.css";
 
 const ProductsTab = lazy(() => import("../components/store-admin/ProductsTab"));
 const OrdersTab = lazy(() => import("../components/store-admin/OrdersTab"));

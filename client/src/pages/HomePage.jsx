@@ -11,7 +11,7 @@ import {
   ShoppingBagIcon,
   UsersIcon,
 } from "../components/SiteIcons";
-import { swrGet } from "../utils/swrCache";
+import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 const COMMUNITY_LINKS = [
   {
@@ -96,9 +96,21 @@ const HOME_HERO_CARDS = [
   },
 ];
 
+const FEATURED_ARTICLE_PARAMS = { limit: 3 };
+const FEATURED_ARTICLE_CACHE_KEY = buildCacheKey("/articles", { params: FEATURED_ARTICLE_PARAMS });
+const FEATURED_ARTICLE_SKELETONS = Array.from({ length: 3 }, (_, index) => index);
+
 function HomePage() {
   const { user } = useAuth();
-  const [featuredArticles, setFeaturedArticles] = useState([]);
+  const [featuredArticles, setFeaturedArticles] = useState(() => {
+    if (typeof window === "undefined") return [];
+    const snapshot = getCacheSnapshot(FEATURED_ARTICLE_CACHE_KEY);
+    return Array.isArray(snapshot?.data?.data) ? snapshot.data.data : [];
+  });
+  const [articlesResolved, setArticlesResolved] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return Boolean(getCacheSnapshot(FEATURED_ARTICLE_CACHE_KEY));
+  });
   const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
 
   const communityCards = useMemo(
@@ -108,26 +120,28 @@ function HomePage() {
 
   useEffect(() => {
     let isMounted = true;
-    const params = { limit: 3 };
 
     swrGet(
       "/articles",
-      { params },
+      { params: FEATURED_ARTICLE_PARAMS },
       {
         ttlMs: 60 * 1000,
         onUpdate: (data) => {
           if (!isMounted) return;
           setFeaturedArticles(Array.isArray(data?.data) ? data.data : []);
+          setArticlesResolved(true);
         },
       },
     )
       .then(({ data }) => {
         if (!isMounted) return;
         setFeaturedArticles(Array.isArray(data?.data) ? data.data : []);
+        setArticlesResolved(true);
       })
       .catch(() => {
         if (!isMounted) return;
         setFeaturedArticles([]);
+        setArticlesResolved(true);
       });
 
     return () => {
@@ -351,6 +365,9 @@ function HomePage() {
                           alt={article.title}
                           loading="lazy"
                           decoding="async"
+                          width="640"
+                          height="480"
+                          sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
                           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                           onError={(event) => {
                             event.currentTarget.style.display = "none";
@@ -381,6 +398,30 @@ function HomePage() {
                 </article>
               );
             })}
+          </div>
+        ) : !articlesResolved ? (
+          <div className="grid gap-4 lg:grid-cols-3">
+            {FEATURED_ARTICLE_SKELETONS.map((item) => (
+              <article
+                key={`featured-article-skeleton-${item}`}
+                className="glass-card flex min-h-[24rem] flex-col overflow-hidden"
+              >
+                <div className="m-2 aspect-[4/3] rounded-2xl skeleton" />
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
+                  <div className="h-3 w-24 rounded-full skeleton" />
+                  <div className="mt-4 h-6 w-4/5 rounded-full skeleton" />
+                  <div className="mt-3 space-y-2">
+                    <div className="h-4 w-full rounded-full skeleton" />
+                    <div className="h-4 w-11/12 rounded-full skeleton" />
+                    <div className="h-4 w-2/3 rounded-full skeleton" />
+                  </div>
+                  <div className="mt-auto flex items-center justify-between pt-5">
+                    <div className="h-4 w-24 rounded-full skeleton" />
+                    <div className="h-4 w-16 rounded-full skeleton" />
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         ) : (
           <div className="rounded-[1.5rem] border border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-center dark:border-zinc-800 dark:bg-zinc-950/70">

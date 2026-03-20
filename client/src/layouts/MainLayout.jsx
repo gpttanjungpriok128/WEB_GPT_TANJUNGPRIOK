@@ -198,6 +198,16 @@ function MainLayout({ children }) {
   }, []);
 
   useEffect(() => {
+    const needsAdminStyles =
+      canAccessDashboard &&
+      (isAdminSidebarPage || location.pathname.startsWith("/dashboard"));
+
+    if (!needsAdminStyles) return;
+
+    import("../styles.admin.css");
+  }, [canAccessDashboard, isAdminSidebarPage, location.pathname]);
+
+  useEffect(() => {
     setMobileMenuOpen(false);
     setProfileMenuOpen(false);
   }, [location.pathname]);

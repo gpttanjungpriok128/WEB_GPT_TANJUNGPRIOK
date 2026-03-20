@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
 import api from "../services/api";
+import "../styles.admin.css";
 
 const CATEGORY_OPTIONS = [
   { value: "kaum_pria", label: "Kaum Pria" },

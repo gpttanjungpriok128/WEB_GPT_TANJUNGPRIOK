@@ -34,6 +34,8 @@
     <link rel="icon" type="image/png" href="/img/logo1.png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/img/logo1.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin="anonymous" />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
     <title>GPT Tanjung Priok</title>
     <script>
       (function () {
@@ -44,6 +46,31 @@
           }
         } catch (error) {
           console.error("Theme bootstrap failed", error);
+        }
+      })();
+    </script>
+    <script>
+      (function () {
+        try {
+          var rawApiUrl = "%VITE_API_URL%";
+          if (!rawApiUrl || rawApiUrl === "%VITE_API_URL%") return;
+
+          var apiOrigin = new URL(rawApiUrl, window.location.origin).origin;
+          if (!apiOrigin || apiOrigin === window.location.origin) return;
+
+          ["preconnect", "dns-prefetch"].forEach(function (rel) {
+            var existing = document.head.querySelector('link[rel="' + rel + '"][href="' + apiOrigin + '"]');
+            if (existing) return;
+            var link = document.createElement("link");
+            link.rel = rel;
+            link.href = apiOrigin;
+            if (rel === "preconnect") {
+              link.crossOrigin = "anonymous";
+            }
+            document.head.appendChild(link);
+          });
+        } catch (error) {
+          console.error("Connection hint bootstrap failed", error);
         }
       })();
     </script>

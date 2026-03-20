@@ -1,0 +1,311 @@
+/* Route-split article detail/reader styles to reduce unused public CSS. */
+
+/* ─── Article Reader ─── */
+.article-detail-shell {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.article-detail-card {
+  border: 1px solid color-mix(in srgb, var(--brand-border) 82%, white 18%);
+  border-radius: 20px;
+  background: color-mix(in srgb, white 94%, #effdf6 6%);
+  box-shadow: 0 18px 40px rgba(14, 69, 50, 0.1);
+  overflow: hidden;
+}
+
+.dark .article-detail-card {
+  border-color: rgba(31, 47, 39, 0.95);
+  background: color-mix(in srgb, #0a120f 92%, #0d1d17 8%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+}
+
+.article-detail-header {
+  padding: 1.1rem 1rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--brand-border) 76%, white 24%);
+}
+
+.dark .article-detail-header {
+  border-bottom-color: rgba(31, 47, 39, 0.95);
+}
+
+.article-detail-figure {
+  margin: 1rem;
+  overflow: hidden;
+  border-radius: 14px;
+  max-height: 360px;
+}
+
+.article-detail-content {
+  padding: 0.25rem 1rem 1.8rem;
+}
+
+@media (max-width: 640px) {
+  .article-detail-card {
+    border-radius: 18px;
+  }
+
+  .article-detail-header {
+    padding: 1rem;
+  }
+
+  .article-detail-figure {
+    margin: 0.9rem;
+    border-radius: 14px;
+    max-height: 320px;
+  }
+
+  .article-detail-content {
+    padding: 0.2rem 1rem 1.4rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .article-detail-card {
+    border-radius: 24px;
+  }
+
+  .article-detail-header {
+    padding: 1.35rem 1.6rem 1.2rem;
+  }
+
+  .article-detail-figure {
+    margin: 1.2rem 1.5rem;
+    border-radius: 18px;
+    max-height: 420px;
+  }
+
+  .article-detail-content {
+    padding: 0.35rem 1.6rem 2.4rem;
+  }
+}
+
+.article-reader-overlay {
+  z-index: 80;
+  padding: 0;
+}
+
+.article-reader-modal {
+  border-radius: 0;
+}
+
+@media (min-width: 768px) {
+  .article-reader-overlay {
+    padding: 1rem;
+  }
+
+  .article-reader-modal {
+    border-radius: 24px 30px 24px 34px / 30px 24px 34px 26px;
+  }
+}
+
+.article-reader-progress {
+  height: 4px;
+  width: 100%;
+  background: rgba(20, 132, 88, 0.12);
+}
+
+.article-reader-progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #148458, #44bd89);
+  transition: width 120ms linear;
+}
+
+.article-reader-header {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  border-bottom: 1px solid color-mix(in srgb, var(--brand-border) 76%, white 24%);
+  padding: 0.95rem 1rem 1.05rem;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(245, 255, 250, 0.88));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dark .article-reader-header {
+  border-bottom-color: rgba(31, 47, 39, 0.95);
+  background:
+    linear-gradient(160deg, rgba(9, 14, 11, 0.96), rgba(7, 12, 9, 0.9));
+}
+
+.article-reader-close {
+  position: absolute;
+  right: 0.8rem;
+  top: 0.75rem;
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 132, 88, 0.18);
+  color: #0e4530;
+  background: rgba(255, 255, 255, 0.9);
+  transition: all 0.2s ease;
+}
+
+.article-reader-close:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 10px 24px rgba(14, 69, 50, 0.2);
+}
+
+.dark .article-reader-close {
+  color: #d1fae5;
+  border-color: rgba(68, 189, 137, 0.25);
+  background: rgba(10, 16, 12, 0.9);
+}
+
+.article-reader-body {
+  padding: 0.85rem 0.9rem 2rem;
+}
+
+@media (min-width: 768px) {
+  .article-reader-header {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .article-reader-close {
+    right: 1rem;
+    top: 1rem;
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .article-reader-body {
+    padding: 1.1rem 1.4rem 2.3rem;
+  }
+}
+
+.article-reader-figure {
+  overflow: hidden;
+  border-radius: 14px 18px 14px 20px / 16px 12px 20px 14px;
+  max-height: 300px;
+  margin: 0 auto 1rem;
+}
+
+@media (min-width: 768px) {
+  .article-reader-figure {
+    border-radius: 16px 24px 16px 28px / 20px 14px 26px 18px;
+    max-height: 360px;
+    margin: 0 auto 1.25rem;
+  }
+}
+
+.article-reader-content {
+  max-width: 68ch;
+  margin: 0 auto;
+  color: #123528;
+  font-size: clamp(0.98rem, 0.93rem + 0.18vw, 1.04rem);
+  line-height: 1.78;
+  letter-spacing: 0.001em;
+}
+
+.dark .article-reader-content {
+  color: #dbeee4;
+}
+
+.dark .article-reader-content [style*="color"],
+.dark .article-reader-content font[color] {
+  color: #dbeee4 !important;
+}
+
+.article-reader-content * {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.article-reader-content :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)[style*="font-size"] {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.article-reader-content > *:first-child {
+  margin-top: 0;
+}
+
+.article-reader-content h1,
+.article-reader-content h2,
+.article-reader-content h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  line-height: 1.28;
+  margin-top: 1.45em;
+  margin-bottom: 0.65em;
+  color: #0f3727;
+}
+
+.article-reader-content h1 {
+  font-size: clamp(1.45rem, 1.18rem + 1vw, 2rem);
+}
+
+.article-reader-content h2 {
+  font-size: clamp(1.3rem, 1.1rem + 0.8vw, 1.75rem);
+}
+
+.article-reader-content h3 {
+  font-size: clamp(1.15rem, 1.02rem + 0.55vw, 1.4rem);
+}
+
+.dark .article-reader-content h1,
+.dark .article-reader-content h2,
+.dark .article-reader-content h3 {
+  color: #f2f9f5 !important;
+}
+
+.article-reader-content p {
+  margin: 0.95em 0;
+}
+
+.article-reader-content blockquote {
+  margin: 1.45em 0;
+  padding: 0.9rem 1rem;
+  border-left: 3px solid rgba(20, 132, 88, 0.7);
+  border-radius: 0.75rem;
+  background: rgba(20, 132, 88, 0.07);
+  font-style: italic;
+}
+
+.dark .article-reader-content blockquote {
+  background: rgba(20, 132, 88, 0.12);
+}
+
+.article-reader-content ul,
+.article-reader-content ol {
+  margin: 1em 0 1.1em 1.1em;
+  padding-left: 0.75em;
+}
+
+.article-reader-content li + li {
+  margin-top: 0.35em;
+}
+
+.article-reader-content a {
+  color: #148458;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.dark .article-reader-content a {
+  color: #7bd6ad !important;
+}
+
+.article-reader-content img {
+  border-radius: 0.9rem;
+  margin: 1rem auto;
+  max-width: 100%;
+}
+
+@media (max-width: 767px) {
+  .article-reader-header {
+    padding-right: 3.5rem;
+  }
+
+  .article-reader-content {
+    max-width: 100%;
+    line-height: 1.72;
+  }
+}

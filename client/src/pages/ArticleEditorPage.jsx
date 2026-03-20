@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import RichTextEditor from '../components/RichTextEditor';
 import DOMPurify from 'dompurify';
+import '../styles.admin.css';
 
 function ArticleEditorPage() {
   const { user } = useAuth();
