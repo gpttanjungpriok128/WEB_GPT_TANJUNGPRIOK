@@ -84,24 +84,29 @@ function ContactPage() {
         {/* Contact Information */}
         <div className="md:col-span-1 space-y-4">
           {contactCards.map((card, i) => (
-            <div key={i} className="glass-card p-5">
-              <div className="icon-box-glow h-11 w-11 mb-3">
-                <span className="text-lg">{card.icon}</span>
+            <div key={i} className="glass-card relative overflow-hidden p-6 group hover:-translate-y-2 hover:shadow-xl transition-all duration-500">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-100/50 to-teal-100/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4 group-hover:scale-150 transition-transform duration-500 dark:from-emerald-900/30 dark:to-teal-900/10 pointer-events-none" />
+              <div className="relative z-10 icon-box-glow h-12 w-12 mb-4 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300 shadow-sm">
+                <span className="text-xl">{card.icon}</span>
               </div>
-              <h3 className="font-semibold mb-2 text-brand-800 dark:text-white">
+              <h3 className="relative z-10 font-bold text-lg mb-2 text-brand-900 dark:text-white">
                 {card.title}
               </h3>
-              {card.content}
+              <div className="relative z-10">
+                {card.content}
+              </div>
             </div>
           ))}
         </div>
 
         {/* Contact Form */}
-        <form onSubmit={handleSubmit} className="md:col-span-2 glass-card p-8 space-y-5">
-          <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
+        <form onSubmit={handleSubmit} className="md:col-span-2 glass-card relative overflow-hidden p-8 md:p-10 shadow-md hover:shadow-xl transition-shadow duration-500">
+          <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-emerald-100/40 rounded-full blur-3xl dark:bg-emerald-900/20 pointer-events-none" />
+          <h2 className="relative z-10 text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-500 dark:from-emerald-400 dark:to-teal-300 mb-8">
             Kirim Pesan
           </h2>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="relative z-10 space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-brand-700 dark:text-brand-300">Nama Lengkap *</label>
               <input
@@ -159,13 +164,17 @@ function ContactPage() {
               {feedback}
             </div>
           )}
+          </div>
         </form>
       </div>
 
       {/* Map Section */}
-      <section className="space-y-4">
-        <h2 className="text-2xl font-bold text-brand-900 dark:text-white">Lokasi Kami</h2>
-        <div className="h-96 rounded-2xl border border-brand-200 dark:border-brand-700 overflow-hidden shadow-glass">
+      <section className="space-y-6 pb-10">
+        <h2 className="text-3xl font-extrabold tracking-tight text-brand-900 dark:text-white flex items-center gap-3">
+          <span className="text-emerald-500">📍</span> Lokasi Kami
+        </h2>
+        <div className="h-[400px] rounded-[1.5rem] border border-brand-200/50 dark:border-brand-700/50 overflow-hidden shadow-lg relative group">
+          <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-transparent transition-colors duration-500 pointer-events-none z-10 mix-blend-overlay"></div>
           <iframe
             title="Church Location"
             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3967.11310000163!2d106.88428407482819!3d-6.115473693871147!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e6a1fc04bc27605%3A0x1569cf9471a85005!2sGPT%20Tg.%20Priok!5e0!3m2!1sen!2sid!4v1772113891624!5m2!1sen!2sid"

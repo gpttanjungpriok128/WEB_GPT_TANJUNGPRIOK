@@ -950,35 +950,27 @@ function CartPage() {
       </div>
 
       <div className="sticky-mobile-bar sm:hidden">
-        <div className="sticky-mobile-surface space-y-3 p-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                Total ({selectedCount} item)
-              </p>
-              <p className="text-lg font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
+        <div className="sticky-mobile-surface space-y-2.5 p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-base font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
                 {formatRupiah(grandTotal)}
               </p>
               <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                Ongkir {shipping > 0 ? formatRupiah(shipping) : "Gratis"}
+                {selectedCount} item • Ongkir {shipping > 0 ? formatRupiah(shipping) : "Gratis"}
               </p>
             </div>
-            <div className="rounded-[1rem] border border-emerald-200/80 bg-emerald-50/90 px-3 py-2 text-right dark:border-emerald-900/40 dark:bg-emerald-900/20">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
-                Checkout
-              </p>
-              <p className="mt-1 text-sm font-semibold text-emerald-800 dark:text-emerald-100">
-                {selectedCount} item
-              </p>
-            </div>
+            <span className="rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
+              {selectedCount} item
+            </span>
           </div>
           <button
             type="button"
             onClick={proceedCheckout}
             disabled={isSubmittingOrder || selectedCount === 0}
-            className="btn-primary min-h-[48px] w-full !rounded-[1.05rem] !px-4 !py-3 text-sm font-semibold disabled:opacity-60"
+            className="btn-primary min-h-[44px] w-full !rounded-[1rem] !px-4 !py-2.5 text-sm font-semibold disabled:opacity-60"
           >
-            {isSubmittingOrder ? "Processing..." : "Checkout & Konfirmasi WhatsApp"}
+            {isSubmittingOrder ? "Processing..." : "Checkout WhatsApp"}
           </button>
         </div>
       </div>

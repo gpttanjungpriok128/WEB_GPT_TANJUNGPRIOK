@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import PageHero from "../components/PageHero";
 import api from "../services/api";
 
 function SettingsPage() {
@@ -51,14 +52,10 @@ function SettingsPage() {
 
   return (
     <div className="page-stack space-y-8 sm:space-y-10">
-      <section className="space-y-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-900 dark:text-white">
-          Pengaturan <span className="gradient-text">Live Streaming</span>
-        </h1>
-        <p className="text-lg text-brand-600 dark:text-brand-400">
-          Kelola link siaran yang akan ditampilkan kepada jemaat
-        </p>
-      </section>
+      <PageHero 
+        title="Pengaturan Live Streaming" 
+        subtitle="Kelola link siaran yang akan ditampilkan kepada jemaat." 
+      />
 
       <section className="glass-card p-8">
         <h2 className="text-2xl font-bold mb-6 text-brand-900 dark:text-white">

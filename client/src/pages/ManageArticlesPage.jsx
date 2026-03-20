@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PageHero from '../components/PageHero';
 import api from '../services/api';
 
 function ManageArticlesPage() {
@@ -54,18 +55,20 @@ function ManageArticlesPage() {
 
   return (
     <section className="page-stack admin-shell space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-3xl font-bold text-brand-900 dark:text-white">Manajemen Renungan</h1>
-        <Link to="/dashboard/articles/new" className="btn-primary !px-5 !py-2.5 text-sm">+ Buat Renungan</Link>
+      <PageHero title="Manajemen Renungan" subtitle="Kelola dan buat renungan harian untuk komunitas." tone="dense" />
+      
+      <div className="flex justify-end mb-2">
+        <Link to="/dashboard/articles/new" className="btn-primary !px-5 !py-2.5 text-sm shadow-md transition-transform hover:-translate-y-0.5">+ Buat Renungan</Link>
       </div>
 
       {isLoading && <p className="text-sm text-brand-600 dark:text-brand-400">Loading...</p>}
       {error && <p className="text-sm text-rose-600">{error}</p>}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {articles.map((article) => (
-          <div key={article.id} className="admin-card p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+          <div key={article.id} className="glass-card relative overflow-hidden p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-100/30 rounded-full blur-3xl dark:bg-emerald-900/10 pointer-events-none" />
+            <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 className="font-semibold text-brand-900 dark:text-white">{article.title}</h2>
                 <p className="text-sm text-brand-500 dark:text-brand-400">

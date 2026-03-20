@@ -15,8 +15,9 @@ function AboutPage() {
       />
 
       {/* Introduction */}
-      <section className="glass-card p-8 md:p-10">
-        <div className="grid gap-8 md:grid-cols-2 items-center">
+      <section className="glass-card relative overflow-hidden p-8 md:p-12 shadow-sm hover:shadow-xl transition-all duration-500">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 dark:bg-emerald-900/20 pointer-events-none" />
+        <div className="relative z-10 grid gap-10 md:grid-cols-2 items-center">
           <div>
             <h2 className="mb-4 text-2xl font-bold text-brand-800 dark:text-white">
               Sejarah Singkat
@@ -45,20 +46,22 @@ function AboutPage() {
       </section>
 
       {/* Motto & Scripture */}
-      <section className="rounded-2xl border-2 border-primary/30 dark:border-primary/20 bg-white dark:bg-brand-900/40 p-8 md:p-10">
-        <div className="grid gap-8 md:grid-cols-2">
+      <section className="glass-card relative overflow-hidden p-8 md:p-12 border-0 bg-gradient-to-br from-emerald-50/50 to-white dark:from-emerald-950/40 dark:to-zinc-950 shadow-sm hover:shadow-xl transition-all duration-500">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.1),transparent_50%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.05),transparent_50%)] pointer-events-none" />
+        <div className="relative z-10 grid gap-10 md:grid-cols-2 items-center">
           <div>
-            <p className="text-3xl md:text-4xl font-extrabold gradient-text mb-4">
+            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 mb-6 drop-shadow-sm">
               🌱 Growing Together
-            </p>
-            <p className="text-brand-700 dark:text-brand-300 leading-relaxed">
+            </h2>
+            <p className="text-lg text-brand-700 dark:text-brand-300 leading-relaxed">
               Kami percaya bahwa pertumbuhan rohani yang sejati terjadi ketika
               kita tumbuh bersama-sama sebagai komunitas iman, saling mendukung,
               saling mengingatkan, dan bersama-sama membesar dalam Kristus.
             </p>
           </div>
           <div>
-            <div className="glass-card !rounded-xl p-6 border-l-4 !border-l-primary">
+            <div className="glass-card relative p-8 shadow-md hover:shadow-xl transition-all duration-300">
+              <div className="absolute -left-3 top-8 h-12 w-1.5 rounded-r-md bg-gradient-to-b from-emerald-400 to-teal-500" />
               <p className="text-brand-700 dark:text-brand-300 italic font-medium mb-3 leading-relaxed">
                 "Jangan menjauhkan diri dari pertemuan-pertemuan ibadah kita,
                 seperti ada di antara kita yang biasa melakukannya, tetapi
@@ -87,10 +90,11 @@ function AboutPage() {
             desc: "Bersekutu sebagai sesama, menyaksikan cinta kasih Kristus, serta melayani sesama dengan rendah hati."
           },
         ].map((item, i) => (
-          <div key={i} className="glass-card p-8">
-            <div className="flex items-start gap-4">
-              <div className="icon-box-glow h-12 w-12 shrink-0 mt-1">
-                <span className="text-xl">{item.icon}</span>
+          <div key={i} className="glass-card relative overflow-hidden group p-8 hover:-translate-y-2 hover:shadow-xl transition-all duration-500">
+            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-emerald-100/50 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700 dark:bg-emerald-900/30" />
+            <div className="relative z-10 flex items-start gap-5">
+              <div className="icon-box-glow h-14 w-14 shrink-0 mt-1 shadow-md group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300">
+                <span className="text-2xl">{item.icon}</span>
               </div>
               <div>
                 <h3 className="mb-3 text-xl font-bold text-brand-800 dark:text-white">
@@ -119,9 +123,10 @@ function AboutPage() {
           ].map((item, i) => (
             <div
               key={i}
-              className="glass-card p-6 text-center group"
+              className="glass-card p-8 text-center group hover:-translate-y-2 hover:shadow-xl transition-all duration-500 relative overflow-hidden"
             >
-              <div className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
+              <div className="absolute -top-10 -left-10 w-24 h-24 bg-teal-100/40 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 dark:bg-teal-900/20" />
+              <div className="relative z-10 mb-5 text-5xl transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 inline-block filter drop-shadow-sm">
                 {item.icon}
               </div>
               <h3 className="font-semibold mb-2 text-brand-800 dark:text-white">
@@ -168,11 +173,12 @@ function AboutPage() {
               cta: "Baca Renungan →",
             },
           ].map((item, i) => (
-            <div key={i} className="glass-card p-6">
-              <div className="icon-box h-12 w-12 mb-4">
-                <span className="text-xl">{item.icon}</span>
+            <div key={i} className="glass-card relative overflow-hidden group p-8 hover:-translate-y-2 hover:shadow-xl transition-all duration-500">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700 dark:bg-emerald-900/20" />
+              <div className="relative z-10 icon-box h-14 w-14 mb-5 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300">
+                <span className="text-2xl">{item.icon}</span>
               </div>
-              <h3 className="text-lg font-semibold mb-3 text-brand-800 dark:text-white">
+              <h3 className="relative z-10 text-xl font-bold tracking-tight mb-3 text-brand-900 dark:text-white group-hover:text-emerald-700 transition-colors">
                 {item.title}
               </h3>
               <p className="text-sm text-brand-600 dark:text-brand-400 mb-4 leading-relaxed">

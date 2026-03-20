@@ -158,50 +158,52 @@ function HomePage() {
 
   return (
     <div className="page-stack space-y-6 sm:space-y-8 lg:space-y-10">
-      <section className="relative overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white px-6 py-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:border-zinc-800 dark:bg-zinc-950 sm:px-8 sm:py-10 lg:px-12 lg:py-14">
+      <section className="relative overflow-hidden rounded-[2rem] border border-emerald-500/30 bg-gradient-to-br from-emerald-600 via-teal-700 to-brand-900 px-6 py-8 shadow-[0_20px_60px_rgba(16,185,129,0.2)] dark:border-emerald-800/50 dark:from-emerald-900 dark:via-teal-900 dark:to-emerald-950 sm:px-8 sm:py-10 lg:px-12 lg:py-14">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-16 top-0 h-48 w-48 rounded-full bg-emerald-100 blur-3xl dark:bg-emerald-950/60" />
-          <div className="absolute right-0 top-6 h-40 w-40 rounded-full bg-zinc-100 blur-3xl dark:bg-zinc-900" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent dark:via-emerald-500/40" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+          <div className="absolute -left-16 top-0 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute bottom-[-3rem] left-[22%] h-28 w-28 rounded-full bg-teal-300/20 blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_38%)]" />
+          <div className="absolute right-[-6%] top-[-12%] h-64 w-64 rounded-full border border-white/10 bg-white/5 blur-2xl" />
         </div>
 
         <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.04fr)_minmax(320px,0.96fr)] lg:items-end">
           <header className="max-w-3xl">
-            <div className="hero-reveal inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 shadow-[0_10px_24px_rgba(15,23,42,0.05)] backdrop-blur dark:border-emerald-900/40 dark:bg-white/[0.03] dark:text-emerald-200">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <div className="hero-reveal inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
               Selamat Datang
             </div>
-            <h1 className="hero-reveal delay-1 mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.05em] text-zinc-950 dark:text-white sm:text-5xl lg:text-6xl">
+            <h1 className="hero-reveal delay-1 mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl drop-shadow-md">
               GPT Tanjung Priok
             </h1>
-            <p className="hero-reveal delay-2 mt-3 text-lg font-medium text-zinc-500 dark:text-zinc-400 sm:text-xl">
+            <p className="hero-reveal delay-2 mt-3 text-lg font-medium text-emerald-100 sm:text-xl drop-shadow-sm">
               {"\ud83c\udf31 Growing Together"}
             </p>
-            <p className="hero-reveal delay-2 mt-5 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 sm:text-base">
+            <p className="hero-reveal delay-2 mt-5 max-w-2xl text-sm leading-7 text-emerald-50/90 sm:text-base">
               Menjadi komunitas yang berakar dalam Kristus dan bertumbuh dalam kasih untuk saling melayani.
             </p>
 
             <div className="hero-reveal delay-3 mt-5 flex flex-wrap gap-2">
-              <span className="rounded-full border border-zinc-200/80 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-zinc-800 dark:bg-white/[0.03] dark:text-zinc-300">
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-100 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur">
                 Komunitas
               </span>
-              <span className="rounded-full border border-zinc-200/80 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-zinc-800 dark:bg-white/[0.03] dark:text-zinc-300">
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-100 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur">
                 Ibadah
               </span>
-              <span className="rounded-full border border-zinc-200/80 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-zinc-800 dark:bg-white/[0.03] dark:text-zinc-300">
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-100 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur">
                 Pelayanan
               </span>
             </div>
 
             <div className="hero-reveal delay-3 mt-7 flex flex-wrap gap-3">
-              <Link to="/schedules" className="btn-primary tap-target">
+              <Link to="/schedules" className="btn-hero tap-target">
                 {"\ud83d\udcc5 Jadwal Ibadah"}
               </Link>
-              <Link to="/shop" className="btn-outline tap-target">
+              <Link to="/shop" className="btn-hero-outline tap-target">
                 {"\ud83d\uded2 GTshirt Store"}
               </Link>
               {user && (
-                <Link to="/prayer" className="btn-outline tap-target">
+                <Link to="/prayer" className="btn-hero-outline tap-target">
                   {"\ud83d\ude4f Kirim Permohonan Doa"}
                 </Link>
               )}
@@ -209,14 +211,14 @@ function HomePage() {
           </header>
 
           <div className="hidden gap-3 lg:grid">
-            <article className="hero-reveal delay-2 rounded-[1.7rem] border border-zinc-200/80 bg-white/[0.82] p-5 shadow-[0_16px_36px_rgba(15,23,42,0.05)] backdrop-blur dark:border-zinc-800 dark:bg-white/[0.03]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
+            <article className="hero-reveal delay-2 rounded-[1.7rem] border border-white/20 bg-white/10 p-5 shadow-[0_16px_36px_rgba(0,0,0,0.1)] backdrop-blur">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/80">
                 Komunitas Iman
               </p>
-              <h2 className="mt-3 text-xl font-semibold tracking-[-0.03em] text-zinc-950 dark:text-white">
+              <h2 className="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">
                 Bertumbuh bersama dalam Kristus dan kasih.
               </h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+              <p className="mt-2 text-sm leading-6 text-emerald-50/90">
                 Temukan jadwal, renungan, galeri, dan kebutuhan jemaat dalam satu ruang yang saling terhubung.
               </p>
             </article>
@@ -225,18 +227,18 @@ function HomePage() {
               {HOME_HERO_CARDS.map(({ label, title, description, Icon }) => (
                 <article
                   key={label}
-                  className="hero-reveal delay-3 rounded-[1.4rem] border border-zinc-200/80 bg-white/[0.78] p-4 backdrop-blur dark:border-zinc-800 dark:bg-white/[0.03]"
+                  className="hero-reveal delay-3 rounded-[1.4rem] border border-white/20 bg-white/10 p-4 backdrop-blur shadow-[0_8px_20px_rgba(0,0,0,0.05)]"
                 >
-                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 text-white shadow-inner">
                     <Icon className="h-4 w-4" />
                   </div>
-                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-100/80">
                     {label}
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-zinc-950 dark:text-white">
+                  <p className="mt-2 text-sm font-semibold text-white">
                     {title}
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                  <p className="mt-2 text-sm leading-6 text-emerald-50/80">
                     {description}
                   </p>
                 </article>
@@ -250,11 +252,12 @@ function HomePage() {
         {communityCards.map(({ title, description, link, cta, Icon, gridClass }) => (
           <article
             key={title}
-            className={`motion-item rounded-[1.5rem] border border-zinc-200/80 bg-white p-6 shadow-[0_14px_36px_rgba(15,23,42,0.04)] transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-950 ${gridClass}`}
+            className={`glass-card relative overflow-hidden p-8 group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl flex flex-col ${gridClass}`}
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
-                <Icon className="h-5 w-5" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-emerald-100/60 to-teal-100/30 rounded-full blur-3xl -translate-y-2/3 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700 dark:from-emerald-900/40 dark:to-teal-900/20" />
+            <div className="relative z-10 flex items-start justify-between gap-4">
+              <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300 dark:bg-zinc-900 dark:text-emerald-400 border border-emerald-50 dark:border-emerald-800/50">
+                <Icon className="h-6 w-6" />
               </div>
               <span className="text-xs font-medium uppercase tracking-[0.22em] text-zinc-400">
                 Jelajahi
@@ -294,11 +297,12 @@ function HomePage() {
           {COMMUNITY_VALUES.map(({ title, description, Icon }, index) => (
             <article
               key={title}
-              className="motion-item rounded-[1.5rem] border border-zinc-200/80 bg-zinc-50/80 p-6 dark:border-zinc-800 dark:bg-zinc-900/70"
+              className="glass-card group p-7 hover:-translate-y-2 hover:shadow-xl transition-all duration-500 relative overflow-hidden"
               style={{ transitionDelay: `${index * 60}ms` }}
             >
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-zinc-900 shadow-[0_10px_24px_rgba(15,23,42,0.05)] dark:bg-zinc-950 dark:text-zinc-100">
-                <Icon className="h-5 w-5" />
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-emerald-100/50 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700 dark:bg-emerald-900/30" />
+              <div className="relative z-10 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-md group-hover:shadow-lg group-hover:-rotate-3 transition-all duration-300 dark:bg-zinc-950 dark:text-emerald-400 border border-emerald-50 dark:border-emerald-800/50">
+                <Icon className="h-6 w-6" />
               </div>
               <h3 className="mt-5 text-lg font-semibold text-zinc-950 dark:text-white">
                 {title}
@@ -337,17 +341,17 @@ function HomePage() {
               return (
                 <article
                   key={article.id}
-                  className="group overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-white shadow-[0_14px_36px_rgba(15,23,42,0.04)] transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-950"
+                  className="glass-card group flex flex-col overflow-hidden hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                 >
-                  <Link to={`/articles?open=${article.id}`} aria-label={`Baca renungan ${article.title}`}>
-                    <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+                  <Link to={`/articles?open=${article.id}`} aria-label={`Baca renungan ${article.title}`} className="flex flex-col h-full">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100 dark:bg-zinc-900 m-2 rounded-2xl shadow-inner">
                       {imageUrl ? (
                         <img
                           src={imageUrl}
                           alt={article.title}
                           loading="lazy"
                           decoding="async"
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                           onError={(event) => {
                             event.currentTarget.style.display = "none";
                           }}

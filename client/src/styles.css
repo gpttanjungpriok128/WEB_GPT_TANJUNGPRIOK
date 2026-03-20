@@ -132,11 +132,20 @@ html {
 
 .glass-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid var(--glass-border);
-  border-radius: 1rem;
-  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 1.25rem;
+  box-shadow: 
+    0 10px 30px -10px rgba(14, 69, 50, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark .glass-card {
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 @media (max-width: 1024px) {
@@ -149,16 +158,18 @@ html {
 
 @media (hover: hover) {
   .glass-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(1.01);
     box-shadow:
-      0 20px 40px rgba(14, 69, 50, 0.08),
-      0 0 0 1px rgba(20, 132, 88, 0.1);
+      0 25px 50px -12px rgba(14, 69, 50, 0.15),
+      0 0 0 1px rgba(20, 132, 88, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   .dark .glass-card:hover {
     box-shadow:
-      0 20px 40px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(20, 132, 88, 0.15);
+      0 25px 50px -12px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(20, 132, 88, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -244,6 +255,35 @@ html {
 }
 
 .btn-hero:active {
+  transform: translateY(0);
+}
+
+.btn-hero-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.75rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+@media (hover: hover) {
+  .btn-hero-outline:hover {
+    transform: translateY(-2px);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.btn-hero-outline:active {
   transform: translateY(0);
 }
 

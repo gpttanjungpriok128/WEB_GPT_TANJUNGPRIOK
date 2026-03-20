@@ -127,39 +127,45 @@ function ArticlesPage() {
             <article
               key={article.id}
               onClick={() => navigate(`/articles/${article.id}`)}
-              className="group overflow-hidden rounded-2xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-900/40 transition-all duration-400 cursor-pointer hover:shadow-glass-lg hover:-translate-y-1"
+              className="glass-card group flex flex-col overflow-hidden hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 cursor-pointer"
             >
-              <div className="h-48 bg-gradient-to-br from-brand-300 via-brand-400 to-primary relative overflow-hidden">
-                {article.image && (
+              <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100 dark:bg-zinc-900 m-2 rounded-2xl shadow-inner">
+                {article.image ? (
                   <img
                     src={resolveImageUrl(article.image)}
                     alt={article.title}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     onError={(event) => {
                       event.currentTarget.style.display = "none";
                     }}
                   />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/40 dark:to-teal-900/40 flex items-center justify-center">
+                    <span className="text-5xl opacity-50">📖</span>
+                  </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute top-3 right-3 bg-white/90 dark:bg-brand-900/90 backdrop-blur-sm text-primary dark:text-brand-300 text-xs font-semibold px-3 py-1 rounded-full">
-                  {article.status}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute top-3 right-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md text-emerald-700 dark:text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+                  {article.status || "Publik"}
                 </div>
               </div>
-              <div className="p-5">
-                <p className="text-xs font-semibold uppercase text-primary dark:text-brand-400 tracking-widest">
+              <div className="p-5 flex-1 flex flex-col">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-400">
                   Renungan
                 </p>
-                <h2 className="mt-2 font-semibold text-lg text-brand-800 dark:text-white line-clamp-2 group-hover:text-primary transition-colors">
+                <h3 className="mt-3 text-xl font-semibold tracking-[-0.03em] text-zinc-950 transition-colors group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-300 line-clamp-2">
                   {article.title}
-                </h2>
-                <p className="mt-3 text-sm text-brand-600 dark:text-brand-400 line-clamp-3">
+                </h3>
+                <p className="mt-3 line-clamp-3 text-sm leading-7 text-zinc-600 dark:text-zinc-300 flex-1">
                   {stripHtml(article.content)}
                 </p>
-                <div className="mt-4 flex items-center justify-between text-xs text-brand-500 dark:text-brand-400">
+                <div className="mt-5 flex items-center justify-between text-xs font-medium text-zinc-500 dark:text-zinc-400">
                   <span>{formatDate(getPublishedDate(article))}</span>
-                  <span className="text-primary font-semibold group-hover:underline">Baca →</span>
+                  <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-semibold group-hover:translate-x-1 transition-transform">
+                    Baca <span aria-hidden="true">&rarr;</span>
+                  </span>
                 </div>
               </div>
             </article>

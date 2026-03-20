@@ -323,9 +323,10 @@ function GalleryPage() {
           { label: "Foto Ditampilkan", value: totalPhotosShown },
           { label: "Album Ditampilkan", value: albums.length },
         ].map((stat, i) => (
-          <div key={i} className="glass-card p-5">
-            <p className="text-xs uppercase text-brand-500 dark:text-brand-400 font-medium tracking-wider">{stat.label}</p>
-            <p className="mt-1 text-3xl font-bold gradient-text">{stat.value}</p>
+          <div key={i} className="glass-card relative overflow-hidden p-6 group hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-100/50 to-teal-100/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4 group-hover:scale-150 transition-transform duration-500 dark:from-emerald-900/30 dark:to-teal-900/10" />
+            <p className="relative z-10 text-[11px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-[0.2em] mb-2">{stat.label}</p>
+            <p className="relative z-10 text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 drop-shadow-sm">{stat.value}</p>
           </div>
         ))}
       </section>
@@ -411,27 +412,30 @@ function GalleryPage() {
               key={album.title}
               type="button"
               onClick={() => openAlbum(album)}
-              className="group overflow-hidden rounded-2xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-brand-900/40 text-left transition-all duration-400 hover:shadow-glass-lg hover:-translate-y-1"
+              className="glass-card group flex flex-col overflow-hidden text-left hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 cursor-pointer"
             >
-              <div className="relative aspect-[16/10] overflow-hidden bg-brand-100 dark:bg-brand-800">
+              <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-900 m-2 rounded-2xl shadow-inner border border-black/5 dark:border-white/5">
                 <img
                   src={`${serverUrl}${album.cover.image}`}
                   alt={album.title}
                   loading="lazy"
                   decoding="async"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute right-3 top-3 rounded-full bg-white/90 dark:bg-brand-900/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-brand-800 dark:text-brand-200">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute right-3 top-3 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-sm">
                   {album.total} foto
                 </div>
               </div>
-              <div className="p-4 space-y-1">
-                <h3 className="line-clamp-2 text-lg font-semibold text-brand-800 dark:text-white group-hover:text-primary transition-colors">
+              <div className="p-5 flex-1 flex flex-col">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-400 mb-2">
+                  Album
+                </p>
+                <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-zinc-950 transition-colors group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-300 line-clamp-2">
                   {album.title}
                 </h3>
-                <p className="text-sm text-brand-600 dark:text-brand-400">
-                  Update: {formatDate(album.updatedAt)}
+                <p className="mt-4 text-xs font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-auto">
+                  <span className="text-emerald-500 text-sm">📅</span> Update {formatDate(album.updatedAt)}
                 </p>
               </div>
             </button>

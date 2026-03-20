@@ -1196,7 +1196,7 @@ function ProductDetailPage() {
             )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3">
             <div className="rounded-[1.5rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
                 Stok Total
@@ -1206,17 +1206,6 @@ function ProductDetailPage() {
               </p>
               <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
                 {totalStock <= 0 ? "Restock sedang disiapkan." : "Siap untuk order harian."}
-              </p>
-            </div>
-            <div className="rounded-[1.5rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                Ukuran Aktif
-              </p>
-              <p className="mt-2 text-lg font-bold text-brand-900 dark:text-white">
-                {selectedSizeLabel}
-              </p>
-              <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
-                {selectedSizeStock} pcs tersedia untuk pilihan ini.
               </p>
             </div>
           </div>
@@ -1491,32 +1480,24 @@ function ProductDetailPage() {
 
       {/* ── Sticky Mobile CTA ─────────────────────── */}
       <div className="sticky-mobile-bar sm:hidden">
-        <div className="sticky-mobile-surface space-y-3 p-3">
-          <div className="flex items-start justify-between gap-3">
+        <div className="sticky-mobile-surface space-y-2.5 p-2.5">
+          <div className="flex items-center justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                Harga
-              </p>
-              <p className="text-lg font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
+              <p className="text-base font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
                 {formatRupiah(effectivePrice)}
               </p>
               <p className="text-[11px] leading-5 text-brand-500 dark:text-brand-400">
-                Ukuran {selectedSizeLabel} • Qty {quantity} • Stok {selectedSizeStock ?? 0}
+                Ukuran {selectedSizeLabel} • {quantity} pcs
               </p>
             </div>
-            <div className="shrink-0 rounded-[1rem] border border-emerald-200/80 bg-emerald-50/90 px-3 py-2 text-right dark:border-emerald-900/40 dark:bg-emerald-900/20">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
-                Ready
-              </p>
-              <p className="mt-1 text-sm font-semibold text-emerald-800 dark:text-emerald-100">
-                {selectedSizeStock ?? 0} pcs
-              </p>
-            </div>
+            <span className="shrink-0 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
+              Stok {selectedSizeStock ?? 0}
+            </span>
           </div>
-          <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-2">
+          <div className="grid grid-cols-[48px_minmax(0,1fr)] gap-2">
             <Link
               to="/cart"
-              className="relative inline-flex h-12 w-full items-center justify-center rounded-[1.05rem] border border-brand-300 bg-white text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-800/60"
+              className="relative inline-flex h-11 w-full items-center justify-center rounded-[1rem] border border-brand-300 bg-white text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-800/60"
               aria-label="Buka keranjang belanja"
               title="Keranjang"
             >
@@ -1547,7 +1528,7 @@ function ProductDetailPage() {
             <button
               onClick={addToCart}
               disabled={selectedSizeStock <= 0}
-              className="btn-primary min-h-[48px] w-full !rounded-[1.05rem] !px-4 !py-3 text-sm font-semibold disabled:opacity-60"
+              className="btn-primary min-h-[44px] w-full !rounded-[1rem] !px-4 !py-2.5 text-sm font-semibold disabled:opacity-60"
             >
               Tambah ke Keranjang
             </button>

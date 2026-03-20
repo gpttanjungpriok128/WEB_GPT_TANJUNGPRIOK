@@ -60,48 +60,54 @@ function SchedulesPage() {
   };
 
   const renderScheduleSection = (title, subtitle, data) => (
-    <section className="space-y-5">
-      <div className="flex items-center justify-between">
+    <section className="space-y-6 relative">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-brand-900 dark:text-white">{title}</h2>
-          <p className="text-sm text-brand-600 dark:text-brand-400 mt-1">
+          <h2 className="text-3xl font-bold tracking-tight text-brand-900 dark:text-white mb-2">{title}</h2>
+          <p className="text-base text-brand-600 dark:text-brand-400">
             {subtitle}
           </p>
         </div>
-        <span className="rounded-full bg-gradient-to-r from-primary/10 to-brand-300/10 dark:from-primary/20 dark:to-brand-600/20 px-4 py-1.5 text-xs font-semibold text-primary dark:text-brand-300 border border-primary/20 dark:border-brand-600/30">
+        <div className="inline-flex items-center self-start sm:self-auto rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 px-5 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300 shadow-sm border border-emerald-100/50 dark:border-emerald-800/50">
+          <span className="relative flex h-2.5 w-2.5 mr-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
           {data.length} Jadwal
-        </span>
+        </div>
       </div>
 
       {data.length === 0 ? (
-        <div className="glass-card py-10 text-center">
-          <p className="text-brand-600 dark:text-brand-400">
+        <div className="glass-card py-16 text-center shadow-sm">
+          <p className="text-lg text-brand-600 dark:text-brand-400">
             Belum ada jadwal pada kategori ini.
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {data.map((item) => (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+          {data.map((item, index) => (
             <div
               key={item.id}
-              className="glass-card p-6 group border-l-4 !border-l-primary"
+              className={`glass-card relative overflow-hidden p-7 group motion-card delay-${(index % 5) + 1}`}
             >
-              <div className="flex gap-4">
-                <div className="icon-box h-14 w-14 shrink-0 group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-2xl">{getIcon(item.title)}</span>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-200/40 to-teal-200/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
+              
+              <div className="relative z-10 flex gap-5">
+                <div className="icon-box h-16 w-16 shrink-0 rounded-2xl shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-300 group-hover:-rotate-3">
+                  <span className="text-3xl filter drop-shadow-sm">{getIcon(item.title)}</span>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-brand-800 dark:text-white group-hover:text-primary transition-colors">
+                <div className="flex-1 pt-1">
+                  <h3 className="text-xl font-bold text-brand-900 dark:text-white group-hover:text-primary transition-colors tracking-tight">
                     {item.title}
                   </h3>
-                  <div className="mt-2 flex items-center gap-2 text-sm text-brand-600 dark:text-brand-400">
-                    <span>⏰</span>
+                  <div className="mt-2.5 inline-flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/40 px-3 py-1.5 text-sm font-medium text-emerald-800 dark:text-emerald-200 border border-emerald-100/50 dark:border-emerald-800/50">
+                    <span className="text-emerald-500">⏰</span>
                     <span>{item.time}</span>
                   </div>
                 </div>
               </div>
               {item.description && (
-                <p className="mt-4 text-sm text-brand-700 dark:text-brand-300 leading-relaxed pl-[4.5rem]">
+                <p className="relative z-10 mt-5 text-sm text-brand-600 dark:text-brand-300 leading-relaxed pl-[5.25rem]">
                   {item.description}
                 </p>
               )}

@@ -91,26 +91,30 @@ function ArticleDetailPage() {
         )}
 
         {!isLoading && article && (
-          <article className="article-detail-card">
-            <header className="article-detail-header">
-              <h1 className="font-display text-2xl font-bold leading-tight text-brand-900 dark:text-white md:text-4xl">
+          <article className="glass-card relative overflow-hidden p-6 md:p-10 lg:p-12 mb-10 shadow-sm hover:shadow-xl transition-shadow duration-500">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 dark:bg-emerald-900/10 pointer-events-none" />
+            <header className="relative z-10 mb-8 pb-8 border-b border-brand-200/60 dark:border-brand-800/60">
+              <h1 className="font-display text-3xl font-extrabold tracking-tight leading-tight text-brand-900 dark:text-white md:text-5xl">
                 {article.title}
               </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-brand-600 dark:text-brand-400">
-                <span>{formatDate(getPublishedDate(article))}</span>
-                <span>•</span>
-                <span>{getReadDuration}</span>
+              <div className="mt-5 flex flex-wrap items-center gap-3 text-sm font-medium text-brand-600 dark:text-brand-400">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50/80 dark:bg-brand-900/40 border border-brand-200/50 dark:border-brand-800/50 shadow-sm">
+                  📅 {formatDate(getPublishedDate(article))}
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50/80 dark:bg-brand-900/40 border border-brand-200/50 dark:border-brand-800/50 shadow-sm">
+                  ⏱️ {getReadDuration}
+                </span>
               </div>
             </header>
 
             {article.image && (
-              <figure className="article-detail-figure">
+              <figure className="relative z-10 mb-10 overflow-hidden rounded-[1.5rem] shadow-md border border-brand-200/50 dark:border-brand-800/50">
                 <img
                   src={resolveImageUrl(article.image)}
                   alt={article.title}
                   loading="eager"
                   decoding="async"
-                  className="h-full w-full object-cover"
+                  className="w-full object-cover max-h-[500px]"
                   onError={(event) => {
                     event.currentTarget.style.display = "none";
                   }}
@@ -118,7 +122,7 @@ function ArticleDetailPage() {
               </figure>
             )}
 
-            <div className="article-reader-content article-detail-content">
+            <div className="relative z-10 article-reader-content article-detail-content">
               <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }} />
             </div>
           </article>

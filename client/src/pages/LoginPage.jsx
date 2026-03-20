@@ -160,18 +160,22 @@ function LoginPage() {
   return (
     <div className="page-stack auth-shell min-h-[calc(100vh-280px)] flex items-center justify-center py-8 sm:py-12">
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <div className="text-5xl mb-4">🔐</div>
-          <h1 className="text-3xl font-extrabold text-brand-900 dark:text-white mb-2">
+        <div className="mb-10 text-center relative z-10">
+          <div className="inline-flex justify-center items-center w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-5xl mb-6 shadow-inner border border-emerald-200/50 dark:border-emerald-800/50">
+            🔐
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-600 dark:from-emerald-400 dark:to-teal-300 drop-shadow-sm mb-3">
             Masuk ke Akun Anda
           </h1>
-          <p className="text-brand-600 dark:text-brand-400">
+          <p className="text-brand-600 dark:text-brand-400 font-medium tracking-wide">
             Selamat datang kembali di GPT Tanjung Priok
           </p>
         </div>
 
-        <form onSubmit={submit} className="glass-card auth-card p-8 space-y-5">
-          <div className="space-y-2">
+        <form onSubmit={submit} className="glass-card auth-card relative overflow-hidden p-8 md:p-10 space-y-6 shadow-xl hover:shadow-2xl transition-shadow duration-500">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 dark:bg-emerald-900/20 pointer-events-none" />
+          <div className="relative z-10 space-y-5">
+            <div className="space-y-2">
             <label className="text-sm font-medium text-brand-700 dark:text-brand-300">Email</label>
             <input
               type="email"
@@ -244,6 +248,7 @@ function LoginPage() {
           <Link to="/register" className="btn-outline w-full text-center block">
             Daftar Akun Baru
           </Link>
+          </div>
         </form>
 
       </div>

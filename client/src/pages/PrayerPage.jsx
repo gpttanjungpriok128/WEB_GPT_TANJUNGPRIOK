@@ -196,23 +196,25 @@ function PrayerPage() {
             { icon: "🤝", title: "Dukungan", desc: "Tim pastoral kami siap mendengarkan dan memberikan dukungan spiritual kepada Anda." },
             { icon: "💌", title: "Kerahasiaan", desc: "Data Anda dijaga dengan aman dan hanya digunakan untuk kepentingan doa bersama." },
           ].map((item, i) => (
-            <div key={i} className="glass-card p-5 group">
-              <div className="icon-box-glow h-11 w-11 mb-3 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-lg">{item.icon}</span>
+            <div key={i} className="glass-card relative overflow-hidden p-8 group hover:-translate-y-2 hover:shadow-xl transition-all duration-500">
+              <div className="absolute -top-6 -right-6 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 dark:bg-emerald-900/20 pointer-events-none" />
+              <div className="relative z-10 icon-box-glow h-14 w-14 mb-5 shadow-sm group-hover:shadow-md group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
+                <span className="text-2xl">{item.icon}</span>
               </div>
-              <h3 className="font-semibold mb-2 text-brand-800 dark:text-white">{item.title}</h3>
+              <h3 className="relative z-10 font-bold text-lg mb-2 text-brand-900 dark:text-white">{item.title}</h3>
               <p className="text-sm text-brand-600 dark:text-brand-400 leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>
 
         {/* Form */}
-        <form onSubmit={submit} className="md:col-span-2 glass-card p-8 space-y-5">
-          <h2 className="text-2xl font-bold text-brand-900 dark:text-white">
+        <form onSubmit={submit} className="md:col-span-2 glass-card relative overflow-hidden p-8 md:p-10 space-y-6 shadow-md hover:shadow-xl transition-shadow duration-500">
+          <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-teal-100/40 rounded-full blur-3xl dark:bg-teal-900/20 pointer-events-none" />
+          <h2 className="relative z-10 text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-teal-500 dark:from-emerald-400 dark:to-teal-300">
             Kirim Permohonan Doa
           </h2>
 
-          <div className="space-y-2">
+          <div className="relative z-10 space-y-2">
             <label className="text-sm font-medium text-brand-700 dark:text-brand-300">Nama Lengkap *</label>
             <input
               type="text"
@@ -264,9 +266,10 @@ function PrayerPage() {
       </div>
 
       {/* Prayer Guidelines */}
-      <section className="glass-card p-6 space-y-4">
-        <h3 className="font-semibold text-lg text-brand-800 dark:text-white">
-          Panduan Pengiriman Permohonan Doa
+      <section className="glass-card relative overflow-hidden p-8 space-y-5 shadow-sm hover:shadow-md transition-shadow duration-300 mt-6">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-50/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 dark:bg-emerald-900/10 pointer-events-none" />
+        <h3 className="relative z-10 font-bold text-xl tracking-tight text-brand-900 dark:text-white flex items-center gap-2">
+          <span>ℹ️</span> Panduan Pengiriman Permohonan Doa
         </h3>
         <ul className="space-y-2.5 text-sm text-brand-700 dark:text-brand-300">
           {[

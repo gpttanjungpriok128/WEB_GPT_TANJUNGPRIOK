@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import PageHero from "../components/PageHero";
 import api from "../services/api";
 
 function DashboardPage() {
@@ -47,21 +48,10 @@ function DashboardPage() {
   return (
     <div className="page-stack space-y-8 sm:space-y-10">
       {/* Welcome Banner */}
-      <section className="admin-hero organic-banner relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-800 via-primary to-brand-600 p-8 md:p-10 text-white">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="admin-hero-orb absolute h-48 w-48 rounded-full bg-white/5 animate-float blur-2xl" style={{ top: "10%", right: "10%" }} />
-          <div className="admin-hero-orb absolute h-36 w-36 rounded-full bg-white/5 animate-float-delayed blur-2xl" style={{ bottom: "10%", left: "10%" }} />
-        </div>
-        <div className="relative z-10">
-          <h1 className="mb-2 text-3xl md:text-4xl font-extrabold">
-            Selamat Datang, {user?.name}! 👋
-          </h1>
-          <p className="text-white/80 text-lg">{getRoleLabel(user?.role)}</p>
-          <p className="mt-2 text-white/60">
-            Kelola akun dan konten Anda dari dashboard ini.
-          </p>
-        </div>
-      </section>
+      <PageHero 
+        title={`Selamat Datang, ${user?.name || "Admin"}! 👋`}
+        subtitle={`${getRoleLabel(user?.role)} - Kelola akun dan konten Anda dari dashboard ini.`}
+      />
 
       {/* Stats */}
       {user?.role === "admin" && (
@@ -73,11 +63,12 @@ function DashboardPage() {
           ) : stats ? (
             <section className="admin-stats-grid grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {Object.entries(stats).map(([key, value]) => (
-                <div key={key} className="glass-card p-6">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">
+                <div key={key} className="glass-card relative overflow-hidden p-6 group hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-100/50 to-teal-100/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4 group-hover:scale-150 transition-transform duration-500 dark:from-emerald-900/30 dark:to-teal-900/10 pointer-events-none" />
+                  <p className="relative z-10 text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-[0.2em] mb-1">
                     {key.replace(/_/g, " ")}
                   </p>
-                  <p className="mt-2 text-3xl font-bold gradient-text">{formatStatValue(key, value)}</p>
+                  <p className="relative z-10 text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 drop-shadow-sm">{formatStatValue(key, value)}</p>
                 </div>
               ))}
             </section>
@@ -106,15 +97,16 @@ function DashboardPage() {
               <Link
                 key={i}
                 to={action.to}
-                className="glass-card p-6 group"
+                className="glass-card relative overflow-hidden p-6 lg:p-8 group hover:-translate-y-2 hover:shadow-xl transition-all duration-500"
               >
-                <div className="icon-box h-12 w-12 mb-4 text-2xl group-hover:scale-110 transition-transform duration-300">
-                  {action.icon}
+                <div className="absolute -top-6 -right-6 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700 dark:bg-emerald-900/20 pointer-events-none" />
+                <div className="relative z-10 icon-box-glow h-14 w-14 mb-5 shadow-sm group-hover:shadow-md group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
+                  <span className="text-2xl">{action.icon}</span>
                 </div>
-                <h3 className="mb-1 font-semibold text-brand-800 dark:text-white group-hover:text-primary transition-colors">
+                <h3 className="relative z-10 mb-2 font-bold text-lg text-brand-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">
                   {action.title}
                 </h3>
-                <p className="text-sm text-brand-600 dark:text-brand-400">
+                <p className="relative z-10 text-sm text-brand-600 dark:text-brand-400 leading-relaxed">
                   {action.desc}
                 </p>
               </Link>
@@ -124,10 +116,12 @@ function DashboardPage() {
       )}
 
       {/* Role Info */}
-      <section className="glass-card p-8">
-        <h2 className="mb-5 text-2xl font-bold text-brand-900 dark:text-white">
-          Informasi Role Anda
-        </h2>
+      <section className="glass-card relative overflow-hidden p-8 md:p-10 shadow-sm">
+        <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-teal-100/30 rounded-full blur-3xl dark:bg-teal-900/10 pointer-events-none" />
+        <div className="relative z-10">
+          <h2 className="mb-6 text-2xl font-bold tracking-tight text-brand-900 dark:text-white">
+            Informasi Role Anda
+          </h2>
         <div className="sm:hidden">
           <details className="admin-role-accordion rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45">
             <summary className="mobile-summary flex cursor-pointer items-center justify-between gap-3">
@@ -271,6 +265,7 @@ function DashboardPage() {
               </ul>
             </div>
           )}
+        </div>
         </div>
       </section>
 

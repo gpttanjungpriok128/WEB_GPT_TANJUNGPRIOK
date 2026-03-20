@@ -163,9 +163,10 @@ function LivePage() {
           </div>
         </div>
       ) : !isLoading ? (
-        <div className="glass-card p-10 text-center">
-          <div className="text-5xl mb-4">📺</div>
-          <h2 className="text-2xl font-bold mb-2 text-brand-900 dark:text-white">
+        <div className="glass-card relative overflow-hidden p-12 text-center group hover:shadow-xl transition-all duration-500">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(244,63,94,0.08),transparent_70%)] dark:bg-[radial-gradient(circle_at_center,rgba(244,63,94,0.05),transparent_70%)] pointer-events-none" />
+          <div className="relative z-10 text-6xl mb-6 group-hover:scale-110 transition-transform duration-500 filter drop-shadow-sm">📺</div>
+          <h2 className="relative z-10 text-3xl font-bold mb-3 tracking-tight text-brand-900 dark:text-white">
             Live Streaming Tidak Tersedia
           </h2>
           <p className="text-brand-600 dark:text-brand-400 mb-6 max-w-md mx-auto">
@@ -183,8 +184,13 @@ function LivePage() {
       ) : null}
 
       {/* Schedule Info */}
-      <section className="glass-card p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-brand-800 dark:text-white">
+      <section className="glass-card relative overflow-hidden p-8 space-y-5 group hover:shadow-xl transition-all duration-500 mt-6">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 dark:bg-emerald-900/20 pointer-events-none group-hover:scale-150 transition-transform duration-700" />
+        <h3 className="relative z-10 text-xl font-bold tracking-tight text-brand-900 dark:text-white flex items-center gap-2">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+          </span>
           Jadwal Ibadah Live
         </h3>
         <ul className="space-y-3 text-sm text-brand-700 dark:text-brand-300">

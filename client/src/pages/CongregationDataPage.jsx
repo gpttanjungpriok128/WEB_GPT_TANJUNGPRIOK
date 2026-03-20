@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import PageHero from "../components/PageHero";
 import api from "../services/api";
 
 const CATEGORY_OPTIONS = [
@@ -210,37 +211,26 @@ function CongregationDataPage() {
 
   return (
     <div className="page-stack admin-shell space-y-5 sm:space-y-6">
-      <section className="glass-card p-8">
-        <h1 className="text-3xl font-bold text-brand-900 dark:text-white">Pendataan Jemaat</h1>
-        <p className="mt-2 text-sm text-brand-600 dark:text-brand-400">
-          {isAdmin
-            ? "Admin dapat melihat total dan seluruh data jemaat."
-            : "Silakan isi data diri dan keluarga. Data hanya dilihat admin."}
-        </p>
-      </section>
+      <PageHero 
+        title="Pendataan Jemaat" 
+        subtitle={isAdmin ? "Admin dapat melihat total dan seluruh data jemaat." : "Silakan isi data diri dan keluarga. Data hanya dilihat admin."} 
+      />
 
       {isAdmin && (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <div className="glass-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">Total</p>
-            <p className="mt-2 text-3xl font-bold gradient-text">{stats.total}</p>
-          </div>
-          <div className="glass-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">Kaum Pria</p>
-            <p className="mt-2 text-3xl font-bold gradient-text">{stats.kaum_pria}</p>
-          </div>
-          <div className="glass-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">Kaum Wanita</p>
-            <p className="mt-2 text-3xl font-bold gradient-text">{stats.kaum_wanita}</p>
-          </div>
-          <div className="glass-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">Kaum Muda</p>
-            <p className="mt-2 text-3xl font-bold gradient-text">{stats.kaum_muda}</p>
-          </div>
-          <div className="glass-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">Sekolah Minggu</p>
-            <p className="mt-2 text-3xl font-bold gradient-text">{stats.sekolah_minggu}</p>
-          </div>
+          {[
+            { label: "Total", value: stats.total },
+            { label: "Kaum Pria", value: stats.kaum_pria },
+            { label: "Kaum Wanita", value: stats.kaum_wanita },
+            { label: "Kaum Muda", value: stats.kaum_muda },
+            { label: "Sekolah Minggu", value: stats.sekolah_minggu },
+          ].map((stat, i) => (
+            <div key={i} className="glass-card relative overflow-hidden p-6 group hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-100/50 to-teal-100/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4 group-hover:scale-150 transition-transform duration-500 dark:from-emerald-900/30 dark:to-teal-900/10 pointer-events-none" />
+              <p className="relative z-10 text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-[0.2em] mb-1">{stat.label}</p>
+              <p className="relative z-10 text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 drop-shadow-sm">{stat.value}</p>
+            </div>
+          ))}
         </section>
       )}
 
@@ -336,8 +326,9 @@ function CongregationDataPage() {
 
       {isAdmin && (
         <>
-          <section className="glass-card p-6">
-            <div className="flex flex-wrap items-end gap-3">
+          <section className="glass-card relative overflow-hidden p-6 shadow-sm">
+            <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-teal-100/30 rounded-full blur-3xl dark:bg-teal-900/10 pointer-events-none" />
+            <div className="relative z-10 flex flex-wrap items-end gap-3">
               <div className="min-w-[220px] flex-1 space-y-2">
                 <label className="text-sm font-medium text-brand-700 dark:text-brand-300">Cari Nama/Telepon/Alamat</label>
                 <input
@@ -378,7 +369,7 @@ function CongregationDataPage() {
             </div>
           </section>
 
-          <section className="glass-card overflow-hidden p-0">
+          <section className="glass-card overflow-hidden p-0 shadow-md">
             <div className="overflow-x-auto">
               <table className="min-w-[980px] w-full text-sm">
                 <thead className="bg-brand-50/80 dark:bg-brand-900/60">
