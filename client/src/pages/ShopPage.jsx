@@ -685,7 +685,7 @@ function ShopPage() {
               </div>
               <div className="relative mt-3 w-full max-w-[74rem] overflow-hidden rounded-[1.9rem] border border-emerald-950/[0.15] bg-black shadow-[0_28px_70px_rgba(2,12,8,0.2)] dark:border-emerald-900/40">
                 <div className="absolute -inset-1 rounded-[1.75rem] bg-gradient-to-r from-emerald-400/[0.12] via-transparent to-emerald-300/[0.12] blur-sm pointer-events-none" />
-                <div className="relative aspect-[16/10] sm:aspect-[16/8.7] lg:aspect-[16/8]">
+                <div className="relative aspect-video">
                   {isPromoVideoActive ? (
                     <iframe
                       title="Video GTshirt"
