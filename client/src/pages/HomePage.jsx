@@ -355,7 +355,7 @@ function HomePage() {
               return (
                 <article
                   key={article.id}
-                  className="glass-card group flex flex-col overflow-hidden hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
+                  className="glass-card group flex flex-col min-h-[24rem] overflow-hidden hover:-translate-y-2 hover:shadow-2xl transition-all duration-500"
                 >
                   <Link to={`/articles?open=${article.id}`} aria-label={`Baca renungan ${article.title}`} className="flex flex-col h-full">
                     <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100 dark:bg-zinc-900 m-2 rounded-2xl shadow-inner">

@@ -296,12 +296,6 @@ function MainLayout({ children }) {
 
     if (!targets.length) return;
 
-    targets.forEach((target, index) => {
-      const delay = `${Math.min((index % 8) * 50, 280)}ms`;
-      target.classList.add("motion-reveal");
-      target.style.setProperty("--motion-delay", delay);
-    });
-
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -314,7 +308,16 @@ function MainLayout({ children }) {
       { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
     );
 
-    targets.forEach((target) => observer.observe(target));
+    targets.forEach((target, index) => {
+      // Prevent CLS by not applying jumpy transform to elements already in the viewport
+      if (target.getBoundingClientRect().top < window.innerHeight) {
+        return;
+      }
+      const delay = `${Math.min((index % 8) * 50, 280)}ms`;
+      target.classList.add("motion-reveal");
+      target.style.setProperty("--motion-delay", delay);
+      observer.observe(target);
+    });
     return () => observer.disconnect();
   }, [location.pathname]);
 
