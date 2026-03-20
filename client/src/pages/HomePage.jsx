@@ -75,6 +75,27 @@ const COMMUNITY_VALUES = [
   },
 ];
 
+const HOME_HERO_CARDS = [
+  {
+    label: "Ibadah",
+    title: "Jadwal mingguan dan agenda jemaat",
+    description: "Temukan waktu ibadah, persekutuan, dan kegiatan pelayanan dari satu tempat.",
+    Icon: CalendarIcon,
+  },
+  {
+    label: "Renungan",
+    title: "Penguatan iman setiap hari",
+    description: "Bacaan yang membantu jemaat terus bertumbuh dalam firman dan pengharapan.",
+    Icon: BookIcon,
+  },
+  {
+    label: "GTshirt",
+    title: "Koleksi komunitas dan dukungan pelayanan",
+    description: "Produk jemaat yang bisa dipesan untuk ibadah, event, dan kebersamaan komunitas.",
+    Icon: ShoppingBagIcon,
+  },
+];
+
 function HomePage() {
   const { user } = useAuth();
   const [featuredArticles, setFeaturedArticles] = useState([]);
@@ -144,10 +165,13 @@ function HomePage() {
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent dark:via-emerald-500/40" />
         </div>
 
-        <div className="relative">
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.04fr)_minmax(320px,0.96fr)] lg:items-end">
           <header className="max-w-3xl">
-            <p className="hero-kicker hero-reveal">Selamat Datang di</p>
-            <h1 className="hero-reveal delay-1 max-w-4xl text-4xl font-semibold tracking-[-0.05em] text-zinc-950 dark:text-white sm:text-5xl lg:text-6xl">
+            <div className="hero-reveal inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 shadow-[0_10px_24px_rgba(15,23,42,0.05)] backdrop-blur dark:border-emerald-900/40 dark:bg-white/[0.03] dark:text-emerald-200">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Selamat Datang
+            </div>
+            <h1 className="hero-reveal delay-1 mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.05em] text-zinc-950 dark:text-white sm:text-5xl lg:text-6xl">
               GPT Tanjung Priok
             </h1>
             <p className="hero-reveal delay-2 mt-3 text-lg font-medium text-zinc-500 dark:text-zinc-400 sm:text-xl">
@@ -156,6 +180,18 @@ function HomePage() {
             <p className="hero-reveal delay-2 mt-5 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 sm:text-base">
               Menjadi komunitas yang berakar dalam Kristus dan bertumbuh dalam kasih untuk saling melayani.
             </p>
+
+            <div className="hero-reveal delay-3 mt-5 flex flex-wrap gap-2">
+              <span className="rounded-full border border-zinc-200/80 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-zinc-800 dark:bg-white/[0.03] dark:text-zinc-300">
+                Komunitas
+              </span>
+              <span className="rounded-full border border-zinc-200/80 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-zinc-800 dark:bg-white/[0.03] dark:text-zinc-300">
+                Ibadah
+              </span>
+              <span className="rounded-full border border-zinc-200/80 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-zinc-800 dark:bg-white/[0.03] dark:text-zinc-300">
+                Pelayanan
+              </span>
+            </div>
 
             <div className="hero-reveal delay-3 mt-7 flex flex-wrap gap-3">
               <Link to="/schedules" className="btn-primary tap-target">
@@ -171,6 +207,42 @@ function HomePage() {
               )}
             </div>
           </header>
+
+          <div className="hidden gap-3 lg:grid">
+            <article className="hero-reveal delay-2 rounded-[1.7rem] border border-zinc-200/80 bg-white/[0.82] p-5 shadow-[0_16px_36px_rgba(15,23,42,0.05)] backdrop-blur dark:border-zinc-800 dark:bg-white/[0.03]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
+                Komunitas Iman
+              </p>
+              <h2 className="mt-3 text-xl font-semibold tracking-[-0.03em] text-zinc-950 dark:text-white">
+                Bertumbuh bersama dalam Kristus dan kasih.
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                Temukan jadwal, renungan, galeri, dan kebutuhan jemaat dalam satu ruang yang saling terhubung.
+              </p>
+            </article>
+
+            <div className="grid gap-3 lg:grid-cols-1 xl:grid-cols-3">
+              {HOME_HERO_CARDS.map(({ label, title, description, Icon }) => (
+                <article
+                  key={label}
+                  className="hero-reveal delay-3 rounded-[1.4rem] border border-zinc-200/80 bg-white/[0.78] p-4 backdrop-blur dark:border-zinc-800 dark:bg-white/[0.03]"
+                >
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+                    {label}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-zinc-950 dark:text-white">
+                    {title}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                    {description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 

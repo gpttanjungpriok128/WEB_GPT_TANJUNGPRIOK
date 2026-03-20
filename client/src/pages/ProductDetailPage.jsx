@@ -220,6 +220,8 @@ const SelectChevronIcon = ({ className = "h-4 w-4" }) => (
   </svg>
 );
 
+const DETAIL_HERO_SHELL = "relative overflow-hidden rounded-[2rem] border border-brand-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,249,0.93))] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:border-brand-800 dark:bg-[linear-gradient(180deg,rgba(10,14,12,0.98),rgba(8,11,10,0.94))] sm:p-5 lg:p-6";
+
 function getImageWithFallback(product, fallbackProducts) {
   if (!product) return storePlaceholderImage;
 
@@ -1014,12 +1016,18 @@ function ProductDetailPage() {
       </nav>
 
       {/* ── Product Detail Section ──────────────────────── */}
-      <section className="grid gap-8 lg:grid-cols-[1fr_1fr]">
+      <section className={`${DETAIL_HERO_SHELL} grid gap-8 lg:grid-cols-[1fr_1fr]`}>
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent dark:via-emerald-500/30" />
+          <div className="absolute -left-14 top-0 h-40 w-40 rounded-full bg-emerald-100 blur-3xl dark:bg-emerald-950/60" />
+          <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-emerald-100/70 blur-3xl dark:bg-emerald-900/30" />
+          <div className="absolute right-10 top-10 hidden h-20 w-20 rounded-[1.6rem] border border-brand-200/60 bg-white/35 backdrop-blur lg:block dark:border-brand-800 dark:bg-white/[0.03]" />
+        </div>
         {/* ── Left: Image Gallery ──────────────────────── */}
-        <div className="space-y-4">
+        <div className="relative space-y-4">
           {/* Main Image */}
           <div
-            className="image-swipe relative overflow-hidden rounded-2xl bg-white dark:bg-brand-900/50 aspect-[4/5] sm:aspect-square border border-brand-100 dark:border-brand-800"
+            className="image-swipe relative overflow-hidden rounded-[1.75rem] border border-brand-100 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,245,0.94))] shadow-[0_18px_40px_rgba(15,23,42,0.05)] dark:border-brand-800 dark:bg-[linear-gradient(180deg,rgba(12,18,15,0.96),rgba(9,13,11,0.92))] aspect-[4/5] sm:aspect-square"
             onTouchStart={handleSwipeStart}
             onTouchMove={handleSwipeMove}
             onTouchEnd={handleSwipeEnd}
@@ -1080,21 +1088,22 @@ function ProductDetailPage() {
         </div>
 
         {/* ── Right: Product Info ──────────────────────── */}
-        <div className="space-y-6">
+        <div className="relative space-y-6">
           {/* Header */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400 mb-2">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   {product.verse || "GTshirt"}
-                </p>
-                <h1 className="text-3xl font-black text-brand-900 dark:text-white">
+                </div>
+                <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-brand-900 dark:text-white sm:text-[2.7rem]">
                   {product.name}
                 </h1>
               </div>
               <button
                 onClick={() => navigate("/shop")}
-                className="text-2xl transition hover:text-brand-600 dark:hover:text-brand-400"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-200 bg-white/80 text-xl transition hover:bg-brand-50 hover:text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:hover:bg-brand-800 dark:hover:text-brand-400"
               >
                 ✕
               </button>
@@ -1117,7 +1126,7 @@ function ProductDetailPage() {
                   ? "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
                   : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
               }`}>
-                {totalStock <= 0 ? "Restock Soon" : "Ready to Order"}
+                {totalStock <= 0 ? "Stok Habis" : "Siap Dipesan"}
               </span>
               {product.color && (
                 <span className="inline-flex items-center rounded-full border border-brand-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
@@ -1131,9 +1140,9 @@ function ProductDetailPage() {
           </div>
 
           {/* Price & Discount */}
-          <div className="space-y-2">
+          <div className="rounded-[1.6rem] border border-brand-200/80 bg-white/[0.76] p-4 shadow-[0_16px_36px_rgba(15,23,42,0.04)] dark:border-brand-700 dark:bg-white/[0.03]">
             {product.promoIsActive && Number(product.discountAmount) > 0 ? (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <p className="text-sm text-brand-500 line-through dark:text-brand-400">
                   {formatRupiah(Number(product.basePrice) || 0)}
                 </p>
@@ -1157,19 +1166,15 @@ function ProductDetailPage() {
                 {formatRupiah(effectivePrice)}
               </span>
             )}
+            {product.promoIsActive && (
+              <p className="mt-3 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                {product.promoLabel || "Promo Spesial"}
+              </p>
+            )}
           </div>
 
-          {/* Promo Badge */}
-          {product.promoIsActive && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900/70 dark:bg-emerald-900/20">
-              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                🎉 {product.promoLabel || "Promo Spesial!"}
-              </p>
-            </div>
-          )}
-
           {/* Description */}
-          <div className="rounded-xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+          <div className="rounded-[1.6rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
               Deskripsi Produk
             </p>
@@ -1191,8 +1196,8 @@ function ProductDetailPage() {
             )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[1.5rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
                 Stok Total
               </p>
@@ -1203,7 +1208,7 @@ function ProductDetailPage() {
                 {totalStock <= 0 ? "Restock sedang disiapkan." : "Siap untuk order harian."}
               </p>
             </div>
-            <div className="rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+            <div className="rounded-[1.5rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
                 Ukuran Aktif
               </p>
@@ -1212,17 +1217,6 @@ function ProductDetailPage() {
               </p>
               <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
                 {selectedSizeStock} pcs tersedia untuk pilihan ini.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                Detail Singkat
-              </p>
-              <p className="mt-2 text-lg font-bold text-brand-900 dark:text-white">
-                {product.color || `${readySizeCount} ukuran ready`}
-              </p>
-              <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
-                {sizePreview}
               </p>
             </div>
           </div>
@@ -1248,7 +1242,7 @@ function ProductDetailPage() {
                       setQuantity((prev) => clampQuantity(prev, getStockForSize(product, size)));
                     }}
                     disabled={isOutOfStock}
-                    className={`min-h-[44px] rounded-lg py-2.5 font-semibold transition ${
+                  className={`min-h-[44px] rounded-[0.95rem] py-2.5 font-semibold transition ${
                       selectedSize === size
                         ? "bg-primary text-white border-2 border-primary"
                         : "border-2 border-brand-200 bg-white text-brand-700 hover:border-primary dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300"
@@ -1459,7 +1453,7 @@ function ProductDetailPage() {
                 </div>
               </summary>
               <div className="pt-4 space-y-5">
-                {reviewBody}
+                  {reviewBody}
               </div>
             </details>
           </div>

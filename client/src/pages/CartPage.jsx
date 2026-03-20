@@ -537,7 +537,6 @@ function CartPage() {
                   key={item.variantKey}
                   className={`${CART_SECTION_SHELL} !p-4 sm:!p-5`}
                 >
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.08),transparent_34%)]" />
                   <div className="relative">
                     <div className="flex gap-3">
                       <label className="flex cursor-pointer items-start pt-1">
@@ -553,7 +552,7 @@ function CartPage() {
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex gap-3 sm:gap-4">
                             <div className="flex-shrink-0">
-                              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[1.35rem] border border-brand-200 bg-[linear-gradient(180deg,rgba(244,247,246,0.96),rgba(235,243,239,0.96))] shadow-[0_16px_34px_rgba(15,23,42,0.05)] dark:border-brand-700 dark:bg-[linear-gradient(180deg,rgba(15,22,18,0.94),rgba(10,15,12,0.92))] sm:h-28 sm:w-28">
+                              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[1.2rem] border border-brand-200 bg-[linear-gradient(180deg,rgba(244,247,246,0.96),rgba(235,243,239,0.96))] dark:border-brand-700 dark:bg-[linear-gradient(180deg,rgba(15,22,18,0.94),rgba(10,15,12,0.92))] sm:h-28 sm:w-28">
                                 {imageSrc && !isImageBroken ? (
                                   <img
                                     src={imageSrc}
@@ -588,18 +587,12 @@ function CartPage() {
                             </div>
 
                             <div className="min-w-0">
-                              <p className={CART_LABEL}>Cart Item</p>
-                              <h3 className="mt-1 line-clamp-2 text-lg font-semibold tracking-[-0.03em] text-brand-900 dark:text-white">
+                              <h3 className="line-clamp-2 text-lg font-semibold tracking-[-0.03em] text-brand-900 dark:text-white">
                                 {item.name}
                               </h3>
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                <span className="rounded-full border border-brand-200 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-700 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
-                                  Size {item.size}
-                                </span>
-                                <span className="rounded-full border border-brand-200 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
-                                  {item.color}
-                                </span>
-                              </div>
+                              <p className="mt-2 text-sm text-brand-600 dark:text-brand-300">
+                                Size {item.size}{item.color ? ` · ${item.color}` : ""}
+                              </p>
                               {isAboveXL(item.size) && (
                                 <p className="mt-2 text-[11px] font-semibold text-amber-600 dark:text-amber-300">
                                   Ukuran di atas XL preorder.
@@ -611,9 +604,11 @@ function CartPage() {
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between gap-3 rounded-[1.3rem] border border-brand-200/80 bg-white/[0.72] px-4 py-3 dark:border-brand-700 dark:bg-white/[0.03] sm:min-w-[164px] sm:flex-col sm:items-end sm:text-right">
+                          <div className="flex items-center justify-between gap-3 sm:min-w-[148px] sm:flex-col sm:items-end sm:text-right">
                             <div>
-                              <p className={CART_LABEL}>Line Total</p>
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                                Total
+                              </p>
                               <p className="mt-1 text-lg font-semibold tracking-[-0.03em] text-brand-900 dark:text-white">
                                 {formatRupiah(item.price * item.quantity)}
                               </p>
@@ -627,17 +622,15 @@ function CartPage() {
                           </div>
                         </div>
 
-                        <div className="rounded-[1.4rem] border border-brand-200/80 bg-white/[0.72] p-3 dark:border-brand-700 dark:bg-white/[0.03]">
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                              <p className={CART_LABEL}>Quantity</p>
-                              <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">
-                                Atur jumlah item di keranjang
-                              </p>
-                              <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                                Maks {item.stock || 0} pcs untuk varian ini
-                              </p>
-                            </div>
+                        <div className="flex flex-col gap-3 border-t border-brand-200/80 pt-4 dark:border-brand-700/80 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                              Jumlah
+                            </p>
+                            <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                              Maks {item.stock || 0} pcs
+                            </p>
+                          </div>
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => updateQuantity(index, item.quantity - 1)}
@@ -662,7 +655,6 @@ function CartPage() {
                                 +
                               </button>
                             </div>
-                          </div>
                         </div>
                       </div>
                     </div>

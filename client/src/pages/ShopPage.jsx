@@ -276,7 +276,7 @@ const SORT_LABELS = {
   stock: "Stok Terbanyak",
   name: "Nama A-Z",
 };
-const SHOP_SECTION_SHELL = "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
+const SHOP_SECTION_SHELL = "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
 const SHOP_SECTION_LABEL = "text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600/80 dark:text-emerald-200/70";
 const PRODUCTS_PER_PAGE = 16;
 const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
@@ -667,33 +667,25 @@ function ShopPage() {
     <div className="relative">
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(circle,rgba(16,185,129,0.16),transparent_60%)] blur-2xl" />
       <div className="pointer-events-none absolute -right-20 top-40 h-60 w-60 rounded-full bg-emerald-200/30 blur-[120px] dark:bg-emerald-500/10" />
-      <div className="page-stack space-y-6 sm:space-y-8 relative">
+      <div className="page-stack relative space-y-5 sm:space-y-8">
         <ShopHero />
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.26fr)_minmax(320px,0.74fr)]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.34fr)_minmax(320px,0.66fr)] xl:items-start">
           {promoVideoSrc && (
-            <section className={`${SHOP_SECTION_SHELL} lg:grid lg:grid-cols-[0.72fr_1.28fr] lg:gap-7 lg:items-center`}>
+            <section className={`${SHOP_SECTION_SHELL} flex flex-col items-center text-center`}>
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_35%),linear-gradient(145deg,rgba(255,255,255,0.08),transparent_58%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(52,211,153,0.1),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.03),transparent_58%)]" />
-              <div className="relative space-y-4">
+              <div className="relative max-w-2xl space-y-3">
                 <p className={SHOP_SECTION_LABEL}>Highlight GTshirt</p>
-                <h2 className="max-w-xl text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white sm:text-[2.15rem]">
-                  Lihat koleksi GTshirt lebih dekat.
+                <h2 className="text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white sm:text-[2.15rem]">
+                  Lihat GTshirt lebih dekat.
                 </h2>
-                <p className="max-w-xl text-sm leading-7 text-brand-600 dark:text-brand-300 sm:text-base">
-                  Cuplikan singkat tentang bahan, detail sablon, dan penggunaan GTshirt di tengah komunitas.
+                <p className="text-sm leading-7 text-brand-600 dark:text-brand-300 sm:text-base">
+                  Cuplikan singkat koleksi GTshirt di tengah komunitas.
                 </p>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-brand-500 dark:text-brand-400">
-                  <span className="rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1.5 font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
-                    Siap ditonton
-                  </span>
-                  <span className="rounded-full border border-zinc-200/80 bg-white/90 px-3 py-1.5 font-semibold uppercase tracking-[0.18em] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-200">
-                    Official GTshirt
-                  </span>
-                </div>
               </div>
-              <div className="relative mt-5 overflow-hidden rounded-[1.9rem] border border-emerald-950/[0.15] bg-black shadow-[0_28px_70px_rgba(2,12,8,0.2)] dark:border-emerald-900/40 lg:mt-0">
+              <div className="relative mt-3 w-full max-w-[74rem] overflow-hidden rounded-[1.9rem] border border-emerald-950/[0.15] bg-black shadow-[0_28px_70px_rgba(2,12,8,0.2)] dark:border-emerald-900/40">
                 <div className="absolute -inset-1 rounded-[1.75rem] bg-gradient-to-r from-emerald-400/[0.12] via-transparent to-emerald-300/[0.12] blur-sm pointer-events-none" />
-                <div className="relative aspect-[16/10]">
+                <div className="relative aspect-[16/10] sm:aspect-[16/8.7] lg:aspect-[16/8]">
                   {isPromoVideoActive ? (
                     <iframe
                       title="Video GTshirt"
@@ -707,7 +699,7 @@ function ShopPage() {
                     <button
                       type="button"
                       onClick={() => setIsPromoVideoActive(true)}
-                      className="group relative flex h-full w-full flex-col items-center justify-end overflow-hidden px-6 py-6 text-left text-white transition hover:brightness-110"
+                      className="group relative block h-full w-full overflow-hidden text-white transition hover:brightness-110"
                       aria-label="Putar video GTshirt"
                     >
                       {promoVideoThumbnailSrc ? (
@@ -716,30 +708,16 @@ function ShopPage() {
                           alt="Thumbnail video GTshirt"
                           loading="lazy"
                           decoding="async"
-                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                         />
                       ) : (
                         <div className="absolute inset-0 bg-[linear-gradient(145deg,#06110c,#102117_58%,#1c3f28)]" />
                       )}
-                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,12,9,0.04),rgba(5,12,9,0.58)_68%,rgba(5,12,9,0.9))]" />
-                      <div className="absolute left-5 top-5 inline-flex items-center rounded-full border border-white/20 bg-[rgba(8,18,13,0.48)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/85 backdrop-blur">
-                        Video GTshirt
-                      </div>
-                      <div className="relative z-[1] flex w-full items-end justify-between gap-4">
-                        <div className="max-w-md space-y-1.5">
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100/75">
-                            Cuplikan Singkat
-                          </p>
-                          <p className="text-lg font-semibold tracking-[-0.03em] text-white sm:text-xl">
-                            Lihat bahan, detail sablon, dan suasana GTshirt di komunitas.
-                          </p>
-                          <p className="text-xs leading-6 text-white/75 sm:text-sm">
-                            Tonton cuplikan singkat sebelum memilih produk yang ingin dipesan.
-                          </p>
-                        </div>
-                        <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white text-brand-900 shadow-[0_18px_36px_rgba(0,0,0,0.24)] transition-transform duration-300 group-hover:scale-105">
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,12,9,0.02),rgba(5,12,9,0.18)_50%,rgba(5,12,9,0.4))]" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white text-brand-900 shadow-[0_18px_36px_rgba(0,0,0,0.24)] transition-transform duration-300 group-hover:scale-105 sm:h-20 sm:w-20">
                           <svg
-                            className="ml-1 h-7 w-7"
+                            className="ml-1 h-7 w-7 sm:h-8 sm:w-8"
                             viewBox="0 0 24 24"
                             fill="currentColor"
                             aria-hidden="true"
@@ -765,11 +743,11 @@ function ShopPage() {
                 GTshirt lahir dari komunitas gereja dan dipersiapkan untuk kebutuhan jemaat, pelayanan, dan kegiatan bersama.
               </p>
             </div>
-            <div className="mt-5 grid gap-3">
+            <div className="mt-4 grid gap-3">
               {STORE_PILLARS.map((item) => (
                 <article
                   key={item.key}
-                  className="group relative overflow-hidden rounded-[1.5rem] border border-emerald-950/10 bg-white/[0.72] p-4 shadow-[0_18px_36px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_rgba(15,23,42,0.08)] dark:border-emerald-900/30 dark:bg-white/[0.03]"
+                  className="group relative overflow-hidden rounded-[1.35rem] border border-emerald-950/10 bg-white/[0.72] p-3.5 shadow-[0_18px_36px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_rgba(15,23,42,0.08)] dark:border-emerald-900/30 dark:bg-white/[0.03] sm:rounded-[1.5rem] sm:p-4"
                 >
                   <div
                     className={`pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100 bg-gradient-to-br ${item.glow}`}
@@ -787,7 +765,7 @@ function ShopPage() {
           </section>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.72fr)_minmax(0,1.28fr)]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(320px,0.72fr)_minmax(0,1.28fr)]">
           <section className={`${SHOP_SECTION_SHELL} flex flex-col justify-between`}>
             <div className="space-y-3">
               <p className={SHOP_SECTION_LABEL}>Pesanan</p>
@@ -798,7 +776,7 @@ function ShopPage() {
                 Setelah checkout, pembeli bisa kembali ke halaman toko untuk membuka riwayat order atau melacak status pesanan dengan kode order dan WhatsApp.
               </p>
             </div>
-            <div className="mt-5 grid gap-3">
+            <div className="mt-4 grid gap-3">
               {user && (
                 <Link
                   to="/my-orders"
@@ -816,7 +794,7 @@ function ShopPage() {
             </div>
           </section>
 
-          <section id="catalog-section" className={`${SHOP_SECTION_SHELL} space-y-5`}>
+          <section id="catalog-section" className={`${SHOP_SECTION_SHELL} space-y-4`}>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-2xl">
                 <p className={SHOP_SECTION_LABEL}>Koleksi</p>
@@ -864,20 +842,19 @@ function ShopPage() {
               </Link>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full border border-brand-200 bg-white/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
-                {filteredProducts.length} produk tampil
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-brand-500 dark:text-brand-400">
+              <span className="font-semibold text-brand-700 dark:text-brand-200">
+                {filteredProducts.length} produk
               </span>
-              <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
-                {availabilityLabel}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
-                {sortLabel}
-              </span>
+              <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
+              <span>{availabilityLabel}</span>
+              <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
+              <span>{sortLabel}</span>
               {activeSearchLabel && (
-                <span className="inline-flex items-center rounded-full border border-brand-200 bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
-                  "{activeSearchLabel}"
-                </span>
+                <>
+                  <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
+                  <span className="truncate">"{activeSearchLabel}"</span>
+                </>
               )}
             </div>
 
@@ -1163,83 +1140,63 @@ function ShopPage() {
               const availableSizes = getAvailableSizes(product).map((size) => normalizeSizeLabel(size));
               const availableSizePreview = availableSizes.length > 0
                 ? availableSizes.slice(0, 3).join(" / ")
-                : "Restock";
+                : "Akan hadir";
               const stockToneClass = totalStock <= 0
-                ? "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
+                ? "text-rose-600 dark:text-rose-300"
                 : totalStock < 6
-                  ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300";
+                  ? "text-amber-700 dark:text-amber-300"
+                  : "text-emerald-700 dark:text-emerald-300";
+              const stockLabel = totalStock <= 0
+                ? "Habis"
+                : totalStock < 6
+                  ? `Sisa ${totalStock}`
+                  : `${totalStock} pcs`;
+              const compactMeta = `${availableSizes.length > 0 ? `Ukuran ${availableSizePreview}` : "Ukuran menyusul"}${product.color ? ` · ${product.color}` : ""}`;
 
               return (
                 <Link
                   key={product.id}
                   to={`/shop/${product.slug}`}
-                  className="product-card group card-soft flex flex-col overflow-hidden rounded-[1.6rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_28px_60px_rgba(15,23,42,0.12)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.9rem]"
+                  className="product-card group card-soft flex flex-col overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_28px_60px_rgba(15,23,42,0.12)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]"
                 >
-                  <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] p-3 dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:p-4">
-                    <div className="pointer-events-none absolute inset-3 rounded-[1.4rem] border border-emerald-950/[0.08] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:border-emerald-900/30 dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))]" />
+                  <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] p-2.5 dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:p-3">
+                    <div className="pointer-events-none absolute inset-2.5 rounded-[1.2rem] border border-emerald-950/[0.08] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:border-emerald-900/30 dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))]" />
                     <img
                       src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}
                       loading={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "eager" : "lazy"}
                       fetchPriority={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "high" : "low"}
                       decoding="async"
-                      className="image-soft relative z-[1] h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
+                      className="image-soft relative z-[1] h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
                       onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
                       onError={(event) => event.currentTarget.classList.add("is-loaded")}
                     />
-                    <div className="absolute left-3 top-3 z-[2] flex flex-col gap-1 text-[10px] font-semibold sm:text-xs">
-                      {product.verse && (
-                        <span className="inline-flex items-center rounded-full border border-white/80 bg-[rgba(255,255,255,0.92)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-700 shadow-sm dark:border-white/10 dark:bg-[rgba(8,14,11,0.82)] dark:text-emerald-100">
-                          {product.verse}
-                        </span>
-                      )}
-                      {product.promoIsActive && (
-                        <span className="inline-flex items-center rounded-full bg-rose-500 px-2 py-0.5 text-white shadow-sm">
-                          Promo
-                        </span>
-                      )}
-                    </div>
-                    <div className="absolute right-3 top-3 z-[2] rounded-full border border-white/80 bg-[rgba(255,255,255,0.92)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-700 shadow-sm dark:border-white/10 dark:bg-[rgba(8,14,11,0.82)] dark:text-emerald-100">
-                      {product.color || "GTshirt"}
-                    </div>
-                    <div className="absolute inset-0 hidden items-end justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-brand-900/10 group-hover:opacity-100 sm:flex">
-                      <span className="mb-4 inline-flex translate-y-4 items-center gap-2 rounded-full bg-[rgba(255,255,255,0.95)] px-4 py-2 text-xs font-bold text-brand-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 dark:bg-brand-800 dark:text-white sm:px-5 sm:py-2.5 sm:text-sm">
-                        Lihat Produk
-                        <ArrowUpRightSmallIcon className="h-4 w-4" />
-                      </span>
-                    </div>
                   </div>
-                  <div className="flex flex-1 flex-col p-4 sm:p-5">
-                    <div className="mb-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400 sm:text-xs sm:tracking-[0.2em]">
-                        GTshirt Readywear
-                      </p>
-                      <h3 className="mt-1 text-sm font-bold text-brand-900 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors sm:text-lg">
+                  <div className="flex flex-1 flex-col gap-3 p-3.5 sm:p-4.5">
+                    <div className="space-y-1.5">
+                      <h3 className="text-sm font-bold leading-snug text-brand-900 transition-colors group-hover:text-primary dark:text-white sm:text-base">
                         {product.name}
                       </h3>
+                      <p className="line-clamp-1 text-[11px] leading-5 text-brand-500 dark:text-brand-400 sm:line-clamp-2 sm:text-xs">
+                        {compactMeta}
+                      </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-brand-500 dark:text-brand-400 sm:text-xs">
-                      <div className="flex items-center gap-0.5">
-                        {renderStars(ratingAverage, "text-[11px] sm:text-xs")}
+                    {ratingCount > 0 && (
+                      <div className="hidden items-center gap-1.5 text-[11px] text-brand-500 dark:text-brand-400 sm:flex sm:text-xs">
+                        <div className="flex items-center gap-0.5">
+                          {renderStars(ratingAverage, "text-[10px]")}
+                        </div>
+                        <span>{ratingAverage.toFixed(1)} ({ratingCount})</span>
                       </div>
-                      <span>
-                        {ratingCount > 0
-                          ? `${ratingAverage.toFixed(1)} · ${ratingCount} ulasan`
-                          : "Belum ada ulasan"}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs">
-                      <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50/80 px-2 py-1 font-semibold text-brand-600 dark:border-brand-700 dark:bg-brand-900/60 dark:text-brand-300">
-                        Ukuran {availableSizePreview}
-                      </span>
-                      <span className={`inline-flex items-center rounded-full border px-2 py-1 font-semibold ${stockToneClass}`}>
-                        {totalStock <= 0 ? "Restock segera" : totalStock < 6 ? "Stok terbatas" : "Ready stock"}
-                      </span>
-                    </div>
+                    )}
 
-                    <div className="mt-auto space-y-3">
-                      <div className="flex items-end justify-between gap-2">
+                    <div className="mt-auto flex items-end justify-between gap-3 border-t border-brand-100 pt-3 dark:border-brand-800">
+                      <div className="min-w-0">
+                        {product.verse && (
+                          <p className="mb-1 hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400 sm:block">
+                            {product.verse}
+                          </p>
+                        )}
                         <div>
                           {product.promoIsActive &&
                           Number(product.discountAmount) > 0 ? (
@@ -1247,46 +1204,24 @@ function ShopPage() {
                               <span className="text-[11px] text-brand-500 line-through dark:text-brand-400 sm:text-xs">
                                 {formatRupiah(Number(product.basePrice) || 0)}
                               </span>
-                              <span className="text-base font-black text-rose-500 sm:text-[1.125rem]">
+                              <span className="text-base font-black text-rose-500 sm:text-[1.05rem]">
                                 {formatRupiah(effectivePrice)}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-base font-black text-brand-900 dark:text-white sm:text-[1.125rem]">
+                            <span className="text-base font-black text-brand-900 dark:text-white sm:text-[1.05rem]">
                               {formatRupiah(effectivePrice)}
                             </span>
                           )}
                         </div>
-                        <span className="rounded-lg bg-[rgba(16,185,129,0.08)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 sm:text-xs">
-                          {product.color || "Pilihan Warna"}
-                        </span>
                       </div>
-
-                      {product.promoIsActive && (
-                        <p className="inline-block rounded-lg bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 sm:px-2.5 sm:py-1 sm:text-xs">
-                          {product.promoLabel || "Harga Spesial"}
+                      <div className="text-right">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                          Stok
                         </p>
-                      )}
-
-                      <div className="flex items-center justify-between gap-3 border-t border-brand-100 pt-2 dark:border-brand-800">
-                        <div>
-                          <p className="text-[11px] font-medium text-brand-500 dark:text-brand-400 sm:text-xs">
-                            Stok Tersedia
-                          </p>
-                          <p
-                            className={`text-sm font-bold sm:text-base ${
-                              totalStock <= 0
-                                ? "text-rose-500"
-                                : "text-brand-700 dark:text-brand-300"
-                            }`}
-                          >
-                            {totalStock <= 0 ? "Habis" : `${totalStock} pcs`}
-                          </p>
-                        </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-700 transition group-hover:bg-brand-100 dark:bg-brand-800/80 dark:text-brand-200 dark:group-hover:bg-brand-800">
-                          Detail
-                          <ArrowUpRightSmallIcon className="h-3.5 w-3.5" />
-                        </span>
+                        <p className={`mt-1 text-sm font-semibold ${stockToneClass}`}>
+                          {stockLabel}
+                        </p>
                       </div>
                     </div>
                   </div>
