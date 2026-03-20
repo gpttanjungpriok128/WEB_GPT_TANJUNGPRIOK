@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
 import storePlaceholderImage from "../img/logo1.png";
@@ -996,7 +997,67 @@ function ProductDetailPage() {
     </>
   );
 
+  const mobileStickyBar = (
+    <div className="sticky-mobile-bar sm:hidden">
+      <div className="sticky-mobile-surface space-y-2.5 p-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
+              {formatRupiah(effectivePrice)}
+            </p>
+            <p className="text-[11px] leading-5 text-brand-500 dark:text-brand-400">
+              Ukuran {selectedSizeLabel} • {quantity} pcs
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
+            Stok {selectedSizeStock ?? 0}
+          </span>
+        </div>
+        <div className="grid grid-cols-[48px_minmax(0,1fr)] gap-2">
+          <Link
+            to="/cart"
+            className="relative inline-flex h-11 w-full items-center justify-center rounded-[1rem] border border-brand-300 bg-white text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-800/60"
+            aria-label="Buka keranjang belanja"
+            title="Keranjang"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+              />
+            </svg>
+            {cartCount > 0 && (
+              <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={addToCart}
+            disabled={selectedSizeStock <= 0}
+            className="btn-primary min-h-[44px] w-full !rounded-[1rem] !px-4 !py-2.5 text-sm font-semibold disabled:opacity-60"
+          >
+            Tambah ke Keranjang
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
+    <>
     <div className="page-stack space-y-6 pb-32 sm:space-y-8 sm:pb-8">
       {/* ── Breadcrumb ──────────────────────── */}
       <nav className="flex flex-wrap items-center justify-between gap-3 text-sm text-brand-600 dark:text-brand-400">
@@ -1478,64 +1539,6 @@ function ProductDetailPage() {
         </div>
       </section>
 
-      {/* ── Sticky Mobile CTA ─────────────────────── */}
-      <div className="sticky-mobile-bar sm:hidden">
-        <div className="sticky-mobile-surface space-y-2.5 p-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
-                {formatRupiah(effectivePrice)}
-              </p>
-              <p className="text-[11px] leading-5 text-brand-500 dark:text-brand-400">
-                Ukuran {selectedSizeLabel} • {quantity} pcs
-              </p>
-            </div>
-            <span className="shrink-0 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
-              Stok {selectedSizeStock ?? 0}
-            </span>
-          </div>
-          <div className="grid grid-cols-[48px_minmax(0,1fr)] gap-2">
-            <Link
-              to="/cart"
-              className="relative inline-flex h-11 w-full items-center justify-center rounded-[1rem] border border-brand-300 bg-white text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-800/60"
-              aria-label="Buka keranjang belanja"
-              title="Keranjang"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.8}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                />
-              </svg>
-              {cartCount > 0 && (
-                <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-            <button
-              onClick={addToCart}
-              disabled={selectedSizeStock <= 0}
-              className="btn-primary min-h-[44px] w-full !rounded-[1rem] !px-4 !py-2.5 text-sm font-semibold disabled:opacity-60"
-            >
-              Tambah ke Keranjang
-            </button>
-          </div>
-        </div>
-      </div>
-
       {isZoomOpen && (
         <div className="image-zoom-backdrop" onClick={closeZoom} role="presentation">
           <div className="image-zoom-shell" onClick={(event) => event.stopPropagation()}>
@@ -1568,6 +1571,8 @@ function ProductDetailPage() {
         </div>
       )}
     </div>
+    {typeof document !== "undefined" ? createPortal(mobileStickyBar, document.body) : mobileStickyBar}
+    </>
   );
 }
 

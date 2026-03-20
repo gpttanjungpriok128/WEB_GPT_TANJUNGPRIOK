@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -483,7 +484,36 @@ function CartPage() {
     );
   }
 
+  const mobileStickyBar = (
+    <div className="sticky-mobile-bar sm:hidden">
+      <div className="sticky-mobile-surface space-y-2.5 p-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-base font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
+              {formatRupiah(grandTotal)}
+            </p>
+            <p className="text-[11px] text-brand-500 dark:text-brand-400">
+              {selectedCount} item • Ongkir {shipping > 0 ? formatRupiah(shipping) : "Gratis"}
+            </p>
+          </div>
+          <span className="rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
+            {selectedCount} item
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={proceedCheckout}
+          disabled={isSubmittingOrder || selectedCount === 0}
+          className="btn-primary min-h-[44px] w-full !rounded-[1rem] !px-4 !py-2.5 text-sm font-semibold disabled:opacity-60"
+        >
+          {isSubmittingOrder ? "Processing..." : "Checkout WhatsApp"}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
+    <>
     <div className="relative pb-36 sm:pb-6">
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(circle,rgba(16,185,129,0.16),transparent_60%)] blur-2xl" />
       <div className="pointer-events-none absolute -right-20 top-40 h-60 w-60 rounded-full bg-emerald-200/30 blur-[120px] dark:bg-emerald-500/10" />
@@ -949,32 +979,9 @@ function CartPage() {
         </aside>
       </div>
 
-      <div className="sticky-mobile-bar sm:hidden">
-        <div className="sticky-mobile-surface space-y-2.5 p-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-base font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
-                {formatRupiah(grandTotal)}
-              </p>
-              <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                {selectedCount} item • Ongkir {shipping > 0 ? formatRupiah(shipping) : "Gratis"}
-              </p>
-            </div>
-            <span className="rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
-              {selectedCount} item
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={proceedCheckout}
-            disabled={isSubmittingOrder || selectedCount === 0}
-            className="btn-primary min-h-[44px] w-full !rounded-[1rem] !px-4 !py-2.5 text-sm font-semibold disabled:opacity-60"
-          >
-            {isSubmittingOrder ? "Processing..." : "Checkout WhatsApp"}
-          </button>
-        </div>
-      </div>
     </div>
+    {typeof document !== "undefined" ? createPortal(mobileStickyBar, document.body) : mobileStickyBar}
+    </>
   );
 }
 
