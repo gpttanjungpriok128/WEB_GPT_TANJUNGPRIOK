@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
@@ -62,6 +62,28 @@ const PhoneFieldIcon = ({ className = "h-4 w-4" }) => (
   </svg>
 );
 
+function readInitialTrackingForm(initialOrderCode = "") {
+  if (typeof window === "undefined") {
+    return {
+      orderCode: initialOrderCode,
+      phone: "",
+    };
+  }
+
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(TRACKING_STORAGE_KEY) || "null");
+    return {
+      orderCode: initialOrderCode || saved?.orderCode || "",
+      phone: saved?.phone || "",
+    };
+  } catch {
+    return {
+      orderCode: initialOrderCode,
+      phone: "",
+    };
+  }
+}
+
 function formatDateTime(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -82,27 +104,10 @@ function TrackOrderPage() {
     searchParams.get("code") ||
     searchParams.get("order") ||
     "";
-  const [form, setForm] = useState({
-    orderCode: initialOrderCode,
-    phone: "",
-  });
+  const [form, setForm] = useState(() => readInitialTrackingForm(initialOrderCode));
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(window.localStorage.getItem(TRACKING_STORAGE_KEY) || "null");
-      if (!saved) return;
-
-      setForm((previous) => ({
-        orderCode: previous.orderCode || saved.orderCode || "",
-        phone: saved.phone || "",
-      }));
-    } catch {
-      // noop
-    }
-  }, []);
 
   const handleFieldChange = (field, value) => {
     setForm((previous) => ({ ...previous, [field]: value }));

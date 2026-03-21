@@ -13,17 +13,41 @@ const ReviewsTab = lazy(() => import("../components/store-admin/ReviewsTab"));
 const ReportsTab = lazy(() => import("../components/store-admin/ReportsTab"));
 const ShippingTab = lazy(() => import("../components/store-admin/ShippingTab"));
 
+const AdminMetricSkeleton = ({ className = "" }) => (
+  <div
+    aria-hidden="true"
+    className={`animate-pulse rounded-[1rem] bg-brand-100/85 dark:bg-brand-800/70 ${className}`}
+  />
+);
+
 const TabLoader = () => (
-  <div className="flex justify-center py-10">
-    <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
-  </div>
+  <section className="glass-card dense-card p-5 sm:p-6" aria-hidden="true">
+    <div className="grid gap-4 lg:grid-cols-[0.34fr_0.66fr]">
+      <div className="space-y-3">
+        <AdminMetricSkeleton className="h-4 w-28 rounded-full" />
+        <AdminMetricSkeleton className="h-9 w-36" />
+        <AdminMetricSkeleton className="h-3.5 w-full" />
+        <AdminMetricSkeleton className="h-3.5 w-[84%]" />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="rounded-[1.4rem] border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45">
+            <AdminMetricSkeleton className="h-3 w-20 rounded-full" />
+            <AdminMetricSkeleton className="mt-3 h-6 w-24" />
+            <AdminMetricSkeleton className="mt-4 h-3.5 w-full" />
+            <AdminMetricSkeleton className="mt-2 h-3.5 w-[74%]" />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
 );
 
 function ManageStorePage() {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("produk");
   const [analytics, setAnalytics] = useState(null);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   const [lastAnalyticsAt, setLastAnalyticsAt] = useState(0);
   const [tabHidden, setTabHidden] = useState(false);
 
@@ -105,7 +129,11 @@ function ManageStorePage() {
             <img
               src={gtshirtLogo}
               alt="GTshirt"
-              loading="lazy"
+              width={1200}
+              height={900}
+              sizes="(max-width: 767px) calc(100vw - 2.5rem), 28vw"
+              loading="eager"
+              fetchPriority="high"
               decoding="async"
               className="h-full w-full rounded-2xl object-cover"
             />
@@ -114,13 +142,14 @@ function ManageStorePage() {
       </section>
 
       <section className="admin-metric-strip">
-        {loadingAnalytics && (
-          <div className="col-span-full flex justify-center py-8">
-            <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
-          </div>
-        )}
-        {!loadingAnalytics &&
-          metricCards.map((item) => (
+        {loadingAnalytics || metricCards.length === 0
+          ? Array.from({ length: 8 }).map((_, index) => (
+            <article key={`metric-skeleton-${index}`} className="admin-metric-card glass-card dense-card" aria-hidden="true">
+              <AdminMetricSkeleton className="h-3 w-24 rounded-full" />
+              <AdminMetricSkeleton className="mt-3 h-8 w-20" />
+            </article>
+          ))
+          : metricCards.map((item) => (
             <article key={item.label} className="admin-metric-card glass-card dense-card">
               <p className="text-xs font-semibold uppercase tracking-wider text-brand-500 dark:text-brand-400">
                 {item.label}

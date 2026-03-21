@@ -5,10 +5,28 @@ import PageHero from "../components/PageHero";
 import api from "../services/api";
 import "../styles.admin.css";
 
+const DashboardSkeletonBlock = ({ className = "" }) => (
+  <div
+    aria-hidden="true"
+    className={`animate-pulse rounded-[1rem] bg-brand-100/85 dark:bg-brand-800/70 ${className}`}
+  />
+);
+
+const DashboardStatsSkeleton = () => (
+  <section className="admin-stats-grid grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-hidden="true">
+    {Array.from({ length: 4 }).map((_, index) => (
+      <div key={index} className="glass-card relative overflow-hidden p-6">
+        <DashboardSkeletonBlock className="h-3 w-24 rounded-full" />
+        <DashboardSkeletonBlock className="mt-4 h-10 w-28" />
+      </div>
+    ))}
+  </section>
+);
+
 function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => !user || user?.role === "admin");
 
   useEffect(() => {
     if (user?.role !== "admin") return;
@@ -46,6 +64,8 @@ function DashboardPage() {
     return value;
   };
 
+  const shouldReserveStats = !user || user?.role === "admin";
+
   return (
     <div className="page-stack space-y-8 sm:space-y-10">
       {/* Welcome Banner */}
@@ -55,12 +75,10 @@ function DashboardPage() {
       />
 
       {/* Stats */}
-      {user?.role === "admin" && (
+      {shouldReserveStats && (
         <>
-          {isLoading ? (
-            <div className="flex justify-center py-10">
-              <div className="h-10 w-10 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
-            </div>
+          {isLoading || !stats ? (
+            <DashboardStatsSkeleton />
           ) : stats ? (
             <section className="admin-stats-grid grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {Object.entries(stats).map(([key, value]) => (

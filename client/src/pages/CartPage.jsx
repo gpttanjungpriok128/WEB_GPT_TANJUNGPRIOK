@@ -151,6 +151,17 @@ const SelectChevronIcon = ({ className = "h-4 w-4" }) => (
   </svg>
 );
 
+function readInitialCartItems() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || "[]");
+    return Array.isArray(saved) ? saved.map(normalizeCartItem) : [];
+  } catch {
+    return [];
+  }
+}
+
 function normalizeCartItem(item = {}) {
   const normalizedImage = normalizeStoreImagePath(item.image);
   const normalizedImageUrls = Array.isArray(item.imageUrls)
@@ -175,8 +186,11 @@ function normalizeCartItem(item = {}) {
 
 function CartPage() {
   const { user } = useAuth();
-  const [cartItems, setCartItems] = useState([]);
-  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [cartItems, setCartItems] = useState(() => readInitialCartItems());
+  const [selectedItems, setSelectedItems] = useState(() => {
+    const initialItems = readInitialCartItems();
+    return new Set(initialItems.map((_, i) => i));
+  });
   const [failedImageKeys, setFailedImageKeys] = useState(new Set());
   const [imageIndexByKey, setImageIndexByKey] = useState({});
   const [shippingCost, setShippingCost] = useState(DEFAULT_SHIPPING_COST);
@@ -197,19 +211,9 @@ function CartPage() {
   const phoneInputRef = useRef(null);
   const addressInputRef = useRef(null);
 
-  // Load cart from localStorage
   useEffect(() => {
-    try {
-      const saved = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || "[]");
-      const normalizedSaved = Array.isArray(saved)
-        ? saved.map(normalizeCartItem)
-        : [];
-      setCartItems(normalizedSaved);
-      setSelectedItems(new Set(normalizedSaved.map((_, i) => i)));
-      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(normalizedSaved));
-    } catch {
-      setCartItems([]);
-    }
+    const normalizedItems = readInitialCartItems();
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(normalizedItems));
   }, []);
 
   // Load shipping cost from store settings (public meta)
@@ -587,6 +591,9 @@ function CartPage() {
                                   <img
                                     src={imageSrc}
                                     alt={item.name}
+                                    width={320}
+                                    height={320}
+                                    sizes="(max-width: 640px) 96px, 112px"
                                     onError={(event) => {
                                       event.currentTarget.classList.add("is-loaded");
                                       if (activeImageIndex < imageCandidates.length - 1) {
