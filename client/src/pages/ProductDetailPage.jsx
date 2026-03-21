@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
@@ -12,8 +12,10 @@ import {
 } from "../utils/storeStock";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
+const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const REVIEW_IMAGE_LIMIT = 3;
 const REVIEW_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const STORE_REQUEST_TIMEOUT_MS = 8000;
 
 const FALLBACK_PRODUCTS = [
   {
@@ -403,15 +405,33 @@ function getDefaultSize(product) {
   return firstAvailable || sizes[0] || "M";
 }
 
+function readCachedCatalogProducts() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = window.localStorage.getItem(PRODUCT_CACHE_KEY);
+    const cached = raw ? JSON.parse(raw) : null;
+    return Array.isArray(cached?.data) ? cached.data : [];
+  } catch {
+    return [];
+  }
+}
+
 function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedSize, setSelectedSize] = useState("");
+  const cachedCatalogProduct = useMemo(
+    () => readCachedCatalogProducts().find((item) => item?.slug === slug) || null,
+    [slug],
+  );
+  const [product, setProduct] = useState(cachedCatalogProduct);
+  const [isLoading, setIsLoading] = useState(() => !cachedCatalogProduct);
+  const [selectedSize, setSelectedSize] = useState(() => getDefaultSize(cachedCatalogProduct));
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState(() =>
+    cachedCatalogProduct ? getImageWithFallback(cachedCatalogProduct, FALLBACK_PRODUCTS) : [],
+  );
   const [failedImages, setFailedImages] = useState(new Set());
   const [feedback, setFeedback] = useState("");
   const [cartCount, setCartCount] = useState(0);
@@ -480,14 +500,18 @@ function ProductDetailPage() {
     const fetchProduct = async () => {
       setIsLoading(true);
       try {
-        const { data } = await api.get(`/store/products/${slug}`);
+        const { data } = await api.get(`/store/products/${slug}`, {
+          timeout: STORE_REQUEST_TIMEOUT_MS,
+        });
         if (data?.data) {
           setProduct(data.data);
           setSelectedSize(getDefaultSize(data.data));
           const imgs = getImageWithFallback(data.data, FALLBACK_PRODUCTS);
           setImages(imgs);
         } else {
-          const found = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
+          const found =
+            readCachedCatalogProducts().find((item) => item?.slug === slug) ||
+            FALLBACK_PRODUCTS.find((p) => p.slug === slug);
           setProduct(found);
           setSelectedSize(getDefaultSize(found));
           if (found) {
@@ -496,7 +520,9 @@ function ProductDetailPage() {
           }
         }
       } catch {
-        const found = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
+        const found =
+          readCachedCatalogProducts().find((item) => item?.slug === slug) ||
+          FALLBACK_PRODUCTS.find((p) => p.slug === slug);
         setProduct(found);
         setSelectedSize(getDefaultSize(found));
         if (found) {
@@ -517,7 +543,9 @@ function ProductDetailPage() {
     const fetchReviews = async () => {
       setIsLoadingReviews(true);
       try {
-        const { data } = await api.get(`/store/products/${slug}/reviews`);
+        const { data } = await api.get(`/store/products/${slug}/reviews`, {
+          timeout: STORE_REQUEST_TIMEOUT_MS,
+        });
         const reviewList = Array.isArray(data?.data) ? data.data : [];
         const meta = data?.meta || {};
         setReviews(reviewList);

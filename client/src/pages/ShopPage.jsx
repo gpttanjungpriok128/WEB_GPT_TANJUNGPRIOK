@@ -8,6 +8,9 @@ import { clampQuantity, getStockForSize, getTotalStock } from "../utils/storeSto
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
+const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
+const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
+const STORE_REQUEST_TIMEOUT_MS = 8000;
 const PROMO_VIDEO_URL = "https://youtu.be/oOOdw2ulGIg";
 const INITIAL_EAGER_PRODUCT_IMAGE_COUNT = 1;
 
@@ -279,8 +282,6 @@ const SORT_LABELS = {
 const SHOP_SECTION_SHELL = "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
 const SHOP_SECTION_LABEL = "text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600/80 dark:text-emerald-200/70";
 const PRODUCTS_PER_PAGE = 16;
-const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
-const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
 const USE_FALLBACK_PRODUCTS = import.meta.env.MODE === "development";
 
 const readShopBootCache = () => {
@@ -290,7 +291,6 @@ const readShopBootCache = () => {
     const raw = window.localStorage.getItem(PRODUCT_CACHE_KEY);
     const cached = raw ? JSON.parse(raw) : null;
     if (!cached?.data || !Array.isArray(cached.data)) return null;
-    if (cached.source && cached.source !== "api") return null;
 
     const meta = cached.meta || {
       page: 1,
@@ -448,7 +448,7 @@ function ShopPage() {
       setProductLoadError(false);
     }
     try {
-      const { data } = await swrGet("/store/products", { params }, {
+      const { data } = await swrGet("/store/products", { params, timeout: STORE_REQUEST_TIMEOUT_MS }, {
         ttlMs: 30 * 1000,
         onUpdate: append
           ? undefined
@@ -492,8 +492,25 @@ function ShopPage() {
       if (!append) {
         setProductLoadError(true);
         if (!products.length && !hasBootCache && !cached) {
-          setProducts(USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : []);
-          setProductMeta({ page: 1, totalPages: 1, total: 0 });
+          setProducts(FALLBACK_PRODUCTS);
+          setProductMeta({ page: 1, totalPages: 1, total: FALLBACK_PRODUCTS.length });
+          setHasBootCache(true);
+          setIsCacheStale(true);
+          if (typeof window !== "undefined") {
+            try {
+              window.localStorage.setItem(
+                PRODUCT_CACHE_KEY,
+                JSON.stringify({
+                  cachedAt: Date.now(),
+                  data: FALLBACK_PRODUCTS,
+                  source: "fallback",
+                  meta: { page: 1, totalPages: 1, total: FALLBACK_PRODUCTS.length },
+                }),
+              );
+            } catch {
+              // ignore fallback cache write
+            }
+          }
         }
       }
     } finally {
