@@ -9,7 +9,7 @@ import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const PROMO_VIDEO_URL = "https://youtu.be/oOOdw2ulGIg";
-const INITIAL_EAGER_PRODUCT_IMAGE_COUNT = 2;
+const INITIAL_EAGER_PRODUCT_IMAGE_COUNT = 1;
 
 const FALLBACK_PRODUCTS = [
   {
@@ -283,6 +283,33 @@ const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
 const USE_FALLBACK_PRODUCTS = import.meta.env.MODE === "development";
 
+const readShopBootCache = () => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(PRODUCT_CACHE_KEY);
+    const cached = raw ? JSON.parse(raw) : null;
+    if (!cached?.data || !Array.isArray(cached.data)) return null;
+    if (cached.source && cached.source !== "api") return null;
+
+    const meta = cached.meta || {
+      page: 1,
+      totalPages: 1,
+      total: cached.data.length,
+    };
+    const age = Date.now() - Number(cached.cachedAt || 0);
+
+    return {
+      data: cached.data,
+      meta,
+      page: meta.page || 1,
+      isStale: age > PRODUCT_CACHE_TTL,
+    };
+  } catch {
+    return null;
+  }
+};
+
 const normalizeSizeLabel = (value) =>
   String(value || "")
     .toUpperCase()
@@ -345,23 +372,27 @@ function getAvailableSizes(product) {
 
 function ShopPage() {
   const { user } = useAuth();
-  const [products, setProducts] = useState(USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : []);
+  const bootCache = useMemo(() => readShopBootCache(), []);
+  const [products, setProducts] = useState(() => {
+    if (bootCache?.data) return bootCache.data;
+    return USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : [];
+  });
   const [selections, setSelections] = useState({});
   const [cartItems, setCartItems] = useState([]);
   const [isCartHydrated, setIsCartHydrated] = useState(false);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(() => !bootCache && !USE_FALLBACK_PRODUCTS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [productLoadError, setProductLoadError] = useState(false);
-  const [productPage, setProductPage] = useState(1);
-  const [productMeta, setProductMeta] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [productPage, setProductPage] = useState(() => bootCache?.page || 1);
+  const [productMeta, setProductMeta] = useState(() => bootCache?.meta || { page: 1, totalPages: 1, total: 0 });
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const promoVideoSrc = normalizeYouTubeUrl(PROMO_VIDEO_URL);
   const [isPromoVideoActive, setIsPromoVideoActive] = useState(false);
-  const [hasBootCache, setHasBootCache] = useState(false);
-  const [isCacheStale, setIsCacheStale] = useState(false);
+  const [hasBootCache, setHasBootCache] = useState(() => Boolean(bootCache));
+  const [isCacheStale, setIsCacheStale] = useState(() => Boolean(bootCache?.isStale));
   const deferredSearch = useDeferredValue(searchQuery);
   const promoVideoThumbnailSrc = getYouTubeThumbnailUrl(promoVideoSrc);
 
@@ -381,25 +412,6 @@ function ShopPage() {
     if (!isCartHydrated) return;
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
   }, [cartItems, isCartHydrated]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(PRODUCT_CACHE_KEY);
-      const cached = raw ? JSON.parse(raw) : null;
-      if (!cached?.data || !Array.isArray(cached.data)) return;
-      if (cached.source && cached.source !== "api") return;
-      const age = Date.now() - Number(cached.cachedAt || 0);
-      setIsCacheStale(age > PRODUCT_CACHE_TTL);
-      setProducts(cached.data);
-      setProductMeta(cached.meta || { page: 1, totalPages: 1, total: cached.data.length });
-      setProductPage(cached.meta?.page || 1);
-      setHasBootCache(true);
-      setIsLoadingProducts(false);
-    } catch {
-      // ignore cache read
-    }
-  }, []);
 
   useEffect(() => {
     setSelections((previous) => {
@@ -667,7 +679,7 @@ function ShopPage() {
     <div className="relative">
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(circle,rgba(16,185,129,0.16),transparent_60%)] blur-2xl" />
       <div className="pointer-events-none absolute -right-20 top-40 h-60 w-60 rounded-full bg-emerald-200/30 blur-[120px] dark:bg-emerald-500/10" />
-      <div className="page-stack relative space-y-5 sm:space-y-8">
+      <div className="page-stack shop-page-stack relative space-y-5 sm:space-y-8">
         <ShopHero />
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.34fr)_minmax(320px,0.66fr)] xl:items-start">
@@ -1164,6 +1176,9 @@ function ShopPage() {
                     <img
                       src={resolveStoreImageUrl(product.imageUrl)}
                       alt={product.name}
+                      width="800"
+                      height="800"
+                      sizes="(min-width: 1280px) 18vw, (min-width: 1024px) 22vw, (min-width: 768px) 30vw, 50vw"
                       loading={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "eager" : "lazy"}
                       fetchPriority={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "high" : "low"}
                       decoding="async"

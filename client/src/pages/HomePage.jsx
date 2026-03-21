@@ -181,13 +181,13 @@ function HomePage() {
           <div className="absolute right-[-6%] top-[-12%] h-64 w-64 rounded-full border border-white/10 bg-white/5 blur-2xl" />
         </div>
 
-        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.04fr)_minmax(320px,0.96fr)] lg:items-end">
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.02fr)_minmax(320px,0.98fr)] lg:items-end">
           <header className="max-w-3xl">
             <div className="hero-reveal inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
               Selamat Datang
             </div>
-            <h1 className="hero-reveal delay-1 mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl drop-shadow-md">
+            <h1 className="hero-reveal delay-1 mt-4 max-w-4xl text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-[3.85rem] xl:text-6xl drop-shadow-md">
               GPT Tanjung Priok
             </h1>
             <p className="hero-reveal delay-2 mt-3 text-lg font-medium text-emerald-100 sm:text-xl drop-shadow-sm">
@@ -237,11 +237,13 @@ function HomePage() {
               </p>
             </article>
 
-            <div className="grid gap-3 lg:grid-cols-1 xl:grid-cols-3">
-              {HOME_HERO_CARDS.map(({ label, title, description, Icon }) => (
+            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+              {HOME_HERO_CARDS.map(({ label, title, description, Icon }, index) => (
                 <article
                   key={label}
-                  className="hero-reveal delay-3 rounded-[1.4rem] border border-white/20 bg-white/10 p-4 backdrop-blur shadow-[0_8px_20px_rgba(0,0,0,0.05)]"
+                  className={`hero-reveal delay-3 rounded-[1.4rem] border border-white/20 bg-white/10 p-4 backdrop-blur shadow-[0_8px_20px_rgba(0,0,0,0.05)] ${
+                    index === HOME_HERO_CARDS.length - 1 ? "lg:col-span-2 xl:col-span-1" : ""
+                  }`}
                 >
                   <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 text-white shadow-inner">
                     <Icon className="h-4 w-4" />
@@ -262,7 +264,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-12" aria-label="Jelajahi konten utama">
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-12" aria-label="Jelajahi konten utama">
         {communityCards.map(({ title, description, link, cta, Icon, gridClass }) => (
           <article
             key={title}

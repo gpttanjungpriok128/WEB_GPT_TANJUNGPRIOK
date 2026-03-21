@@ -147,7 +147,7 @@ function TrackOrderPage() {
         tone="dense"
       />
 
-      <div className="page-stack relative grid gap-5 sm:gap-6 xl:grid-cols-[0.82fr_1.18fr]">
+      <div className="page-stack relative grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:grid-cols-[0.82fr_1.18fr]">
         <section className="space-y-5">
           <article className={TRACK_SECTION_SHELL}>
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_35%),linear-gradient(145deg,rgba(255,255,255,0.06),transparent_58%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(52,211,153,0.08),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.03),transparent_58%)]" />
@@ -171,7 +171,7 @@ function TrackOrderPage() {
               </span>
             </div>
 
-            <form onSubmit={handleTrackOrder} className="mt-5 space-y-4">
+            <form onSubmit={handleTrackOrder} className="mt-5 grid gap-4 lg:grid-cols-2">
               <label className="space-y-1.5">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
                   Kode Pesanan
@@ -206,7 +206,7 @@ function TrackOrderPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full !rounded-[1.2rem] !py-3 disabled:opacity-60"
+                className="btn-primary w-full !rounded-[1.2rem] !py-3 disabled:opacity-60 lg:col-span-2"
               >
                 {loading ? "Melacak Pesanan..." : "Lacak Pesanan"}
               </button>
@@ -267,11 +267,13 @@ function TrackOrderPage() {
                   </p>
                 </div>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  {TRACK_EMPTY_STEPS.map((step) => (
+                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {TRACK_EMPTY_STEPS.map((step, index) => (
                     <article
                       key={step.key}
-                      className="rounded-[1.45rem] border border-brand-200/80 bg-white/[0.72] p-4 text-left dark:border-brand-700 dark:bg-white/[0.03]"
+                      className={`rounded-[1.45rem] border border-brand-200/80 bg-white/[0.72] p-4 text-left dark:border-brand-700 dark:bg-white/[0.03] ${
+                        index === TRACK_EMPTY_STEPS.length - 1 ? "sm:col-span-2 xl:col-span-1" : ""
+                      }`}
                     >
                       <p className={TRACK_LABEL}>{step.label}</p>
                       <h3 className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">

@@ -323,11 +323,9 @@ html {
 @keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -1138,14 +1136,8 @@ html {
 
 /* ─── Shop Catalog Perf ─── */
 .product-card {
-  content-visibility: auto;
-  contain-intrinsic-size: 320px 420px;
-}
-
-@media (max-width: 640px) {
-  .product-card {
-    contain-intrinsic-size: 200px 320px;
-  }
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
 }
 
 .content-visibility-auto {
@@ -2024,18 +2016,15 @@ body {
 
 .hero-reveal {
   opacity: 0;
-  transform: translate3d(0, 14px, 0);
   animation: heroReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes heroReveal {
   from {
     opacity: 0;
-    transform: translate3d(0, 14px, 0);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -2055,6 +2044,17 @@ body {
 .page-stack > section,
 .page-stack > div > section {
   contain-intrinsic-size: 1px 640px;
+}
+
+.shop-page-stack > section,
+.shop-page-stack > div > section {
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
+}
+
+.shop-page-stack .hero-reveal {
+  opacity: 1;
+  animation: none;
 }
 
 .input-modern {

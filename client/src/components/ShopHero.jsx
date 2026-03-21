@@ -62,7 +62,7 @@ function ShopHero() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent" />
       </div>
 
-      <div className="relative grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1.02fr)_minmax(320px,0.98fr)] lg:items-end">
+      <div className="relative grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1.04fr)_minmax(340px,0.96fr)] lg:items-end">
         <div className="max-w-[46rem]">
           <div className="rounded-[1.6rem] border border-white/10 bg-[linear-gradient(155deg,rgba(4,12,9,0.84),rgba(8,24,16,0.58))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.22)] backdrop-blur-md sm:rounded-[2rem] sm:p-6 lg:p-8">
             <div className="hero-reveal h-px w-16 bg-gradient-to-r from-emerald-300 via-emerald-200 to-transparent" />
@@ -86,7 +86,7 @@ function ShopHero() {
               </div>
             </div>
             <p className="hero-kicker hero-reveal mt-4 text-emerald-200/90">KOLEKSI GTSHIRT</p>
-            <h1 className="hero-reveal delay-1 max-w-4xl text-[2rem] font-semibold leading-[0.96] tracking-[-0.05em] text-white drop-shadow-[0_12px_32px_rgba(0,0,0,0.32)] sm:text-4xl sm:leading-[0.96] lg:text-[3.6rem] lg:leading-[0.94] xl:text-[4rem]">
+            <h1 className="hero-reveal delay-1 max-w-4xl text-[2rem] font-semibold leading-[0.96] tracking-[-0.05em] text-white drop-shadow-[0_12px_32px_rgba(0,0,0,0.32)] sm:text-4xl sm:leading-[0.96] lg:text-[3.25rem] lg:leading-[0.94] xl:text-[4rem]">
               Kaos komunitas yang nyaman dan siap dipakai setiap hari.
             </h1>
             <p className="hero-reveal delay-2 mt-3 max-w-2xl text-sm leading-6 text-emerald-50/90 sm:mt-5 sm:text-base sm:leading-7">
@@ -168,24 +168,26 @@ function ShopHero() {
               </div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-3">
-              {HIGHLIGHTS.map(({ label, title, description, Icon }) => (
+            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+              {HIGHLIGHTS.map(({ label, title, description, Icon }, index) => (
                 <article
                   key={label}
-                  className="hero-reveal rounded-[1.5rem] border border-emerald-200/20 bg-white/10 p-4 text-white shadow-[0_14px_34px_rgba(0,0,0,0.14)] backdrop-blur"
+                  className={`hero-reveal rounded-[1.5rem] border border-emerald-200/20 bg-white/10 p-3.5 text-white shadow-[0_14px_34px_rgba(0,0,0,0.14)] backdrop-blur xl:p-4 ${
+                    index === HIGHLIGHTS.length - 1 ? "lg:col-span-2 xl:col-span-1" : ""
+                  }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[rgba(255,255,255,0.94)] text-zinc-900 shadow-[0_10px_24px_rgba(0,0,0,0.16)]">
-                      <Icon className="h-5 w-5" />
+                    <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[rgba(255,255,255,0.94)] text-zinc-900 shadow-[0_10px_24px_rgba(0,0,0,0.16)] xl:h-12 xl:w-12">
+                      <Icon className="h-4 w-4 xl:h-5 xl:w-5" />
                     </div>
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/70">
                         {label}
                       </p>
-                      <h2 className="mt-2 text-base font-semibold text-white">
+                      <h2 className="mt-2 text-[0.98rem] font-semibold leading-6 text-white xl:text-base">
                         {title}
                       </h2>
-                      <p className="mt-2 text-sm leading-6 text-emerald-50/[0.88]">
+                      <p className="mt-2 text-[0.92rem] leading-6 text-emerald-50/[0.88] xl:text-sm">
                         {description}
                       </p>
                     </div>

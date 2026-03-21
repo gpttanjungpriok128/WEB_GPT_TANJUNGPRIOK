@@ -737,7 +737,7 @@ function CartPage() {
                 </p>
               )}
 
-              <div className="mt-5 grid gap-4">
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
                     Nama Lengkap
@@ -785,7 +785,7 @@ function CartPage() {
                   )}
                 </label>
 
-                <label className="space-y-1.5">
+                <label className="space-y-1.5 lg:col-span-2">
                   <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
                     Alamat Pengiriman
                   </span>
@@ -807,7 +807,7 @@ function CartPage() {
                   )}
                 </label>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
                   <label className="space-y-1.5">
                     <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
                       Pengiriman
@@ -846,7 +846,7 @@ function CartPage() {
                   </label>
                 </div>
 
-                <label className="space-y-1.5">
+                <label className="space-y-1.5 lg:col-span-2">
                   <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
                     Catatan Tambahan
                   </span>
@@ -897,7 +897,7 @@ function CartPage() {
           </article>
         </section>
 
-        <aside className="h-fit space-y-4 xl:sticky xl:top-24">
+        <aside className="h-fit space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 xl:block xl:space-y-4 xl:sticky xl:top-24">
           <article className={CART_SECTION_SHELL}>
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.1),transparent_34%)]" />
             <div className="relative space-y-5">

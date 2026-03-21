@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./router/ProtectedRoute";
 import HomePage from "./pages/HomePage";
+import ShopPage from "./pages/ShopPage";
 
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const SchedulesPage = lazy(() => import("./pages/SchedulesPage"));
@@ -12,7 +13,6 @@ const GalleryPage = lazy(() => import("./pages/GalleryPage"));
 const LivePage = lazy(() => import("./pages/LivePage"));
 const PrayerPage = lazy(() => import("./pages/PrayerPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
-const ShopPage = lazy(() => import("./pages/ShopPage"));
 const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
 const MyOrdersPage = lazy(() => import("./pages/MyOrdersPage"));

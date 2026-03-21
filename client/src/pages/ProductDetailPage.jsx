@@ -1077,7 +1077,7 @@ function ProductDetailPage() {
       </nav>
 
       {/* ── Product Detail Section ──────────────────────── */}
-      <section className={`${DETAIL_HERO_SHELL} grid gap-8 lg:grid-cols-[1fr_1fr]`}>
+      <section className={`${DETAIL_HERO_SHELL} grid gap-6 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)] xl:gap-8`}>
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent dark:via-emerald-500/30" />
           <div className="absolute -left-14 top-0 h-40 w-40 rounded-full bg-emerald-100 blur-3xl dark:bg-emerald-950/60" />
@@ -1158,7 +1158,7 @@ function ProductDetailPage() {
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
                   {product.verse || "GTshirt"}
                 </div>
-                <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-brand-900 dark:text-white sm:text-[2.7rem]">
+                <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-brand-900 dark:text-white sm:text-[2.35rem] lg:text-[2.55rem] xl:text-[2.7rem]">
                   {product.name}
                 </h1>
               </div>
