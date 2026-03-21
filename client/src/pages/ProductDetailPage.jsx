@@ -223,6 +223,153 @@ const SelectChevronIcon = ({ className = "h-4 w-4" }) => (
 
 const DETAIL_HERO_SHELL = "relative overflow-hidden rounded-[2rem] border border-brand-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,249,0.93))] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:border-brand-800 dark:bg-[linear-gradient(180deg,rgba(10,14,12,0.98),rgba(8,11,10,0.94))] sm:p-5 lg:p-6";
 
+const SkeletonBlock = ({ className = "" }) => (
+  <div
+    aria-hidden="true"
+    className={`animate-pulse rounded-[1rem] bg-brand-100/85 dark:bg-brand-800/70 ${className}`}
+  />
+);
+
+const ReviewListSkeleton = () => (
+  <div className="space-y-3" aria-hidden="true">
+    {[0, 1].map((item) => (
+      <div
+        key={item}
+        className="rounded-xl border border-brand-200 bg-white p-4 dark:border-brand-700 dark:bg-brand-900/50"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-2">
+            <SkeletonBlock className="h-4 w-28" />
+            <SkeletonBlock className="h-3 w-20 rounded-full" />
+          </div>
+          <SkeletonBlock className="h-4 w-24 rounded-full" />
+        </div>
+        <div className="mt-3 space-y-2">
+          <SkeletonBlock className="h-3.5 w-full" />
+          <SkeletonBlock className="h-3.5 w-[88%]" />
+          <SkeletonBlock className="h-3.5 w-[72%]" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const ProductDetailSkeleton = () => (
+  <div className="page-stack space-y-6 pb-32 sm:space-y-8 sm:pb-8">
+    <div className="flex items-center gap-2">
+      <SkeletonBlock className="h-4 w-12 rounded-full" />
+      <SkeletonBlock className="h-4 w-4 rounded-full" />
+      <SkeletonBlock className="h-4 w-40 rounded-full" />
+    </div>
+
+    <section className={`${DETAIL_HERO_SHELL} grid gap-6 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)] xl:gap-8`}>
+      <div className="relative space-y-4">
+        <div className="overflow-hidden rounded-[1.75rem] border border-brand-100 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,245,0.94))] shadow-[0_18px_40px_rgba(15,23,42,0.05)] dark:border-brand-800 dark:bg-[linear-gradient(180deg,rgba(12,18,15,0.96),rgba(9,13,11,0.92))] aspect-[4/5] sm:aspect-square">
+          <div className="h-full w-full p-4">
+            <SkeletonBlock className="h-full w-full rounded-[1.4rem]" />
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
+          {[0, 1, 2, 3].map((item) => (
+            <SkeletonBlock key={item} className="h-14 rounded-xl sm:h-20" />
+          ))}
+        </div>
+      </div>
+
+      <div className="relative space-y-6">
+        <div className="space-y-4">
+          <SkeletonBlock className="h-8 w-32 rounded-full" />
+          <div className="space-y-3">
+            <SkeletonBlock className="h-11 w-full max-w-[30rem]" />
+            <SkeletonBlock className="h-11 w-[82%] max-w-[24rem]" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <SkeletonBlock className="h-6 w-24 rounded-full" />
+            <SkeletonBlock className="h-6 w-28 rounded-full" />
+            <SkeletonBlock className="h-6 w-32 rounded-full" />
+          </div>
+        </div>
+
+        <div className="rounded-[1.6rem] border border-brand-200/80 bg-white/[0.76] p-4 shadow-[0_16px_36px_rgba(15,23,42,0.04)] dark:border-brand-700 dark:bg-white/[0.03]">
+          <SkeletonBlock className="h-12 w-44" />
+          <SkeletonBlock className="mt-3 h-4 w-28 rounded-full" />
+        </div>
+
+        <div className="rounded-[1.6rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+          <SkeletonBlock className="h-3 w-28 rounded-full" />
+          <div className="mt-3 space-y-2">
+            <SkeletonBlock className="h-3.5 w-full" />
+            <SkeletonBlock className="h-3.5 w-[92%]" />
+            <SkeletonBlock className="h-3.5 w-[74%]" />
+          </div>
+        </div>
+
+        <div className="rounded-[1.5rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
+          <SkeletonBlock className="h-3 w-20 rounded-full" />
+          <SkeletonBlock className="mt-3 h-6 w-24" />
+          <SkeletonBlock className="mt-2 h-3.5 w-36 rounded-full" />
+        </div>
+
+        <div className="h-px bg-brand-200 dark:bg-brand-700" />
+
+        <div className="space-y-3">
+          <SkeletonBlock className="h-4 w-28 rounded-full" />
+          <div className="grid grid-cols-4 gap-2">
+            {[0, 1, 2, 3].map((item) => (
+              <SkeletonBlock key={item} className="h-11 rounded-[0.95rem]" />
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <SkeletonBlock className="h-4 w-20 rounded-full" />
+            <SkeletonBlock className="h-6 w-24 rounded-full" />
+          </div>
+          <div className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3 rounded-[1.35rem] border border-brand-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,249,0.9))] p-3 shadow-[0_14px_32px_rgba(15,23,42,0.04)] dark:border-brand-700/80 dark:bg-[linear-gradient(180deg,rgba(11,18,14,0.94),rgba(8,13,11,0.92))]">
+            <SkeletonBlock className="h-12 rounded-[1rem]" />
+            <SkeletonBlock className="h-12 rounded-[1rem]" />
+            <SkeletonBlock className="h-12 rounded-[1rem]" />
+          </div>
+        </div>
+
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[0, 1, 2, 3].map((item) => (
+            <SkeletonBlock key={item} className="h-12 rounded-xl" />
+          ))}
+        </div>
+
+        <div className="sm:hidden grid grid-cols-2 gap-2">
+          <SkeletonBlock className="h-11 rounded-xl" />
+          <SkeletonBlock className="h-11 rounded-xl" />
+        </div>
+
+        <div className="space-y-5 rounded-2xl border border-brand-200 bg-white/80 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/40">
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-2">
+              <SkeletonBlock className="h-3 w-28 rounded-full" />
+              <SkeletonBlock className="h-5 w-36" />
+              <SkeletonBlock className="h-4 w-48 rounded-full" />
+            </div>
+            <SkeletonBlock className="h-5 w-28 rounded-full" />
+          </div>
+          <div className="space-y-3 rounded-xl border border-brand-200 bg-brand-50/60 p-3 sm:p-4 dark:border-brand-700 dark:bg-brand-900/30">
+            <SkeletonBlock className="h-4 w-28 rounded-full" />
+            <div className="grid gap-3 md:grid-cols-2">
+              <SkeletonBlock className="h-14 rounded-[1.1rem]" />
+              <SkeletonBlock className="h-14 rounded-[1.1rem]" />
+            </div>
+            <SkeletonBlock className="h-14 rounded-[1.1rem]" />
+            <SkeletonBlock className="min-h-[110px] rounded-[1.1rem]" />
+            <SkeletonBlock className="h-14 rounded-[1.1rem]" />
+          </div>
+          <ReviewListSkeleton />
+        </div>
+      </div>
+    </section>
+  </div>
+);
+
 function getImageWithFallback(product, fallbackProducts) {
   if (!product) return storePlaceholderImage;
 
@@ -638,11 +785,7 @@ function ProductDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="page-stack flex items-center justify-center py-20">
-        <div className="h-12 w-12 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
-      </div>
-    );
+    return <ProductDetailSkeleton />;
   }
 
   if (!product) {
@@ -935,13 +1078,11 @@ function ProductDetailPage() {
 
       <div className="space-y-3">
         {isLoadingReviews ? (
-          <div className="flex justify-center py-6">
-            <div className="h-8 w-8 rounded-full border-[3px] border-brand-200 border-t-primary animate-spin" />
-          </div>
+          <ReviewListSkeleton />
         ) : reviews.length === 0 ? (
-          <p className="text-sm text-brand-600 dark:text-brand-300">
+          <div className="flex min-h-[8.5rem] items-center rounded-xl border border-brand-200 bg-white p-4 text-sm text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
             Belum ada ulasan. Jadilah yang pertama memberi ulasan!
-          </p>
+          </div>
         ) : (
           reviews.map((review) => (
             <div
@@ -981,6 +1122,9 @@ function ProductDetailPage() {
                         <img
                           src={resolvedImage}
                           alt={`Foto ulasan ${index + 1}`}
+                          width={400}
+                          height={400}
+                          sizes="(max-width: 640px) 28vw, 120px"
                           loading="lazy"
                           decoding="async"
                           className="aspect-square h-full w-full object-cover"
@@ -1105,6 +1249,9 @@ function ProductDetailPage() {
             <img
               src={resolveStoreImageUrl(images[selectedImageIndex])}
               alt={product.name}
+              width={1200}
+              height={1500}
+              sizes="(max-width: 640px) calc(100vw - 3rem), (max-width: 1280px) 50vw, 42vw"
               onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
               onError={(event) => {
                 event.currentTarget.classList.add("is-loaded");
@@ -1133,6 +1280,9 @@ function ProductDetailPage() {
                   <img
                     src={resolveStoreImageUrl(image)}
                     alt={`Foto ${index + 1}`}
+                    width={240}
+                    height={240}
+                    sizes="(max-width: 640px) 22vw, 96px"
                     onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
                     onError={(event) => {
                       event.currentTarget.classList.add("is-loaded");
