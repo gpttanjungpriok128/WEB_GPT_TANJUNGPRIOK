@@ -54,7 +54,7 @@ function MainLayout({ children }) {
   );
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
@@ -385,13 +385,18 @@ function MainLayout({ children }) {
               <div className="flex items-center gap-2">
                 <div className="hidden sm:flex">{themeButton}</div>
 
-                {!user && (
+                {authLoading ? (
+                  <>
+                    <span className="hidden h-12 w-28 rounded-full skeleton sm:inline-flex" aria-hidden="true" />
+                    <span className="inline-flex h-12 w-12 rounded-full skeleton lg:hidden" aria-hidden="true" />
+                  </>
+                ) : !user && (
                   <Link to="/login" className="btn-primary hidden sm:inline-flex tap-target">
                     Login
                   </Link>
                 )}
 
-                {user && canAccessDashboard && (
+                {!authLoading && user && canAccessDashboard && (
                   <NavLink
                     to="/dashboard"
                     className="btn-outline hidden md:inline-flex tap-target"
@@ -400,7 +405,7 @@ function MainLayout({ children }) {
                   </NavLink>
                 )}
 
-                {user && (
+                {!authLoading && user && (
                   <div ref={profileMenuRef} className="relative hidden sm:block">
                     <button
                       type="button"

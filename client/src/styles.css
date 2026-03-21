@@ -435,24 +435,17 @@ html {
 
 .motion-reveal {
   opacity: 0;
-  transform: translate3d(0, 30px, 0);
-  transition:
-    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) var(--motion-delay, 0ms),
-    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) var(--motion-delay, 0ms);
-  will-change: transform, opacity;
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) var(--motion-delay, 0ms);
+  will-change: opacity;
 }
 
 .motion-reveal.is-visible {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
 }
 
 @media (max-width: 640px) {
   .motion-reveal {
-    transform: translate3d(0, 18px, 0);
-    transition:
-      opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1) var(--motion-delay, 0ms),
-      transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) var(--motion-delay, 0ms);
+    transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1) var(--motion-delay, 0ms);
   }
 }
 
@@ -860,8 +853,6 @@ html {
 .page-stack > section,
 .page-stack > div > section {
   position: relative;
-  content-visibility: auto; /* Optimizes rendering for off-screen sections */
-  contain-intrinsic-size: 100px;
 }
 
 .nav-glass {
@@ -2030,20 +2021,11 @@ body {
 
 .motion-reveal {
   opacity: 0;
-  transform: translate3d(0, 18px, 0);
-  transition:
-    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1) var(--motion-delay, 0ms),
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) var(--motion-delay, 0ms);
+  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1) var(--motion-delay, 0ms);
 }
 
 .motion-reveal.is-visible {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
-}
-
-.page-stack > section,
-.page-stack > div > section {
-  contain-intrinsic-size: 1px 640px;
 }
 
 .shop-page-stack > section,
