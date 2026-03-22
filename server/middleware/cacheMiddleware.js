@@ -24,6 +24,26 @@ function evictIfNeeded() {
   if (oldestKey) cacheStore.delete(oldestKey);
 }
 
+function invalidateCache(matcher) {
+  if (!matcher) return 0;
+
+  let removed = 0;
+  const match =
+    typeof matcher === 'function'
+      ? matcher
+      : matcher instanceof RegExp
+        ? (key) => matcher.test(key)
+        : (key) => key.includes(String(matcher));
+
+  for (const key of cacheStore.keys()) {
+    if (!match(key)) continue;
+    cacheStore.delete(key);
+    removed += 1;
+  }
+
+  return removed;
+}
+
 function cacheResponse(options = {}) {
   const ttl = Math.max(0, Number(options.ttlMs ?? DEFAULT_TTL_MS));
   const cacheControl = options.cacheControl || `public, max-age=${Math.floor(ttl / 1000)}, stale-while-revalidate=60`;
@@ -97,4 +117,4 @@ function cacheResponse(options = {}) {
   };
 }
 
-module.exports = { cacheResponse };
+module.exports = { cacheResponse, invalidateCache };

@@ -11,6 +11,7 @@ const {
   User
 } = require('../models');
 const { syncRevenueReportToSheet, isSheetsConfigured } = require('../services/sheetsService');
+const { invalidateCache } = require('../middleware/cacheMiddleware');
 
 const DEFAULT_SHIPPING_COST = 15000;
 const STORE_WHATSAPP_NUMBER = String(
@@ -27,6 +28,10 @@ const ORDER_STATUSES = [
   'cancelled'
 ];
 const uploadsDir = path.join(__dirname, '..', 'uploads');
+
+function invalidateStoreCatalogCache() {
+  invalidateCache((key) => key.includes('/store/products'));
+}
 
 function getUploadedFiles(req) {
   if (Array.isArray(req.files)) {
@@ -944,6 +949,7 @@ async function createProductReview(req, res, next) {
       isApproved: true
     });
     uploadedPaths = [];
+    invalidateStoreCatalogCache();
 
     return res.status(201).json({
       message: 'Ulasan berhasil dikirim',
@@ -1157,6 +1163,7 @@ async function createAdminProduct(req, res, next) {
     payload.imageUrl = uploadedPaths[0] || null;
 
     const product = await StoreProduct.create(payload);
+    invalidateStoreCatalogCache();
     return res.status(201).json({
       message: 'Produk berhasil ditambahkan',
       data: serializeProduct(product)
@@ -1200,6 +1207,7 @@ async function updateAdminProduct(req, res, next) {
     if (uploadedPaths.length > 0) {
       await removeImageFiles(oldImages);
     }
+    invalidateStoreCatalogCache();
 
     return res.status(200).json({
       message: 'Produk berhasil diperbarui',
@@ -1221,6 +1229,7 @@ async function deleteAdminProduct(req, res, next) {
     const oldImages = normalizeProductImages(product);
     await product.destroy();
     await removeImageFiles(oldImages);
+    invalidateStoreCatalogCache();
 
     return res.status(200).json({ message: 'Produk berhasil dihapus permanen' });
   } catch (error) {
@@ -1442,6 +1451,7 @@ async function updateAdminReviewStatus(req, res, next) {
 
     const isApproved = toBoolean(req.body.isApproved, review.isApproved);
     await review.update({ isApproved });
+    invalidateStoreCatalogCache();
 
     return res.status(200).json({
       message: 'Status ulasan berhasil diperbarui',
@@ -1462,6 +1472,7 @@ async function deleteAdminReview(req, res, next) {
     const oldImages = Array.isArray(review.imageUrls) ? review.imageUrls.filter(Boolean) : [];
     await review.destroy();
     await removeImageFiles(oldImages);
+    invalidateStoreCatalogCache();
     return res.status(200).json({ message: 'Ulasan berhasil dihapus' });
   } catch (error) {
     return next(error);
@@ -1491,6 +1502,7 @@ async function resetAdminOrders(req, res, next) {
 
 async function updateAdminOrderStatus(req, res, next) {
   const transaction = await sequelize.transaction();
+  let didMutateCatalog = false;
 
   try {
     const order = await StoreOrder.findByPk(req.params.id, {
@@ -1623,10 +1635,14 @@ async function updateAdminOrderStatus(req, res, next) {
       }
 
       updatePayload.stockDeductedAt = new Date();
+      didMutateCatalog = true;
     }
 
     await order.update(updatePayload, { transaction });
     await transaction.commit();
+    if (didMutateCatalog) {
+      invalidateStoreCatalogCache();
+    }
     triggerRevenueSheetSync({ status: 'all' });
 
     return res.status(200).json({
@@ -1657,6 +1673,7 @@ async function updateAdminSettings(req, res, next) {
     const settings = await getOrCreateStoreSettings();
     const shippingCost = Math.max(0, toInteger(req.body.shippingCost, DEFAULT_SHIPPING_COST));
     await settings.update({ shippingCost });
+    invalidateStoreCatalogCache();
 
     return res.status(200).json({
       message: 'Pengaturan ongkir berhasil diperbarui',

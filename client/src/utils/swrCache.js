@@ -45,6 +45,19 @@ function setCacheData(key, data, ttlMs) {
   });
 }
 
+function invalidateCacheByPrefix(prefix) {
+  if (!prefix) return 0;
+
+  let removed = 0;
+  for (const key of Array.from(cacheStore.keys())) {
+    if (!key.includes(prefix)) continue;
+    cacheStore.delete(key);
+    removed += 1;
+  }
+
+  return removed;
+}
+
 async function fetchAndCache(key, url, config, ttlMs) {
   if (pendingStore.has(key)) {
     return pendingStore.get(key);
@@ -82,4 +95,4 @@ async function swrGet(url, config = {}, options = {}) {
   return { data, fromCache: false, isFresh: true };
 }
 
-export { buildCacheKey, getCacheSnapshot, setCacheData, swrGet };
+export { buildCacheKey, getCacheSnapshot, invalidateCacheByPrefix, setCacheData, swrGet };

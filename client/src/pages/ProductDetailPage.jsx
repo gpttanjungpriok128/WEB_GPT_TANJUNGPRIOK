@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
@@ -10,9 +10,14 @@ import {
   getTotalStock,
   normalizeSizeKey,
 } from "../utils/storeStock";
+import {
+  PRODUCT_CACHE_KEY,
+  STORE_CATALOG_INVALIDATION_EVENT,
+  STORE_CATALOG_SYNC_KEY,
+  updateStoreCatalogProduct,
+} from "../utils/storeCatalogCache";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
-const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const REVIEW_IMAGE_LIMIT = 3;
 const REVIEW_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const STORE_REQUEST_TIMEOUT_MS = 8000;
@@ -459,6 +464,55 @@ function ProductDetailPage() {
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchDeltaRef = useRef({ x: 0, y: 0 });
   const prefetchedDetailImagesRef = useRef(new Set());
+  const resolveFallbackProduct = useCallback(
+    () => (
+      readCachedCatalogProducts().find((item) => item?.slug === slug) ||
+      FALLBACK_PRODUCTS.find((item) => item.slug === slug) ||
+      null
+    ),
+    [slug],
+  );
+  const applyResolvedProduct = useCallback((nextProduct) => {
+    setProduct(nextProduct);
+    setSelectedSize((previous) => {
+      const sizes = Array.isArray(nextProduct?.sizes)
+        ? nextProduct.sizes.filter((size) => normalizeSizeLabel(size) !== "XXL")
+        : [];
+
+      return previous && sizes.includes(previous) ? previous : getDefaultSize(nextProduct);
+    });
+
+    const nextImages = nextProduct ? getImageWithFallback(nextProduct, FALLBACK_PRODUCTS) : [];
+    setImages(nextImages);
+    setSelectedImageIndex((previous) => Math.min(previous, Math.max(0, nextImages.length - 1)));
+  }, []);
+  const fetchProduct = useCallback(async ({ forceRefresh = false, silent = false } = {}) => {
+    if (!silent) {
+      setIsLoading(true);
+    }
+
+    try {
+      const { data } = await api.get(`/store/products/${slug}`, {
+        timeout: STORE_REQUEST_TIMEOUT_MS,
+        headers: forceRefresh ? { "Cache-Control": "no-cache" } : undefined,
+      });
+
+      if (data?.data) {
+        applyResolvedProduct(data.data);
+        updateStoreCatalogProduct(data.data);
+      } else {
+        applyResolvedProduct(resolveFallbackProduct());
+      }
+    } catch {
+      if (!silent) {
+        applyResolvedProduct(resolveFallbackProduct());
+      }
+    } finally {
+      if (!silent) {
+        setIsLoading(false);
+      }
+    }
+  }, [applyResolvedProduct, resolveFallbackProduct, slug]);
 
   const syncCartCount = () => {
     try {
@@ -497,45 +551,41 @@ function ProductDetailPage() {
   }, [reviewImages]);
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      setIsLoading(true);
-      try {
-        const { data } = await api.get(`/store/products/${slug}`, {
-          timeout: STORE_REQUEST_TIMEOUT_MS,
-        });
-        if (data?.data) {
-          setProduct(data.data);
-          setSelectedSize(getDefaultSize(data.data));
-          const imgs = getImageWithFallback(data.data, FALLBACK_PRODUCTS);
-          setImages(imgs);
-        } else {
-          const found =
-            readCachedCatalogProducts().find((item) => item?.slug === slug) ||
-            FALLBACK_PRODUCTS.find((p) => p.slug === slug);
-          setProduct(found);
-          setSelectedSize(getDefaultSize(found));
-          if (found) {
-            const imgs = getImageWithFallback(found, FALLBACK_PRODUCTS);
-            setImages(imgs);
-          }
-        }
-      } catch {
-        const found =
-          readCachedCatalogProducts().find((item) => item?.slug === slug) ||
-          FALLBACK_PRODUCTS.find((p) => p.slug === slug);
-        setProduct(found);
-        setSelectedSize(getDefaultSize(found));
-        if (found) {
-          const imgs = getImageWithFallback(found, FALLBACK_PRODUCTS);
-          setImages(imgs);
-        }
-      } finally {
-        setIsLoading(false);
+    fetchProduct();
+  }, [fetchProduct]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return undefined;
+
+    const refreshProduct = () => {
+      if (document.visibilityState === "hidden") return;
+      fetchProduct({ forceRefresh: true, silent: true });
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === STORE_CATALOG_SYNC_KEY) {
+        refreshProduct();
       }
     };
 
-    fetchProduct();
-  }, [slug]);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshProduct();
+      }
+    };
+
+    window.addEventListener("focus", refreshProduct);
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshProduct);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", refreshProduct);
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshProduct);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchProduct]);
 
   useEffect(() => {
     let handle = null;

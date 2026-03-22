@@ -1,14 +1,20 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import ShopHero from "../components/ShopHero";
 import storePlaceholderImage from "../img/logo1.png";
 import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
 import { clampQuantity, getStockForSize, getTotalStock } from "../utils/storeStock";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
+import {
+  PRODUCT_CACHE_KEY,
+  STORE_CATALOG_INVALIDATION_EVENT,
+  STORE_CATALOG_SYNC_KEY,
+  writeStoreCatalogSnapshot,
+} from "../utils/storeCatalogCache";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
-const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
 const STORE_REQUEST_TIMEOUT_MS = 8000;
 const PROMO_VIDEO_URL = "https://youtu.be/oOOdw2ulGIg";
@@ -284,6 +290,27 @@ const SHOP_SECTION_LABEL = "text-[11px] font-semibold uppercase tracking-[0.28em
 const PRODUCTS_PER_PAGE = 16;
 const USE_FALLBACK_PRODUCTS = import.meta.env.MODE === "development";
 
+const buildProductParams = (page, search) => ({
+  page,
+  limit: PRODUCTS_PER_PAGE,
+  search: search || undefined,
+});
+
+const parseProductResponse = (payload, page) => {
+  const apiProducts = Array.isArray(payload?.data)
+    ? payload.data.filter((item) => item.isActive !== false)
+    : [];
+
+  return {
+    apiProducts,
+    meta: payload?.meta || {
+      page,
+      totalPages: 1,
+      total: apiProducts.length,
+    },
+  };
+};
+
 const readShopBootCache = () => {
   if (typeof window === "undefined") return null;
 
@@ -429,16 +456,13 @@ function ShopPage() {
   }, [products]);
 
   const fetchProducts = async ({ page = 1, append = false } = {}) => {
-    const params = {
-      page,
-      limit: PRODUCTS_PER_PAGE,
-      search: debouncedSearch || undefined
-    };
+    const params = buildProductParams(page, debouncedSearch);
     const cacheKey = buildCacheKey("/store/products", { params });
     const cached = append ? null : getCacheSnapshot(cacheKey);
     if (cached?.data?.data && !append) {
-      setProducts(cached.data.data);
-      setProductMeta(cached.data.meta || { page, totalPages: 1, total: cached.data.data.length });
+      const { apiProducts, meta } = parseProductResponse(cached.data, page);
+      setProducts(apiProducts);
+      setProductMeta(meta);
       setProductPage(page);
     }
     if (append) {
@@ -453,40 +477,24 @@ function ShopPage() {
         onUpdate: append
           ? undefined
           : (payload) => {
-            const apiProducts = Array.isArray(payload?.data)
-              ? payload.data.filter((item) => item.isActive !== false)
-              : [];
+            const { apiProducts, meta } = parseProductResponse(payload, page);
             setProducts(apiProducts);
-            setProductMeta(payload?.meta || { page, totalPages: 1, total: apiProducts.length });
+            setProductMeta(meta);
             setProductPage(page);
           }
       });
-      const apiProducts = Array.isArray(data?.data)
-        ? data.data.filter((item) => item.isActive !== false)
-        : [];
+      const { apiProducts, meta } = parseProductResponse(data, page);
 
       setProducts((prev) => (append ? [...prev, ...apiProducts] : apiProducts));
-      setProductMeta(data?.meta || { page, totalPages: 1, total: apiProducts.length });
+      setProductMeta(meta);
       setProductPage(page);
       if (!append) {
         setProductLoadError(false);
         setIsCacheStale(false);
       }
-      if (!append && apiProducts.length > 0 && typeof window !== "undefined") {
-        try {
-          window.localStorage.setItem(
-            PRODUCT_CACHE_KEY,
-            JSON.stringify({
-              cachedAt: Date.now(),
-              data: apiProducts,
-              source: "api",
-              meta: data?.meta || { page, totalPages: 1, total: apiProducts.length },
-            }),
-          );
-          setHasBootCache(true);
-        } catch {
-          // ignore cache write
-        }
+      if (!append && typeof window !== "undefined") {
+        writeStoreCatalogSnapshot(apiProducts, meta);
+        setHasBootCache(true);
       }
     } catch {
       if (!append) {
@@ -497,19 +505,7 @@ function ShopPage() {
           setHasBootCache(true);
           setIsCacheStale(true);
           if (typeof window !== "undefined") {
-            try {
-              window.localStorage.setItem(
-                PRODUCT_CACHE_KEY,
-                JSON.stringify({
-                  cachedAt: Date.now(),
-                  data: FALLBACK_PRODUCTS,
-                  source: "fallback",
-                  meta: { page: 1, totalPages: 1, total: FALLBACK_PRODUCTS.length },
-                }),
-              );
-            } catch {
-              // ignore fallback cache write
-            }
+            writeStoreCatalogSnapshot(FALLBACK_PRODUCTS, { page: 1, totalPages: 1, total: FALLBACK_PRODUCTS.length });
           }
         }
       }
@@ -529,6 +525,78 @@ function ShopPage() {
   useEffect(() => {
     fetchProducts({ page: 1, append: false });
   }, [debouncedSearch]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return undefined;
+
+    let isCancelled = false;
+
+    const refreshVisibleCatalog = async () => {
+      if (document.visibilityState === "hidden") return;
+
+      try {
+        const loadedPages = Math.max(1, productPage);
+        const pageResults = await Promise.all(
+          Array.from({ length: loadedPages }, (_, index) => api.get("/store/products", {
+            params: buildProductParams(index + 1, debouncedSearch),
+            timeout: STORE_REQUEST_TIMEOUT_MS,
+            headers: { "Cache-Control": "no-cache" },
+          })),
+        );
+
+        if (isCancelled) return;
+
+        const normalizedResults = pageResults.map((response, index) => (
+          parseProductResponse(response?.data, index + 1)
+        ));
+        const mergedProducts = normalizedResults.flatMap((result) => result.apiProducts);
+        const latestMeta = normalizedResults[normalizedResults.length - 1]?.meta || {
+          page: loadedPages,
+          totalPages: 1,
+          total: mergedProducts.length,
+        };
+
+        setProducts(mergedProducts);
+        setProductMeta(latestMeta);
+        setProductPage(loadedPages);
+        setProductLoadError(false);
+        setIsCacheStale(false);
+
+        const firstPageResult = normalizedResults[0];
+        if (firstPageResult) {
+          writeStoreCatalogSnapshot(firstPageResult.apiProducts, firstPageResult.meta);
+          setHasBootCache(true);
+        }
+      } catch {
+        // keep current view if background revalidation fails
+      }
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === STORE_CATALOG_SYNC_KEY) {
+        refreshVisibleCatalog();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshVisibleCatalog();
+      }
+    };
+
+    window.addEventListener("focus", refreshVisibleCatalog);
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshVisibleCatalog);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isCancelled = true;
+      window.removeEventListener("focus", refreshVisibleCatalog);
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshVisibleCatalog);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [debouncedSearch, productPage]);
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = deferredSearch.trim().toLowerCase();

@@ -42,16 +42,16 @@ const router = express.Router();
 router.get(
   '/products',
   cacheResponse({
-    ttlMs: 120 * 1000,
-    cacheControl: 'public, max-age=120, stale-while-revalidate=300, stale-if-error=86400'
+    ttlMs: 15 * 1000,
+    cacheControl: 'public, max-age=15, must-revalidate'
   }),
   getPublicProducts
 );
 router.get(
   '/products/:slug',
   cacheResponse({
-    ttlMs: 120 * 1000,
-    cacheControl: 'public, max-age=120, stale-while-revalidate=300, stale-if-error=86400'
+    ttlMs: 15 * 1000,
+    cacheControl: 'public, max-age=15, must-revalidate'
   }),
   getPublicProductBySlug
 );

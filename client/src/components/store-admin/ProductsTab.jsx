@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import api from "../../services/api";
 import { formatRupiah } from "../../utils/storeFormatters";
+import { invalidateStoreCatalogCache } from "../../utils/storeCatalogCache";
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") || "http://localhost:5000";
 const DEFAULT_SIZES = ["S", "M", "L", "XL"];
@@ -221,6 +222,7 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
         await api.post("/store/admin/products", formData, { headers: { "Content-Type": "multipart/form-data" } });
         setFeedback({ type: "success", text: "Produk baru berhasil ditambahkan." });
       }
+      invalidateStoreCatalogCache();
       resetProductForm();
       await fetchProducts();
       onRefreshAnalytics?.();
@@ -241,6 +243,7 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
       formData.append("isActive", String(nextActive));
       await api.put(`/store/admin/products/${product.id}`, formData, { headers: { "Content-Type": "multipart/form-data" } });
       setFeedback({ type: "success", text: `Produk berhasil ${nextActive ? "diaktifkan" : "dinonaktifkan"}.` });
+      invalidateStoreCatalogCache();
       await fetchProducts();
       onRefreshAnalytics?.();
     } catch (error) {
@@ -254,6 +257,7 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
     try {
       await api.delete(`/store/admin/products/${product.id}`);
       setFeedback({ type: "success", text: "Produk berhasil dihapus permanen." });
+      invalidateStoreCatalogCache();
       await fetchProducts();
       onRefreshAnalytics?.();
     } catch (error) {

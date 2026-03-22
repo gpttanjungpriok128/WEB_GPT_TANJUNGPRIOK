@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import api from "../../services/api";
 import gtshirtLogo from "../../img/gtshirt-logo.jpeg";
 import { formatRupiah, formatDateTime, mapOrderStatusLabel } from "../../utils/storeFormatters";
+import { invalidateStoreCatalogCache } from "../../utils/storeCatalogCache";
 import { ORDER_STATUS_BADGE } from "../../utils/storeOrderStatus";
 
 const ORDER_STATUS_OPTIONS = [
@@ -114,6 +115,7 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
     setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
     try {
       await api.patch(`/store/admin/orders/${orderId}/status`, { status });
+      invalidateStoreCatalogCache();
       setFeedback({ type: "success", text: "Status order berhasil diperbarui." });
     } catch (error) {
       setOrders(previousOrders);
@@ -141,7 +143,9 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
     const ids = new Set(selectedOrders.map((o) => o.id));
     setOrders((prev) => prev.map((o) => ids.has(o.id) ? { ...o, status: bulkStatus } : o));
     const results = await Promise.allSettled(selectedOrders.map((o) => api.patch(`/store/admin/orders/${o.id}/status`, { status: bulkStatus })));
+    const successCount = results.filter((result) => result.status === "fulfilled").length;
     const failed = results.filter((r) => r.status === "rejected").length;
+    if (successCount > 0) invalidateStoreCatalogCache();
     if (failed > 0) { setOrders(previousOrders); setFeedback({ type: "error", text: `${failed} order gagal diperbarui. Coba ulangi.` }); return; }
     setFeedback({ type: "success", text: "Status order terpilih berhasil diperbarui." });
     setSelectedOrderIds(new Set());
