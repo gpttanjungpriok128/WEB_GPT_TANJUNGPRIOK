@@ -1,6 +1,19 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "web-gpt-tanjungpriok.vercel.app"
+        }
+      ],
+      "destination": "https://gpttanjungpriok.vercel.app/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/shop",
