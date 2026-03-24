@@ -1,18 +1,29 @@
-function PageHero({ title, titleAccent, subtitle, tone = "default" }) {
+import gtshirtLogo from "../img/gtshirt-logo.jpeg";
+import heroAbout from "../img/hero-about.webp";
+import heroArticles from "../img/hero-articles.webp";
+import heroChurch from "../img/hero-church.webp";
+import heroChurchFallback from "../img/hero-church.png";
+import heroContact from "../img/hero-contact.webp";
+import heroGallery from "../img/hero-gallery.webp";
+import heroPrayer from "../img/hero-prayer.webp";
+import heroSchedules from "../img/hero-schedules.webp";
+
+function PageHero({ title, titleAccent, subtitle, tone = "default", imageSrc = "" }) {
   const isDense = tone === "dense";
   const hasAccent = Boolean(titleAccent);
 
   const getIllustration = () => {
     const t = String((title || "") + " " + (titleAccent || "")).toLowerCase();
-    if (t.includes("tentang")) return "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"; // Changed to safely load (sprout)
-    if (t.includes("jadwal")) return "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&q=80&w=800"; // Worship gathering
-    if (t.includes("renungan")) return "https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?auto=format&fit=crop&q=80&w=800"; // Open Bible
-    if (t.includes("galeri")) return "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"; // Joyful community gathering
-    if (t.includes("ibadah") || t.includes("live")) return "https://images.unsplash.com/photo-1516280440502-6288344e66c6?auto=format&fit=crop&q=80&w=800"; // Live worship
-    if (t.includes("permohonan") || t.includes("doa")) return "https://images.unsplash.com/photo-1516981879613-9f5da904015f?auto=format&fit=crop&q=80&w=800"; // Hands held in prayer
-    if (t.includes("hubungi") || t.includes("kontak")) return "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&q=80&w=800"; // Supporting hands
-    if (t.includes("keranjang") || t.includes("pesanan") || t.includes("lacak")) return "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=800"; // Shop
-    return "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800"; // Fallback: Sprout/Growing Together
+    if (imageSrc) return imageSrc;
+    if (t.includes("tentang")) return heroAbout;
+    if (t.includes("jadwal")) return heroSchedules;
+    if (t.includes("renungan")) return heroArticles;
+    if (t.includes("galeri")) return heroGallery;
+    if (t.includes("ibadah") || t.includes("live")) return heroChurch;
+    if (t.includes("permohonan") || t.includes("doa")) return heroPrayer;
+    if (t.includes("hubungi") || t.includes("kontak")) return heroContact;
+    if (t.includes("keranjang") || t.includes("pesanan") || t.includes("lacak")) return gtshirtLogo;
+    return heroChurch;
   };
 
   return (
@@ -69,6 +80,10 @@ function PageHero({ title, titleAccent, subtitle, tone = "default" }) {
               <img 
                 src={getIllustration()} 
                 alt={`${title || titleAccent || "Page"} Illustration`} 
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = heroChurchFallback;
+                }}
                 className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
               />
             </div>
