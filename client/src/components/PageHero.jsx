@@ -84,7 +84,7 @@ function PageHero({ title, titleAccent, subtitle, tone = "default", imageSrc = "
                   event.currentTarget.onerror = null;
                   event.currentTarget.src = heroChurchFallback;
                 }}
-                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                className="h-full w-full origin-center object-cover object-center scale-[1.2] transform-gpu transition-transform duration-700 group-hover:scale-[1.28]"
               />
             </div>
             {/* Floating glass elements to maintain the premium glassmorphism feel */}
