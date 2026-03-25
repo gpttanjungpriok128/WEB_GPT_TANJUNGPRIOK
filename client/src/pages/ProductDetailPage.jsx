@@ -475,26 +475,31 @@ const ProductDetailSkeleton = () => (
 );
 
 function getImageWithFallback(product, fallbackProducts) {
-  if (!product) return storePlaceholderImage;
+  if (!product) return [storePlaceholderImage];
 
-  const imageUrls =
+  const rawUrls =
     Array.isArray(product.imageUrls) && product.imageUrls.length > 0
       ? product.imageUrls
       : product.imageUrl
         ? [product.imageUrl]
         : [];
 
-  // Try to find a fallback product by slug to use its images
-  const fallbackProduct = fallbackProducts.find((p) => p.slug === product.slug);
-  if (
-    fallbackProduct &&
-    Array.isArray(fallbackProduct.imageUrls) &&
-    fallbackProduct.imageUrls.length > 0
-  ) {
-    return [...imageUrls, ...fallbackProduct.imageUrls];
+  const validUrls = rawUrls.filter((url) => typeof url === "string" && url.trim() !== "");
+
+  // Try to find a fallback product by slug to use its images if no valid urls exist
+  if (validUrls.length === 0) {
+    const fallbackProduct = fallbackProducts.find((p) => p.slug === product.slug);
+    if (
+      fallbackProduct &&
+      Array.isArray(fallbackProduct.imageUrls) &&
+      fallbackProduct.imageUrls.length > 0
+    ) {
+      return fallbackProduct.imageUrls;
+    }
+    return [storePlaceholderImage];
   }
 
-  return imageUrls.length > 0 ? imageUrls : [storePlaceholderImage];
+  return validUrls;
 }
 
 function getDefaultSize(product) {
@@ -551,6 +556,7 @@ function ProductDetailPage() {
   const [reviewFeedback, setReviewFeedback] = useState({ type: "", text: "" });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchDeltaRef = useRef({ x: 0, y: 0 });
@@ -1372,9 +1378,7 @@ function ProductDetailPage() {
   return (
     <>
       <div className="page-stack space-y-12 pb-36 sm:space-y-16 sm:pb-12">
-        <div className="pointer-events-none absolute inset-x-0 top-0 -z-[1] h-[32rem] bg-[radial-gradient(circle_at_top,rgba(9,89,76,0.12),transparent_58%),linear-gradient(180deg,rgba(247,248,252,0.98),rgba(244,245,249,0.94))] dark:bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.15),transparent_56%),linear-gradient(180deg,rgba(9,12,15,0.98),rgba(8,11,13,0.96))]" />
-
-        <nav className="flex flex-wrap items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-brand-500 dark:text-brand-400">
+        <nav className="relative z-10 flex flex-wrap items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-brand-500 dark:text-brand-400">
           <div className="flex items-center gap-2">
             <Link to="/shop" className="transition hover:text-brand-900 dark:hover:text-white">
               Shop
@@ -1424,10 +1428,10 @@ function ProductDetailPage() {
                 key={`thumb-desktop-${index}`}
                 type="button"
                 onClick={() => setSelectedImageIndex(index)}
-                className={`group overflow-hidden rounded-[1rem] border p-1.5 transition ${
+                className={`group overflow-hidden rounded-[1rem] p-1.5 transition ${
                   selectedImageIndex === index
-                    ? "border-primary bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-brand-900/80"
-                    : "border-brand-200/80 bg-white/70 hover:border-brand-400 dark:border-brand-700 dark:bg-brand-900/40"
+                    ? "opacity-100 ring-2 ring-primary ring-offset-2 dark:ring-offset-brand-950"
+                    : "opacity-60 hover:opacity-100"
                 }`}
               >
                 <img
@@ -1450,7 +1454,7 @@ function ProductDetailPage() {
 
           <div className="space-y-4">
             <div
-              className="image-swipe relative overflow-hidden rounded-[2rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,245,247,0.95))] p-5 shadow-[0_28px_70px_rgba(15,23,42,0.08)] dark:border-brand-800 dark:bg-[linear-gradient(180deg,rgba(18,23,20,0.98),rgba(9,13,12,0.96))] sm:p-7"
+              className="image-swipe relative overflow-hidden rounded-[2rem] p-2 sm:p-4"
               onTouchStart={handleSwipeStart}
               onTouchMove={handleSwipeMove}
               onTouchEnd={handleSwipeEnd}
@@ -1489,10 +1493,10 @@ function ProductDetailPage() {
                     key={`thumb-mobile-${index}`}
                     type="button"
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`overflow-hidden rounded-[1rem] border p-1.5 transition ${
+                    className={`overflow-hidden rounded-[1rem] p-1.5 transition ${
                       selectedImageIndex === index
-                        ? "border-primary bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-brand-900/80"
-                        : "border-brand-200/80 bg-white/70 hover:border-brand-400 dark:border-brand-700 dark:bg-brand-900/40"
+                        ? "opacity-100 ring-2 ring-primary ring-offset-2 dark:ring-offset-brand-950"
+                        : "opacity-60 hover:opacity-100"
                     }`}
                   >
                     <img
@@ -1537,15 +1541,33 @@ function ProductDetailPage() {
                 )}
               </div>
 
-              <div className="max-w-xl space-y-4 text-[15px] leading-8 text-brand-700 dark:text-brand-300">
-                <p>
-                  {product.description || "GTshirt hadir sebagai apparel komunitas yang rapi, nyaman, dan siap dipakai bertumbuh bersama."}
-                </p>
-                <div className="border-l-2 border-emerald-400/70 pl-4 text-sm italic text-brand-600 dark:text-brand-400">
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] not-italic text-brand-500 dark:text-brand-500">
-                    Mission
-                  </p>
-                  <p>{missionQuote}</p>
+              <div className="max-w-xl border-b border-brand-200/70 pb-4 dark:border-brand-800">
+                <button
+                  type="button"
+                  onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
+                  className="flex w-full items-center justify-between text-left font-semibold text-brand-950 dark:text-white"
+                >
+                  <span className="text-[15px]">Product Description</span>
+                  <span className="text-xl leading-none text-brand-500 hover:text-brand-900 dark:hover:text-white transition">{isDescriptionOpen ? "−" : "+"}</span>
+                </button>
+                <div
+                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                    isDescriptionOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="space-y-4 pt-4 text-[15px] leading-8 text-brand-700 dark:text-brand-300">
+                      <p>
+                        {product.description || "GTshirt hadir sebagai apparel komunitas yang rapi, nyaman, dan siap dipakai bertumbuh bersama."}
+                      </p>
+                      <div className="border-l-2 border-emerald-400/70 pl-4 text-sm italic text-brand-600 dark:text-brand-400">
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] not-italic text-brand-500 dark:text-brand-500">
+                          Mission
+                        </p>
+                        <p>{missionQuote}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1578,13 +1600,22 @@ function ProductDetailPage() {
                       }}
                       disabled={isOutOfStock}
                       title={isOutOfStock ? `Ukuran ${size} habis` : `${sizeStock} pcs tersedia`}
-                      className={`min-w-[3rem] rounded-[0.9rem] border px-4 py-3 text-sm font-semibold transition ${
+                      className={`relative flex min-w-[4rem] flex-col items-center justify-center rounded-[0.9rem] border px-4 py-2 transition ${
                         selectedSize === size
                           ? "border-primary bg-primary text-white shadow-[0_14px_26px_rgba(9,89,76,0.22)]"
-                          : "border-brand-200 bg-white text-brand-700 hover:border-brand-400 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+                          : "border-brand-200 bg-white hover:border-brand-400 dark:border-brand-700 dark:bg-brand-900/40"
                       } ${isOutOfStock ? "cursor-not-allowed opacity-35" : ""}`}
                     >
-                      {normalizeSizeKey(size)}
+                      <span className="text-sm font-semibold">{normalizeSizeKey(size)}</span>
+                      <span
+                        className={`mt-0.5 text-[10px] font-normal ${
+                          selectedSize === size
+                            ? "text-white/90"
+                            : "text-brand-500 dark:text-brand-400"
+                        }`}
+                      >
+                        {sizeStock > 0 ? `Sisa ${sizeStock}` : "Habis"}
+                      </span>
                     </button>
                   );
                 })}
