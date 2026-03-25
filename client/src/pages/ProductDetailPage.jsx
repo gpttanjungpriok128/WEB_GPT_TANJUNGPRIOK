@@ -22,14 +22,14 @@ const REVIEW_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const FALLBACK_PRODUCTS = [
   {
     id: 1001,
-    name: "He Left The 99 For You - Green Edition",
-    slug: "he-left-the-99-for-you-green-edition",
+    name: "He Left The 99 For You - White Edition",
+    slug: "he-left-the-99-for-you-white-edition",
     basePrice: 130000,
     finalPrice: 130000,
     discountAmount: 0,
     promoIsActive: false,
     promoLabel: "",
-    color: "Green Edition",
+    color: "White Edition",
     verse: "Lukas 15:4",
     description: "Desain streetwear dengan pesan kasih dan pencarian. Nyaman untuk ibadah dan kegiatan komunitas.",
     sizes: ["S", "M", "L", "XL"],
@@ -478,6 +478,7 @@ const ProductDetailSkeleton = () => (
 function getImageWithFallback(product, fallbackProducts) {
   if (!product) return [storePlaceholderImage];
 
+  // Get raw image URLs from product
   const rawUrls =
     Array.isArray(product.imageUrls) && product.imageUrls.length > 0
       ? product.imageUrls
@@ -485,24 +486,58 @@ function getImageWithFallback(product, fallbackProducts) {
         ? [product.imageUrl]
         : [];
 
-  const validUrls = rawUrls.filter((url) => typeof url === "string" && url.trim() !== "");
+  // Filter to only valid, non-empty strings
+  const validUrls = rawUrls.filter((url) => 
+    typeof url === "string" && url.trim() !== "" && url.trim() !== "null"
+  );
 
   // Return valid URLs if they exist
   if (validUrls.length > 0) {
     return validUrls;
   }
 
-  // Try to find a fallback product by slug or name to use its images if no valid urls exist
+  // Try to find a fallback product by exact slug match
   if (fallbackProducts && Array.isArray(fallbackProducts) && fallbackProducts.length > 0) {
-    const fallbackProduct = fallbackProducts.find(
-      (p) => p && (p.slug === product.slug || p.name === product.name)
-    );
-    if (
-      fallbackProduct &&
-      Array.isArray(fallbackProduct.imageUrls) &&
-      fallbackProduct.imageUrls.length > 0
-    ) {
-      return fallbackProduct.imageUrls;
+    if (product.slug) {
+      const exactSlugMatch = fallbackProducts.find((p) => 
+        p && p.slug && p.slug.toLowerCase() === String(product.slug).toLowerCase()
+      );
+      if (
+        exactSlugMatch &&
+        Array.isArray(exactSlugMatch.imageUrls) &&
+        exactSlugMatch.imageUrls.length > 0
+      ) {
+        return exactSlugMatch.imageUrls;
+      }
+    }
+    
+    // Try to find by exact name match
+    if (product.name) {
+      const exactNameMatch = fallbackProducts.find((p) => 
+        p && p.name && p.name.toLowerCase() === String(product.name).toLowerCase()
+      );
+      if (
+        exactNameMatch &&
+        Array.isArray(exactNameMatch.imageUrls) &&
+        exactNameMatch.imageUrls.length > 0
+      ) {
+        return exactNameMatch.imageUrls;
+      }
+    }
+    
+    // Try to find by partial name match as last resort
+    if (product.name) {
+      const productNameLower = String(product.name).toLowerCase();
+      const partialMatch = fallbackProducts.find((p) => 
+        p && p.name && productNameLower.includes(p.name.toLowerCase().split("-")[0].trim())
+      );
+      if (
+        partialMatch &&
+        Array.isArray(partialMatch.imageUrls) &&
+        partialMatch.imageUrls.length > 0
+      ) {
+        return partialMatch.imageUrls;
+      }
     }
   }
 
@@ -518,6 +553,21 @@ function getDefaultSize(product) {
 
   const firstAvailable = sizes.find((size) => getStockForSize(product, size) > 0);
   return firstAvailable || sizes[0] || "M";
+}
+
+function ensureValidImageUrl(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== "string") {
+    return storePlaceholderImage;
+  }
+  
+  const resolved = resolveStoreImageUrl(imageUrl);
+  
+  // If resolved is empty or doesn't look like a valid URL/path, use placeholder
+  if (!resolved || !resolved.trim() || resolved === imageUrl && !imageUrl.includes("/")) {
+    return storePlaceholderImage;
+  }
+  
+  return resolved;
 }
 
 function buildRelatedProductPool(currentSlug, candidates = []) {
@@ -1797,9 +1847,12 @@ function ProductDetailPage() {
 
           <div className="grid gap-6 md:grid-cols-3">
             {showcaseProducts.map((item) => {
+              if (!item || !item.id) return null;
+              
               const relatedPrice = Number(item.finalPrice ?? item.basePrice ?? 0);
-              const relatedImage = getImageWithFallback(item, FALLBACK_PRODUCTS)[0];
-              const resolvedImageUrl = resolveStoreImageUrl(relatedImage);
+              const relatedImages = getImageWithFallback(item, FALLBACK_PRODUCTS);
+              const relatedImage = relatedImages && relatedImages.length > 0 ? relatedImages[0] : storePlaceholderImage;
+              const finalImageUrl = ensureValidImageUrl(relatedImage);
 
               return (
                 <Link
@@ -1809,7 +1862,7 @@ function ProductDetailPage() {
                 >
                   <div className="overflow-hidden rounded-[1.9rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,245,247,0.95))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.06)] transition-transform duration-300 group-hover:-translate-y-1 dark:bg-[linear-gradient(180deg,rgba(18,23,20,0.98),rgba(9,13,12,0.96))]">
                     <img
-                      src={resolvedImageUrl || storePlaceholderImage}
+                      src={finalImageUrl}
                       alt={item.name}
                       width={720}
                       height={860}
@@ -1817,6 +1870,10 @@ function ProductDetailPage() {
                       decoding="async"
                       onError={(event) => {
                         event.currentTarget.src = storePlaceholderImage;
+                        event.currentTarget.classList.add("is-loaded");
+                      }}
+                      onLoad={(event) => {
+                        event.currentTarget.classList.add("is-loaded");
                       }}
                       className="image-soft aspect-[4/5] w-full object-contain mix-blend-multiply dark:mix-blend-normal"
                     />
