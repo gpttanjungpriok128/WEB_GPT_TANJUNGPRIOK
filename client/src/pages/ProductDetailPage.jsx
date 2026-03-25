@@ -3,6 +3,10 @@ import { createPortal } from "react-dom";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
 import storePlaceholderImage from "../img/logo1.png";
+import imgHope from "../img/store/for-all-my-hope-is-in-him.png";
+import imgLight from "../img/store/you-are-the-light.png";
+import imgWorship from "../img/store/made-to-worship.png";
+
 import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
 import {
   clampQuantity,
@@ -18,20 +22,19 @@ const REVIEW_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const FALLBACK_PRODUCTS = [
   {
     id: 1001,
-    name: "Worship Smoke Tee",
-    slug: "worship-smoke-tee",
-    basePrice: 189000,
-    finalPrice: 189000,
+    name: "He Left The 99 For You - Green Edition",
+    slug: "he-left-the-99-for-you-green-edition",
+    basePrice: 130000,
+    finalPrice: 130000,
     discountAmount: 0,
     promoIsActive: false,
     promoLabel: "",
-    color: "Jet Black",
-    verse: "Mazmur 95:1",
-    description:
-      "Desain minimalist streetwear dengan nuansa worship modern. Nyaman untuk ibadah, youth service, dan kegiatan komunitas.",
+    color: "Green Edition",
+    verse: "Lukas 15:4",
+    description: "Desain streetwear dengan pesan kasih dan pencarian. Nyaman untuk ibadah dan kegiatan komunitas.",
     sizes: ["S", "M", "L", "XL"],
-    imageUrl: storePlaceholderImage,
-    imageUrls: [storePlaceholderImage],
+    imageUrl: imgWorship,
+    imageUrls: [imgWorship],
     stock: 20,
     isActive: true,
     ratingAverage: 0,
@@ -39,20 +42,19 @@ const FALLBACK_PRODUCTS = [
   },
   {
     id: 1002,
-    name: "Light of The World Tee",
-    slug: "light-of-the-world-tee",
-    basePrice: 195000,
-    finalPrice: 195000,
+    name: "YOU ARE THE LIGHT",
+    slug: "you-are-the-light",
+    basePrice: 130000,
+    finalPrice: 130000,
     discountAmount: 0,
     promoIsActive: false,
     promoLabel: "",
     color: "Off White",
-    verse: "Yohanes 8:12",
-    description:
-      "Visual clean dan kuat dengan statement LIGHT. Cocok untuk look casual harian dengan pesan iman yang jelas.",
+    verse: "Matius 5:14",
+    description: "Visual clean dan kuat dengan statement LIGHT. Cocok untuk look casual harian dengan pesan iman yang jelas.",
     sizes: ["S", "M", "L", "XL"],
-    imageUrl: storePlaceholderImage,
-    imageUrls: [storePlaceholderImage],
+    imageUrl: imgLight,
+    imageUrls: [imgLight],
     stock: 20,
     isActive: true,
     ratingAverage: 0,
@@ -60,20 +62,19 @@ const FALLBACK_PRODUCTS = [
   },
   {
     id: 1003,
-    name: "Hope in Him Tee",
-    slug: "hope-in-him-tee",
-    basePrice: 199000,
-    finalPrice: 199000,
+    name: "FOR ALL MY HOPE IS IN HIM",
+    slug: "for-all-my-hope-is-in-him",
+    basePrice: 130000,
+    finalPrice: 130000,
     discountAmount: 0,
     promoIsActive: false,
     promoLabel: "",
     color: "Jet Black",
-    verse: "Mazmur 42:11",
-    description:
-      "Potongan basic oversize dengan artwork belakang bertema HOPE. Karakter streetwear simple dan tetap rohani.",
+    verse: "Mazmur 62:5",
+    description: "Potongan basic oversize dengan artwork bertema HOPE. Karakter streetwear simple dan bermakna.",
     sizes: ["S", "M", "L", "XL"],
-    imageUrl: storePlaceholderImage,
-    imageUrls: [storePlaceholderImage],
+    imageUrl: imgHope,
+    imageUrls: [imgHope],
     stock: 20,
     isActive: true,
     ratingAverage: 0,
@@ -491,9 +492,11 @@ function getImageWithFallback(product, fallbackProducts) {
     return validUrls;
   }
 
-  // Try to find a fallback product by slug to use its images if no valid urls exist
+  // Try to find a fallback product by slug or name to use its images if no valid urls exist
   if (fallbackProducts && Array.isArray(fallbackProducts) && fallbackProducts.length > 0) {
-    const fallbackProduct = fallbackProducts.find((p) => p && p.slug === product.slug);
+    const fallbackProduct = fallbackProducts.find(
+      (p) => p && (p.slug === product.slug || p.name === product.name)
+    );
     if (
       fallbackProduct &&
       Array.isArray(fallbackProduct.imageUrls) &&
