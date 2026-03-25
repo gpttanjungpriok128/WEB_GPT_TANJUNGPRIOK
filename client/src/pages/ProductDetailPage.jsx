@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
@@ -10,17 +10,10 @@ import {
   getTotalStock,
   normalizeSizeKey,
 } from "../utils/storeStock";
-import {
-  PRODUCT_CACHE_KEY,
-  STORE_CATALOG_INVALIDATION_EVENT,
-  STORE_CATALOG_SYNC_KEY,
-  updateStoreCatalogProduct,
-} from "../utils/storeCatalogCache";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const REVIEW_IMAGE_LIMIT = 3;
 const REVIEW_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const STORE_REQUEST_TIMEOUT_MS = 8000;
 
 const FALLBACK_PRODUCTS = [
   {
@@ -228,7 +221,94 @@ const SelectChevronIcon = ({ className = "h-4 w-4" }) => (
   </svg>
 );
 
+const PremiumBadgeIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.7}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 3.75 14.5 8l4.75.75-3.25 3.4.75 4.85L12 14.9 7.25 17l.75-4.85-3.25-3.4L9.5 8 12 3.75Z" />
+  </svg>
+);
+
+const CommunityBadgeIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.7}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 20s-6.5-3.8-6.5-9.25A3.75 3.75 0 0 1 12 8a3.75 3.75 0 0 1 6.5 2.75C18.5 16.2 12 20 12 20Z" />
+    <path d="M12 8V4.75" />
+    <path d="M10.5 6.25h3" />
+  </svg>
+);
+
+const DeliveryBadgeIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.7}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3.5 7.5h11v7.5h-11z" />
+    <path d="M14.5 10h3l2 2.25v2.75h-5" />
+    <path d="M7.25 18.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z" />
+    <path d="M17.5 18.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z" />
+  </svg>
+);
+
+const ArrowRightTinyIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M5 12h14" />
+    <path d="m13 6 6 6-6 6" />
+  </svg>
+);
+
 const DETAIL_HERO_SHELL = "relative overflow-hidden rounded-[2rem] border border-brand-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,249,0.93))] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:border-brand-800 dark:bg-[linear-gradient(180deg,rgba(10,14,12,0.98),rgba(8,11,10,0.94))] sm:p-5 lg:p-6";
+
+const DETAIL_BENEFITS = [
+  {
+    key: "premium",
+    title: "Premium Quality",
+    description: "Cotton nyaman untuk dipakai harian.",
+    Icon: PremiumBadgeIcon,
+  },
+  {
+    key: "community",
+    title: "Supporting Community",
+    description: "Setiap pembelian mendukung pelayanan GPT.",
+    Icon: CommunityBadgeIcon,
+  },
+  {
+    key: "delivery",
+    title: "Fast Delivery",
+    description: "Siap dikirim atau pickup dengan rapi.",
+    Icon: DeliveryBadgeIcon,
+  },
+];
 
 const SkeletonBlock = ({ className = "" }) => (
   <div
@@ -410,36 +490,31 @@ function getDefaultSize(product) {
   return firstAvailable || sizes[0] || "M";
 }
 
-function readCachedCatalogProducts() {
-  if (typeof window === "undefined") return [];
+function buildRelatedProductPool(currentSlug, candidates = []) {
+  const seen = new Set();
 
-  try {
-    const raw = window.localStorage.getItem(PRODUCT_CACHE_KEY);
-    const cached = raw ? JSON.parse(raw) : null;
-    return Array.isArray(cached?.data) ? cached.data : [];
-  } catch {
-    return [];
-  }
+  return candidates
+    .filter((item) => item && item.slug && item.slug !== currentSlug && item.isActive !== false)
+    .filter((item) => {
+      if (seen.has(item.slug)) return false;
+      seen.add(item.slug);
+      return true;
+    })
+    .slice(0, 3);
 }
 
 function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const cachedCatalogProduct = useMemo(
-    () => readCachedCatalogProducts().find((item) => item?.slug === slug) || null,
-    [slug],
-  );
-  const [product, setProduct] = useState(cachedCatalogProduct);
-  const [isLoading, setIsLoading] = useState(() => !cachedCatalogProduct);
-  const [selectedSize, setSelectedSize] = useState(() => getDefaultSize(cachedCatalogProduct));
+  const [product, setProduct] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [images, setImages] = useState(() =>
-    cachedCatalogProduct ? getImageWithFallback(cachedCatalogProduct, FALLBACK_PRODUCTS) : [],
-  );
+  const [images, setImages] = useState([]);
   const [failedImages, setFailedImages] = useState(new Set());
   const [feedback, setFeedback] = useState("");
-  const [cartCount, setCartCount] = useState(0);
+  const [relatedProducts, setRelatedProducts] = useState(() => buildRelatedProductPool(slug, FALLBACK_PRODUCTS));
   const [reviews, setReviews] = useState([]);
   const [reviewSummary, setReviewSummary] = useState({
     average: 0,
@@ -460,78 +535,9 @@ function ProductDetailPage() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchDeltaRef = useRef({ x: 0, y: 0 });
   const prefetchedDetailImagesRef = useRef(new Set());
-  const resolveFallbackProduct = useCallback(
-    () => (
-      readCachedCatalogProducts().find((item) => item?.slug === slug) ||
-      FALLBACK_PRODUCTS.find((item) => item.slug === slug) ||
-      null
-    ),
-    [slug],
-  );
-  const applyResolvedProduct = useCallback((nextProduct) => {
-    setProduct(nextProduct);
-    setSelectedSize((previous) => {
-      const sizes = Array.isArray(nextProduct?.sizes)
-        ? nextProduct.sizes.filter((size) => normalizeSizeLabel(size) !== "XXL")
-        : [];
-
-      return previous && sizes.includes(previous) ? previous : getDefaultSize(nextProduct);
-    });
-
-    const nextImages = nextProduct ? getImageWithFallback(nextProduct, FALLBACK_PRODUCTS) : [];
-    setImages(nextImages);
-    setSelectedImageIndex((previous) => Math.min(previous, Math.max(0, nextImages.length - 1)));
-  }, []);
-  const fetchProduct = useCallback(async ({ forceRefresh = false, silent = false } = {}) => {
-    if (!silent) {
-      setIsLoading(true);
-    }
-
-    try {
-      const { data } = await api.get(`/store/products/${slug}`, {
-        timeout: STORE_REQUEST_TIMEOUT_MS,
-        headers: forceRefresh ? { "Cache-Control": "no-cache" } : undefined,
-      });
-
-      if (data?.data) {
-        applyResolvedProduct(data.data);
-        updateStoreCatalogProduct(data.data);
-      } else {
-        applyResolvedProduct(resolveFallbackProduct());
-      }
-    } catch {
-      if (!silent) {
-        applyResolvedProduct(resolveFallbackProduct());
-      }
-    } finally {
-      if (!silent) {
-        setIsLoading(false);
-      }
-    }
-  }, [applyResolvedProduct, resolveFallbackProduct, slug]);
-
-  const syncCartCount = () => {
-    try {
-      const rawCart = window.localStorage.getItem(CART_STORAGE_KEY);
-      const parsedCart = rawCart ? JSON.parse(rawCart) : [];
-      const list = Array.isArray(parsedCart) ? parsedCart : [];
-      const count = list.reduce((total, item) => total + (Number(item?.quantity) || 0), 0);
-      setCartCount(count);
-    } catch {
-      setCartCount(0);
-    }
-  };
-
-  useEffect(() => {
-    syncCartCount();
-    const handleStorage = () => syncCartCount();
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
 
   useEffect(() => {
     if (!reviewImages.length) {
@@ -551,41 +557,76 @@ function ProductDetailPage() {
   }, [reviewImages]);
 
   useEffect(() => {
+    const fetchProduct = async () => {
+      setIsLoading(true);
+      try {
+        const { data } = await api.get(`/store/products/${slug}`);
+        if (data?.data) {
+          setProduct(data.data);
+          setSelectedSize(getDefaultSize(data.data));
+          const imgs = getImageWithFallback(data.data, FALLBACK_PRODUCTS);
+          setImages(imgs);
+        } else {
+          const found = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
+          setProduct(found);
+          setSelectedSize(getDefaultSize(found));
+          if (found) {
+            const imgs = getImageWithFallback(found, FALLBACK_PRODUCTS);
+            setImages(imgs);
+          }
+        }
+      } catch {
+        const found = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
+        setProduct(found);
+        setSelectedSize(getDefaultSize(found));
+        if (found) {
+          const imgs = getImageWithFallback(found, FALLBACK_PRODUCTS);
+          setImages(imgs);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchProduct();
-  }, [fetchProduct]);
+  }, [slug]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined") return undefined;
+    let isCancelled = false;
 
-    const refreshProduct = () => {
-      if (document.visibilityState === "hidden") return;
-      fetchProduct({ forceRefresh: true, silent: true });
-    };
+    const hydrateRelatedProducts = async () => {
+      try {
+        const { data } = await api.get("/store/products", {
+          params: { page: 1, limit: 8 },
+        });
+        const rows = Array.isArray(data?.data) ? data.data : [];
+        const primaryPool = buildRelatedProductPool(slug, rows);
 
-    const handleStorage = (event) => {
-      if (event.key === STORE_CATALOG_SYNC_KEY) {
-        refreshProduct();
+        if (!isCancelled) {
+          if (primaryPool.length >= 3) {
+            setRelatedProducts(primaryPool);
+            return;
+          }
+
+          const fallbackPool = buildRelatedProductPool(slug, [
+            ...primaryPool,
+            ...FALLBACK_PRODUCTS,
+          ]);
+          setRelatedProducts(fallbackPool);
+        }
+      } catch {
+        if (!isCancelled) {
+          setRelatedProducts(buildRelatedProductPool(slug, FALLBACK_PRODUCTS));
+        }
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        refreshProduct();
-      }
-    };
-
-    window.addEventListener("focus", refreshProduct);
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshProduct);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    hydrateRelatedProducts();
 
     return () => {
-      window.removeEventListener("focus", refreshProduct);
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshProduct);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      isCancelled = true;
     };
-  }, [fetchProduct]);
+  }, [slug]);
 
   useEffect(() => {
     let handle = null;
@@ -593,9 +634,7 @@ function ProductDetailPage() {
     const fetchReviews = async () => {
       setIsLoadingReviews(true);
       try {
-        const { data } = await api.get(`/store/products/${slug}/reviews`, {
-          timeout: STORE_REQUEST_TIMEOUT_MS,
-        });
+        const { data } = await api.get(`/store/products/${slug}/reviews`);
         const reviewList = Array.isArray(data?.data) ? data.data : [];
         const meta = data?.meta || {};
         setReviews(reviewList);
@@ -765,16 +804,16 @@ function ProductDetailPage() {
     }
   };
 
-  const addToCart = () => {
+  const saveCartItem = () => {
     if (!product) return;
     if (!selectedSize) {
       setFeedback("Pilih ukuran terlebih dahulu");
-      return;
+      return false;
     }
     const sizeStock = getStockForSize(product, selectedSize);
     if (sizeStock <= 0) {
       setFeedback(`Stok ukuran ${normalizeSizeKey(selectedSize)} sedang habis`);
-      return;
+      return false;
     }
 
     try {
@@ -824,12 +863,24 @@ function ProductDetailPage() {
       }
 
       window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(savedCart));
-      syncCartCount();
-      setFeedback(`${product.name} berhasil ditambahkan ke keranjang!`);
       setQuantity(1);
-      setTimeout(() => setFeedback(""), 3000);
+      return true;
     } catch (error) {
       setFeedback("Gagal menambahkan ke keranjang");
+      return false;
+    }
+  };
+
+  const addToCart = () => {
+    if (saveCartItem()) {
+      setFeedback(`${product.name} berhasil ditambahkan ke keranjang!`);
+      setTimeout(() => setFeedback(""), 3000);
+    }
+  };
+
+  const handleBuyNow = () => {
+    if (saveCartItem()) {
+      navigate("/cart");
     }
   };
 
@@ -860,6 +911,14 @@ function ProductDetailPage() {
     } finally {
       setTimeout(() => setFeedback(""), 2500);
     }
+  };
+
+  const scrollToSizeGuide = () => {
+    if (typeof document === "undefined") return;
+    document.getElementById("size-guide-info")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   if (isLoading) {
@@ -902,6 +961,15 @@ function ProductDetailPage() {
   const selectedSizeLabel = selectedSize ? normalizeSizeKey(selectedSize) : "-";
   const readySizeCount = sizes.filter((size) => getStockForSize(product, size) > 0).length;
   const sizePreview = sizes.slice(0, 4).map((size) => normalizeSizeKey(size)).join(" / ");
+  const missionQuote = product.verse
+    ? `"${product.verse}" menginspirasi koleksi ini untuk tetap tampil modern, rapi, dan penuh makna.`
+    : "Setiap piece GTshirt dirancang untuk dipakai bertumbuh, melayani, dan membawa identitas iman ke ruang sehari-hari.";
+  const curatedLabel = product.color
+    ? `${product.color} Edition`
+    : "The Curator Series";
+  const showcaseProducts = relatedProducts.length > 0
+    ? relatedProducts
+    : buildRelatedProductPool(slug, FALLBACK_PRODUCTS);
   const canSubmitReview =
     reviewForm.orderCode.trim().length > 0 &&
     reviewForm.phone.trim().length > 0 &&
@@ -1222,56 +1290,34 @@ function ProductDetailPage() {
   const mobileStickyBar = (
     <div className="sticky-mobile-bar sm:hidden">
       <div className="sticky-mobile-surface space-y-2.5 p-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-bold tracking-[-0.03em] text-brand-900 dark:text-white">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-base font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
               {formatRupiah(effectivePrice)}
             </p>
-            <p className="text-[11px] leading-5 text-brand-500 dark:text-brand-400">
-              Ukuran {selectedSizeLabel} • {quantity} pcs
+            <p className="text-[11px] uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+              {curatedLabel}
             </p>
           </div>
-          <span className="shrink-0 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
-            Stok {selectedSizeStock ?? 0}
+          <span className="shrink-0 rounded-full border border-brand-200 bg-white px-3 py-1 text-[11px] font-semibold text-brand-700 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+            {selectedSizeLabel} • {quantity}
           </span>
         </div>
-        <div className="grid grid-cols-[48px_minmax(0,1fr)] gap-2">
-          <Link
-            to="/cart"
-            className="relative inline-flex h-11 w-full items-center justify-center rounded-[1rem] border border-brand-300 bg-white text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-800/60"
-            aria-label="Buka keranjang belanja"
-            title="Keranjang"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.8}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-              />
-            </svg>
-            {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-                {cartCount}
-              </span>
-            )}
-          </Link>
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={addToCart}
             disabled={selectedSizeStock <= 0}
             className="btn-primary min-h-[44px] w-full !rounded-[1rem] !px-4 !py-2.5 text-sm font-semibold disabled:opacity-60"
           >
-            Tambah ke Keranjang
+            Add to Cart
+          </button>
+          <button
+            type="button"
+            onClick={handleBuyNow}
+            disabled={selectedSizeStock <= 0}
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[1rem] border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-900 transition hover:bg-brand-50 disabled:opacity-60 dark:border-brand-700 dark:bg-brand-900/50 dark:text-white dark:hover:bg-brand-800/60"
+          >
+            Buy Now
           </button>
         </div>
       </div>
@@ -1280,492 +1326,412 @@ function ProductDetailPage() {
 
   return (
     <>
-    <div className="page-stack space-y-6 pb-32 sm:space-y-8 sm:pb-8">
-      {/* ── Breadcrumb ──────────────────────── */}
-      <nav className="flex flex-wrap items-center justify-between gap-3 text-sm text-brand-600 dark:text-brand-400">
-        <div className="flex min-w-0 items-center gap-2">
-          <Link
-            to="/shop"
-            className="transition hover:text-brand-900 dark:hover:text-white"
-          >
-            Toko
-          </Link>
-          <span>/</span>
-          <span className="truncate text-brand-900 dark:text-white font-semibold">
-            {product.name}
-          </span>
-        </div>
+      <div className="page-stack space-y-12 pb-36 sm:space-y-16 sm:pb-12">
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-[1] h-[32rem] bg-[radial-gradient(circle_at_top,rgba(9,89,76,0.12),transparent_58%),linear-gradient(180deg,rgba(247,248,252,0.98),rgba(244,245,249,0.94))] dark:bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.15),transparent_56%),linear-gradient(180deg,rgba(9,12,15,0.98),rgba(8,11,13,0.96))]" />
 
-      </nav>
-
-      {/* ── Product Detail Section ──────────────────────── */}
-      <section className={`${DETAIL_HERO_SHELL} grid gap-6 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)] xl:gap-8`}>
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent dark:via-emerald-500/30" />
-          <div className="absolute -left-14 top-0 h-40 w-40 rounded-full bg-emerald-100 blur-3xl dark:bg-emerald-950/60" />
-          <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-emerald-100/70 blur-3xl dark:bg-emerald-900/30" />
-          <div className="absolute right-10 top-10 hidden h-20 w-20 rounded-[1.6rem] border border-brand-200/60 bg-white/35 backdrop-blur lg:block dark:border-brand-800 dark:bg-white/[0.03]" />
-        </div>
-        {/* ── Left: Image Gallery ──────────────────────── */}
-        <div className="relative space-y-4">
-          {/* Main Image */}
-          <div
-            className="image-swipe relative overflow-hidden rounded-[1.75rem] border border-brand-100 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,245,0.94))] shadow-[0_18px_40px_rgba(15,23,42,0.05)] dark:border-brand-800 dark:bg-[linear-gradient(180deg,rgba(12,18,15,0.96),rgba(9,13,11,0.92))] aspect-[4/5] sm:aspect-square"
-            onTouchStart={handleSwipeStart}
-            onTouchMove={handleSwipeMove}
-            onTouchEnd={handleSwipeEnd}
-            onTouchCancel={handleSwipeEnd}
-          >
-            <button
-              type="button"
-              onClick={openZoom}
-              className="image-zoom-trigger"
-              aria-label="Perbesar foto produk"
-            >
-              Zoom
-            </button>
-            <img
-              src={resolveStoreImageUrl(images[selectedImageIndex])}
-              alt={product.name}
-              width={1200}
-              height={1500}
-              sizes="(max-width: 640px) calc(100vw - 3rem), (max-width: 1280px) 50vw, 42vw"
-              onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
-              onError={(event) => {
-                event.currentTarget.classList.add("is-loaded");
-                handleImageError(selectedImageIndex);
-              }}
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              className="image-soft h-full w-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal"
-            />
-          </div>
-
-          {/* Thumbnail Gallery */}
-          {images.length > 1 && (
-            <div className="grid grid-cols-4 gap-2 sm:gap-3">
-              {images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImageIndex(index)}
-                  className={`overflow-hidden rounded-xl border-2 transition ${
-                    selectedImageIndex === index
-                      ? "border-primary"
-                      : "border-brand-200 dark:border-brand-700 hover:border-brand-300 dark:hover:border-brand-600"
-                  }`}
-                >
-                  <img
-                    src={resolveStoreImageUrl(image)}
-                    alt={`Foto ${index + 1}`}
-                    width={240}
-                    height={240}
-                    sizes="(max-width: 640px) 22vw, 96px"
-                    onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
-                    onError={(event) => {
-                      event.currentTarget.classList.add("is-loaded");
-                      handleImageError(index);
-                    }}
-                    loading="lazy"
-                    decoding="async"
-                    className="image-soft h-14 w-full object-contain p-1 bg-white dark:bg-brand-900/50 mix-blend-multiply dark:mix-blend-normal sm:h-20"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── Right: Product Info ──────────────────────── */}
-        <div className="relative space-y-6">
-          {/* Header */}
-          <div className="space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  {product.verse || "GTshirt"}
-                </div>
-                <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-brand-900 dark:text-white sm:text-[2.35rem] lg:text-[2.55rem] xl:text-[2.7rem]">
-                  {product.name}
-                </h1>
-              </div>
-              <button
-                onClick={() => navigate("/shop")}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-200 bg-white/80 text-xl transition hover:bg-brand-50 hover:text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:hover:bg-brand-800 dark:hover:text-brand-400"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Rating & Review */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1">
-                {renderStars(ratingAverage, "text-lg")}
-              </div>
-              <span className="text-sm text-brand-600 dark:text-brand-300">
-                {ratingCount > 0
-                  ? `${ratingAverage.toFixed(1)} / 5 · ${ratingCount} ulasan`
-                  : "Belum ada ulasan"}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
-                totalStock <= 0
-                  ? "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
-              }`}>
-                {totalStock <= 0 ? "Stok Habis" : "Siap Dipesan"}
-              </span>
-              {product.color && (
-                <span className="inline-flex items-center rounded-full border border-brand-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
-                  {product.color}
-                </span>
-              )}
-              <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
-                {readySizeCount}/{sizes.length} ukuran ready
-              </span>
-            </div>
-          </div>
-
-          {/* Price & Discount */}
-          <div className="rounded-[1.6rem] border border-brand-200/80 bg-white/[0.76] p-4 shadow-[0_16px_36px_rgba(15,23,42,0.04)] dark:border-brand-700 dark:bg-white/[0.03]">
-            {product.promoIsActive && Number(product.discountAmount) > 0 ? (
-              <div className="space-y-2">
-                <p className="text-sm text-brand-500 line-through dark:text-brand-400">
-                  {formatRupiah(Number(product.basePrice) || 0)}
-                </p>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-4xl font-black text-primary">
-                    {formatRupiah(effectivePrice)}
-                  </span>
-                  <span className="inline-block rounded-full bg-rose-500 px-3 py-1 text-sm font-bold text-white">
-                    -
-                    {Math.round(
-                      (Number(product.discountAmount) /
-                        Number(product.basePrice)) *
-                        100,
-                    )}
-                    %
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <span className="text-4xl font-black text-primary">
-                {formatRupiah(effectivePrice)}
-              </span>
-            )}
-            {product.promoIsActive && (
-              <p className="mt-3 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                {product.promoLabel || "Promo Spesial"}
-              </p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div className="rounded-[1.6rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-              Deskripsi Produk
-            </p>
-            <p
-              className={`mt-2 text-sm sm:text-[15px] leading-relaxed text-brand-700 dark:text-brand-300 ${
-                isDescriptionExpanded ? "whitespace-pre-line" : "line-clamp-3 whitespace-normal"
-              }`}
-            >
-              {product.description || "Deskripsi produk akan ditampilkan di sini."}
-            </p>
-            {product.description && product.description.length > 160 && (
-              <button
-                type="button"
-                onClick={() => setIsDescriptionExpanded((prev) => !prev)}
-                className="mt-3 text-xs font-semibold text-primary hover:underline"
-              >
-                {isDescriptionExpanded ? "Tutup Deskripsi" : "Lihat Selengkapnya"}
-              </button>
-            )}
-          </div>
-
-          <div className="grid gap-3">
-            <div className="rounded-[1.5rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                Stok Total
-              </p>
-              <p className={`mt-2 text-lg font-bold ${totalStock <= 0 ? "text-rose-600 dark:text-rose-300" : "text-brand-900 dark:text-white"}`}>
-                {totalStock <= 0 ? "Habis" : `${totalStock} pcs`}
-              </p>
-              <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">
-                {totalStock <= 0 ? "Restock sedang disiapkan." : "Siap untuk order harian."}
-              </p>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="h-px bg-brand-200 dark:bg-brand-700" />
-
-          {/* Size Selection */}
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-brand-700 dark:text-brand-300">
-              Pilih Ukuran
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {sizes.map((size) => {
-                const sizeStock = getStockForSize(product, size);
-                const isOutOfStock = sizeStock <= 0;
-
-                return (
-                  <button
-                    key={size}
-                    onClick={() => {
-                      setSelectedSize(size);
-                      setQuantity((prev) => clampQuantity(prev, getStockForSize(product, size)));
-                    }}
-                    disabled={isOutOfStock}
-                  className={`min-h-[44px] rounded-[0.95rem] py-2.5 font-semibold transition ${
-                      selectedSize === size
-                        ? "bg-primary text-white border-2 border-primary"
-                        : "border-2 border-brand-200 bg-white text-brand-700 hover:border-primary dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300"
-                    } ${isOutOfStock ? "cursor-not-allowed opacity-40" : ""}`}
-                    title={isOutOfStock ? `Ukuran ${size} habis` : `${sizeStock} pcs tersedia`}
-                  >
-                    {size}
-                  </button>
-                );
-              })}
-            </div>
-            {hasPreorderSizes && (
-              <p className="text-xs text-amber-600 dark:text-amber-300">
-                Ukuran di atas XL tersedia preorder.
-              </p>
-            )}
-          </div>
-
-          {/* Quantity Selection */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <label className="block text-sm font-semibold text-brand-700 dark:text-brand-300">
-                Jumlah
-              </label>
-              <span className="inline-flex items-center rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
-                Max {selectedSizeStock || 0} pcs
-              </span>
-            </div>
-            <div className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3 rounded-[1.35rem] border border-brand-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,249,0.9))] p-3 shadow-[0_14px_32px_rgba(15,23,42,0.04)] dark:border-brand-700/80 dark:bg-[linear-gradient(180deg,rgba(11,18,14,0.94),rgba(8,13,11,0.92))]">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="flex h-12 w-12 items-center justify-center rounded-[1rem] border border-brand-200 bg-white font-bold text-brand-800 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-100 dark:hover:bg-brand-900"
-                aria-label="Kurangi jumlah"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                min="1"
-                max={selectedSizeStock || 1}
-                value={quantity}
-                onChange={(e) =>
-                  setQuantity(clampQuantity(e.target.value, selectedSizeStock || 1))
-                }
-                className="input-modern !h-12 !rounded-[1rem] !px-3 text-center text-base font-semibold"
-              />
-              <button
-                onClick={() =>
-                  setQuantity(
-                    clampQuantity(quantity + 1, selectedSizeStock || 1),
-                  )
-                }
-                className="flex h-12 w-12 items-center justify-center rounded-[1rem] border border-brand-200 bg-white font-bold text-brand-800 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-100 dark:hover:bg-brand-900"
-                aria-label="Tambah jumlah"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* Feedback */}
-          {feedback && (
-            <div
-              className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-                feedback.includes("gagal") || feedback.includes("Gagal")
-                  ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300"
-              }`}
-            >
-              {feedback}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="action-buttons-desktop hidden sm:flex flex-col gap-3 sm:flex-row">
-            <button
-              onClick={addToCart}
-              disabled={selectedSizeStock <= 0}
-              className="btn-outline flex flex-1 items-center justify-center gap-2 !py-3 font-semibold disabled:opacity-50"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.8}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                />
-              </svg>
-              <span>Tambah ke Keranjang</span>
-            </button>
-            <Link
-              to="/cart"
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-brand-300 bg-white px-4 py-3 text-center font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/60"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.8}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 3h1.386a1.5 1.5 0 0 1 1.415 1.004l.365 1.093m0 0h13.512a1.5 1.5 0 0 1 1.454 1.869l-1.12 4.48a1.5 1.5 0 0 1-1.454 1.131H8.118a1.5 1.5 0 0 1-1.454-1.131L5.416 5.097Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 19.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                />
-              </svg>
-              <span>Lihat Keranjang</span>
-              {cartCount > 0 && (
-                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white">
-                  {cartCount}
-                </span>
-              )}
+        <nav className="flex flex-wrap items-center justify-between gap-4 text-[11px] uppercase tracking-[0.22em] text-brand-500 dark:text-brand-400">
+          <div className="flex items-center gap-2">
+            <Link to="/shop" className="transition hover:text-brand-900 dark:hover:text-white">
+              Shop
             </Link>
+            <span>/</span>
+            <span className="max-w-[16rem] truncate text-brand-900 dark:text-white">
+              {product.name}
+            </span>
+          </div>
+          <div className="flex items-center gap-4 normal-case tracking-normal">
             <button
               type="button"
               onClick={handleShare}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-brand-300 bg-white px-4 py-3 font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/60"
+              className="text-xs font-medium text-brand-600 transition hover:text-brand-900 dark:text-brand-300 dark:hover:text-white"
             >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.8}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h8v8" />
-              </svg>
-              <span>Bagikan</span>
-            </button>
-            <Link
-              to="/shop"
-              className="flex-1 rounded-xl bg-primary px-4 py-3 text-center font-semibold text-white transition hover:bg-primary/90"
-            >
-              ← Kembali ke Toko
-            </Link>
-          </div>
-          <div className="sm:hidden grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={handleShare}
-              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-brand-300 bg-white px-3 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.8}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h8v8" />
-              </svg>
               Bagikan
             </button>
             <Link
               to="/shop"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-brand-300 bg-white px-3 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+              className="inline-flex items-center gap-2 text-xs font-medium text-brand-600 transition hover:text-brand-900 dark:text-brand-300 dark:hover:text-white"
             >
-              ← Kembali
+              Kembali ke koleksi
+              <ArrowRightTinyIcon className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </nav>
+
+        <section className="grid gap-8 xl:grid-cols-[76px_minmax(0,1.08fr)_minmax(350px,0.82fr)] xl:items-start">
+          <div className="hidden xl:flex xl:flex-col xl:gap-3 xl:pt-3">
+            {images.map((image, index) => (
+              <button
+                key={`thumb-desktop-${index}`}
+                type="button"
+                onClick={() => setSelectedImageIndex(index)}
+                className={`group overflow-hidden rounded-[1rem] border p-1.5 transition ${
+                  selectedImageIndex === index
+                    ? "border-primary bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-brand-900/80"
+                    : "border-brand-200/80 bg-white/70 hover:border-brand-400 dark:border-brand-700 dark:bg-brand-900/40"
+                }`}
+              >
+                <img
+                  src={resolveStoreImageUrl(image)}
+                  alt={`Foto ${index + 1}`}
+                  width={140}
+                  height={140}
+                  loading="lazy"
+                  decoding="async"
+                  onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
+                  onError={(event) => {
+                    event.currentTarget.classList.add("is-loaded");
+                    handleImageError(index);
+                  }}
+                  className="image-soft h-16 w-full rounded-[0.8rem] bg-white object-cover dark:bg-brand-900/80"
+                />
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-4">
+            <div
+              className="image-swipe relative overflow-hidden rounded-[2rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,245,247,0.95))] p-5 shadow-[0_28px_70px_rgba(15,23,42,0.08)] dark:border-brand-800 dark:bg-[linear-gradient(180deg,rgba(18,23,20,0.98),rgba(9,13,12,0.96))] sm:p-7"
+              onTouchStart={handleSwipeStart}
+              onTouchMove={handleSwipeMove}
+              onTouchEnd={handleSwipeEnd}
+              onTouchCancel={handleSwipeEnd}
+            >
+              <button
+                type="button"
+                onClick={openZoom}
+                className="image-zoom-trigger"
+                aria-label="Perbesar foto produk"
+              >
+                Zoom
+              </button>
+              <img
+                src={resolveStoreImageUrl(images[selectedImageIndex])}
+                alt={product.name}
+                width={1200}
+                height={1500}
+                sizes="(max-width: 1280px) 100vw, 48vw"
+                onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
+                onError={(event) => {
+                  event.currentTarget.classList.add("is-loaded");
+                  handleImageError(selectedImageIndex);
+                }}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="image-soft mx-auto aspect-[4/5] w-full max-w-[44rem] object-contain mix-blend-multiply dark:mix-blend-normal"
+              />
+            </div>
+
+            {images.length > 1 && (
+              <div className="grid grid-cols-4 gap-2 xl:hidden">
+                {images.map((image, index) => (
+                  <button
+                    key={`thumb-mobile-${index}`}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`overflow-hidden rounded-[1rem] border p-1.5 transition ${
+                      selectedImageIndex === index
+                        ? "border-primary bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-brand-900/80"
+                        : "border-brand-200/80 bg-white/70 hover:border-brand-400 dark:border-brand-700 dark:bg-brand-900/40"
+                    }`}
+                  >
+                    <img
+                      src={resolveStoreImageUrl(image)}
+                      alt={`Foto ${index + 1}`}
+                      width={180}
+                      height={180}
+                      loading="lazy"
+                      decoding="async"
+                      onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
+                      onError={(event) => {
+                        event.currentTarget.classList.add("is-loaded");
+                        handleImageError(index);
+                      }}
+                      className="image-soft h-16 w-full rounded-[0.8rem] bg-white object-cover dark:bg-brand-900/80"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6 xl:pt-1">
+            <div className="space-y-5">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.28em] text-brand-500 dark:text-brand-400">
+                  The Curator Series
+                </p>
+                <h1 className="mt-3 text-4xl font-semibold leading-[0.95] tracking-[-0.06em] text-brand-950 dark:text-white sm:text-[3.4rem]">
+                  {product.name}
+                </h1>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[2rem] font-semibold tracking-[-0.05em] text-brand-950 dark:text-white">
+                  {formatRupiah(effectivePrice)}
+                </p>
+                {product.promoIsActive && Number(product.discountAmount) > 0 && (
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                    Promo aktif: {product.promoLabel || "Harga spesial tersedia sekarang"}
+                  </p>
+                )}
+              </div>
+
+              <div className="max-w-xl space-y-4 text-[15px] leading-8 text-brand-700 dark:text-brand-300">
+                <p>
+                  {product.description || "GTshirt hadir sebagai apparel komunitas yang rapi, nyaman, dan siap dipakai bertumbuh bersama."}
+                </p>
+                <div className="border-l-2 border-emerald-400/70 pl-4 text-sm italic text-brand-600 dark:text-brand-400">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] not-italic text-brand-500 dark:text-brand-500">
+                    Mission
+                  </p>
+                  <p>{missionQuote}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-5 border-t border-brand-200/70 pt-5 dark:border-brand-800">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-brand-500 dark:text-brand-400">
+                  Select Size
+                </p>
+                <button
+                  type="button"
+                  onClick={scrollToSizeGuide}
+                  className="text-[11px] font-medium uppercase tracking-[0.18em] text-brand-500 underline underline-offset-4 transition hover:text-brand-900 dark:text-brand-400 dark:hover:text-white"
+                >
+                  Size Guide
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2.5">
+                {sizes.map((size) => {
+                  const sizeStock = getStockForSize(product, size);
+                  const isOutOfStock = sizeStock <= 0;
+
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSize(size);
+                        setQuantity((prev) => clampQuantity(prev, getStockForSize(product, size)));
+                      }}
+                      disabled={isOutOfStock}
+                      title={isOutOfStock ? `Ukuran ${size} habis` : `${sizeStock} pcs tersedia`}
+                      className={`min-w-[3rem] rounded-[0.9rem] border px-4 py-3 text-sm font-semibold transition ${
+                        selectedSize === size
+                          ? "border-primary bg-primary text-white shadow-[0_14px_26px_rgba(9,89,76,0.22)]"
+                          : "border-brand-200 bg-white text-brand-700 hover:border-brand-400 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200"
+                      } ${isOutOfStock ? "cursor-not-allowed opacity-35" : ""}`}
+                    >
+                      {normalizeSizeKey(size)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-4 border-t border-brand-200/70 pt-5 dark:border-brand-800">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-brand-500 dark:text-brand-400">
+                Quantity
+              </p>
+              <div className="inline-grid grid-cols-[52px_72px_52px] items-center rounded-[1rem] bg-[#f3f5fb] p-1.5 dark:bg-brand-900/70">
+                <button
+                  type="button"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="flex h-11 items-center justify-center rounded-[0.85rem] text-lg font-semibold text-brand-700 transition hover:bg-white dark:text-brand-200 dark:hover:bg-brand-800"
+                  aria-label="Kurangi jumlah"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  max={selectedSizeStock || 1}
+                  value={quantity}
+                  onChange={(event) =>
+                    setQuantity(clampQuantity(event.target.value, selectedSizeStock || 1))
+                  }
+                  className="border-0 bg-transparent px-2 text-center text-base font-semibold text-brand-900 focus:outline-none focus:ring-0 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setQuantity(clampQuantity(quantity + 1, selectedSizeStock || 1))}
+                  className="flex h-11 items-center justify-center rounded-[0.85rem] text-lg font-semibold text-brand-700 transition hover:bg-white dark:text-brand-200 dark:hover:bg-brand-800"
+                  aria-label="Tambah jumlah"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {feedback && (
+              <div
+                className={`rounded-[1rem] border px-4 py-3 text-sm font-medium ${
+                  feedback.toLowerCase().includes("gagal")
+                    ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300"
+                }`}
+              >
+                {feedback}
+              </div>
+            )}
+
+            <div className="space-y-3 border-t border-brand-200/70 pt-6 dark:border-brand-800">
+              <button
+                type="button"
+                onClick={addToCart}
+                disabled={selectedSizeStock <= 0}
+                className="btn-primary min-h-[54px] w-full !rounded-[1rem] !px-4 text-base font-semibold disabled:opacity-60"
+              >
+                Add to Cart
+              </button>
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={selectedSizeStock <= 0}
+                className="inline-flex min-h-[54px] w-full items-center justify-center rounded-[1rem] bg-[#dfe4f2] px-4 text-base font-semibold text-brand-950 transition hover:bg-[#d4dbed] disabled:opacity-60 dark:bg-brand-800 dark:text-white dark:hover:bg-brand-700"
+              >
+                Buy Now
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 pt-2">
+              {DETAIL_BENEFITS.map(({ key, title, description, Icon }) => (
+                <div
+                  key={key}
+                  className="rounded-[1.25rem] bg-[#f2f4fb] px-3 py-4 text-center dark:bg-brand-900/60"
+                >
+                  <span className="mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-primary shadow-sm dark:bg-brand-800">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-700 dark:text-brand-200">
+                    {title}
+                  </p>
+                  <p className="mt-1 hidden text-[11px] leading-5 text-brand-500 dark:text-brand-400 lg:block">
+                    {description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] xl:gap-8">
+          <article
+            id="size-guide-info"
+            className="rounded-[2rem] border border-brand-200/80 bg-white/82 p-5 shadow-[0_18px_48px_rgba(15,23,42,0.05)] dark:border-brand-800 dark:bg-brand-900/40 sm:p-6"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-brand-500 dark:text-brand-400">
+                  Product Notes
+                </p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-brand-950 dark:text-white">
+                  Size guide, stock, dan detail koleksi
+                </h2>
+              </div>
+              <span className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
+                {curatedLabel}
+              </span>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[1.2rem] bg-[#f2f4fb] p-4 dark:bg-brand-900/60">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                  Size spread
+                </p>
+                <p className="mt-2 text-lg font-semibold text-brand-950 dark:text-white">
+                  {sizePreview}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-brand-600 dark:text-brand-300">
+                  Pilih ukuran yang tersedia. Varian di atas XL tetap bisa diproses sebagai preorder jika dicantumkan di katalog.
+                </p>
+              </div>
+              <div className="rounded-[1.2rem] bg-[#f2f4fb] p-4 dark:bg-brand-900/60">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-brand-500 dark:text-brand-400">
+                  Stock status
+                </p>
+                <p className="mt-2 text-lg font-semibold text-brand-950 dark:text-white">
+                  {totalStock <= 0 ? "Currently sold out" : `${totalStock} pcs ready`}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-brand-600 dark:text-brand-300">
+                  {totalStock <= 0
+                    ? "Produk ini sedang habis. Pantau katalog untuk batch berikutnya."
+                    : `${readySizeCount} dari ${sizes.length} ukuran saat ini masih tersedia.`}
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 grid gap-3 text-sm text-brand-600 dark:text-brand-300">
+              <p>Material utama: cotton combed dengan feel ringan dan rapi untuk ibadah, komunitas, dan aktivitas harian.</p>
+              <p>Colorway: {product.color || "Signature GTshirt palette"}.</p>
+              {hasPreorderSizes && (
+                <p className="font-medium text-amber-600 dark:text-amber-300">
+                  Ukuran di atas XL tersedia dengan alur preorder.
+                </p>
+              )}
+            </div>
+          </article>
+
+          <article className="space-y-5 rounded-[2rem] border border-brand-200/80 bg-white/82 p-5 shadow-[0_18px_48px_rgba(15,23,42,0.05)] dark:border-brand-800 dark:bg-brand-900/40 sm:p-6">
+            {reviewHeader}
+            {reviewBody}
+          </article>
+        </section>
+
+        <section className="space-y-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.28em] text-brand-500 dark:text-brand-400">
+                Complete the look
+              </p>
+              <h2 className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-brand-950 dark:text-white">
+                You Might Also Like
+              </h2>
+            </div>
+            <Link
+              to="/shop"
+              className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.18em] text-brand-700 transition hover:text-brand-950 dark:text-brand-300 dark:hover:text-white"
+            >
+              Explore all collection
+              <ArrowRightTinyIcon className="h-4 w-4" />
             </Link>
           </div>
 
-          {/* Reviews */}
-          <div className="sm:hidden">
-            <details className="mobile-review rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40">
-              <summary className="mobile-summary flex cursor-pointer items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                    Ulasan Pembeli
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">
-                    Rating Produk
-                  </p>
-                  <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                    {ratingSummaryText}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    {renderStars(ratingAverage, "text-base")}
+          <div className="grid gap-6 md:grid-cols-3">
+            {showcaseProducts.map((item) => {
+              const relatedPrice = Number(item.finalPrice ?? item.basePrice ?? 0);
+              const relatedImage = getImageWithFallback(item, FALLBACK_PRODUCTS)[0];
+
+              return (
+                <Link
+                  key={item.id}
+                  to={`/shop/${item.slug}`}
+                  className="group block"
+                >
+                  <div className="overflow-hidden rounded-[1.9rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,245,247,0.95))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.06)] transition-transform duration-300 group-hover:-translate-y-1 dark:bg-[linear-gradient(180deg,rgba(18,23,20,0.98),rgba(9,13,12,0.96))]">
+                    <img
+                      src={resolveStoreImageUrl(relatedImage)}
+                      alt={item.name}
+                      width={720}
+                      height={860}
+                      loading="lazy"
+                      decoding="async"
+                      className="image-soft aspect-[4/5] w-full object-contain mix-blend-multiply dark:mix-blend-normal"
+                    />
                   </div>
-                  <svg
-                    className="mobile-summary-icon h-5 w-5 text-brand-500 dark:text-brand-300"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.6}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
-                  </svg>
-                </div>
-              </summary>
-              <div className="pt-4 space-y-5">
-                  {reviewBody}
-              </div>
-            </details>
+                  <div className="px-1 pt-4">
+                    <h3 className="text-[1.4rem] font-medium tracking-[-0.04em] text-brand-950 dark:text-white">
+                      {item.name}
+                    </h3>
+                    <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
+                      {formatRupiah(relatedPrice)}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-
-          <div className="hidden sm:block">
-            <div className="space-y-5 rounded-2xl border border-brand-200 bg-white/80 p-4 sm:p-5 dark:border-brand-700 dark:bg-brand-900/40">
-              {reviewHeader}
-              {reviewBody}
-            </div>
-          </div>
-
-          {/* Info Box */}
-          <details className="rounded-xl border border-blue-200 bg-blue-50 p-3 sm:p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
-            <summary className="info-summary flex cursor-pointer items-center justify-between gap-3 text-xs font-semibold text-blue-700 dark:text-blue-300">
-              <span>Informasi Produk</span>
-              <svg
-                className="info-summary-icon h-4 w-4 text-blue-600 dark:text-blue-200"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.6}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 7.5l5 5 5-5" />
-              </svg>
-            </summary>
-            <ul className="mt-2 space-y-1 text-xs text-blue-700 dark:text-blue-300">
-              <li>✓ Bahan: Cotton Combed 24s Premium</li>
-              <li>✓ Fit: Unisex Comfort</li>
-              <li>✓ Brand: GTshirt Authentic</li>
-              <li>✓ Sablon: High-quality printing</li>
-            </ul>
-          </details>
-        </div>
-      </section>
+        </section>
 
       {isZoomOpen && (
         <div className="image-zoom-backdrop" onClick={closeZoom} role="presentation">
@@ -1798,8 +1764,8 @@ function ProductDetailPage() {
           </div>
         </div>
       )}
-    </div>
-    {typeof document !== "undefined" ? createPortal(mobileStickyBar, document.body) : mobileStickyBar}
+      </div>
+      {typeof document !== "undefined" ? createPortal(mobileStickyBar, document.body) : mobileStickyBar}
     </>
   );
 }
