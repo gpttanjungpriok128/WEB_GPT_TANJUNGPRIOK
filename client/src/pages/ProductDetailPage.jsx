@@ -287,6 +287,23 @@ const ArrowRightTinyIcon = ({ className = "h-4 w-4" }) => (
   </svg>
 );
 
+const ShoppingCartIcon = ({ className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="9" cy="21" r="1" />
+    <circle cx="20" cy="21" r="1" />
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+  </svg>
+);
+
 const DETAIL_HERO_SHELL = "relative overflow-hidden rounded-[2rem] border border-brand-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,249,0.93))] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:border-brand-800 dark:bg-[linear-gradient(180deg,rgba(10,14,12,0.98),rgba(8,11,10,0.94))] sm:p-5 lg:p-6";
 
 const DETAIL_BENEFITS = [
@@ -538,6 +555,33 @@ function ProductDetailPage() {
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchDeltaRef = useRef({ x: 0, y: 0 });
   const prefetchedDetailImagesRef = useRef(new Set());
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    const updateCartCount = () => {
+      try {
+        const rawCart = window.localStorage.getItem(CART_STORAGE_KEY);
+        if (rawCart) {
+          const parsed = JSON.parse(rawCart);
+          if (Array.isArray(parsed)) {
+            setCartCount(parsed.reduce((sum, item) => sum + (item.quantity || 0), 0));
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+      setCartCount(0);
+    };
+
+    updateCartCount();
+    window.addEventListener("storage", updateCartCount);
+    window.addEventListener("cartUpdated", updateCartCount);
+    return () => {
+      window.removeEventListener("storage", updateCartCount);
+      window.removeEventListener("cartUpdated", updateCartCount);
+    };
+  }, []);
 
   useEffect(() => {
     if (!reviewImages.length) {
@@ -863,6 +907,7 @@ function ProductDetailPage() {
       }
 
       window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(savedCart));
+      window.dispatchEvent(new Event("cartUpdated"));
       setQuantity(1);
       return true;
     } catch (error) {
@@ -1340,6 +1385,21 @@ function ProductDetailPage() {
             </span>
           </div>
           <div className="flex items-center gap-4 normal-case tracking-normal">
+            <Link
+              to="/cart"
+              className="relative inline-flex items-center gap-2 text-xs font-medium text-brand-600 transition hover:text-brand-900 dark:text-brand-300 dark:hover:text-white"
+              title="Lihat Keranjang"
+            >
+              <div className="relative">
+                <ShoppingCartIcon className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:bg-emerald-500 dark:ring-brand-950">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                )}
+              </div>
+              <span className="hidden sm:inline">Keranjang</span>
+            </Link>
             <button
               type="button"
               onClick={handleShare}
@@ -1349,9 +1409,9 @@ function ProductDetailPage() {
             </button>
             <Link
               to="/shop"
-              className="inline-flex items-center gap-2 text-xs font-medium text-brand-600 transition hover:text-brand-900 dark:text-brand-300 dark:hover:text-white"
+              className="hidden md:inline-flex items-center gap-2 text-xs font-medium text-brand-600 transition hover:text-brand-900 dark:text-brand-300 dark:hover:text-white"
             >
-              Kembali ke koleksi
+              Koleksi Lainnya
               <ArrowRightTinyIcon className="h-3.5 w-3.5" />
             </Link>
           </div>
