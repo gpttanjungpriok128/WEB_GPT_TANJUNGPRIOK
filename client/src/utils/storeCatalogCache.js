@@ -15,7 +15,7 @@ function readStoreCatalogSnapshot() {
   }
 }
 
-function writeStoreCatalogSnapshot(products, meta = null) {
+function writeStoreCatalogSnapshot(products, meta = null, source = "api") {
   if (typeof window === "undefined") return;
 
   try {
@@ -24,6 +24,7 @@ function writeStoreCatalogSnapshot(products, meta = null) {
       JSON.stringify({
         cachedAt: Date.now(),
         data: Array.isArray(products) ? products : [],
+        source,
         meta: meta || {
           page: 1,
           totalPages: 1,

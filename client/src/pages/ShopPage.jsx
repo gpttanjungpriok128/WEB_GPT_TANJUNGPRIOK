@@ -1,6 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import ShopHero from "../components/ShopHero";
 import storePlaceholderImage from "../img/logo1.png";
@@ -8,15 +7,12 @@ import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeIma
 import { clampQuantity, getStockForSize, getTotalStock } from "../utils/storeStock";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 import {
-  PRODUCT_CACHE_KEY,
   STORE_CATALOG_INVALIDATION_EVENT,
   STORE_CATALOG_SYNC_KEY,
   writeStoreCatalogSnapshot,
 } from "../utils/storeCatalogCache";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
-const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
-const STORE_REQUEST_TIMEOUT_MS = 8000;
 const PROMO_VIDEO_URL = "https://youtu.be/oOOdw2ulGIg";
 const INITIAL_EAGER_PRODUCT_IMAGE_COUNT = 1;
 
@@ -288,28 +284,9 @@ const SORT_LABELS = {
 const SHOP_SECTION_SHELL = "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
 const SHOP_SECTION_LABEL = "text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600/80 dark:text-emerald-200/70";
 const PRODUCTS_PER_PAGE = 16;
+const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
+const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
 const USE_FALLBACK_PRODUCTS = import.meta.env.MODE === "development";
-
-const buildProductParams = (page, search) => ({
-  page,
-  limit: PRODUCTS_PER_PAGE,
-  search: search || undefined,
-});
-
-const parseProductResponse = (payload, page) => {
-  const apiProducts = Array.isArray(payload?.data)
-    ? payload.data.filter((item) => item.isActive !== false)
-    : [];
-
-  return {
-    apiProducts,
-    meta: payload?.meta || {
-      page,
-      totalPages: 1,
-      total: apiProducts.length,
-    },
-  };
-};
 
 const readShopBootCache = () => {
   if (typeof window === "undefined") return null;
@@ -318,6 +295,7 @@ const readShopBootCache = () => {
     const raw = window.localStorage.getItem(PRODUCT_CACHE_KEY);
     const cached = raw ? JSON.parse(raw) : null;
     if (!cached?.data || !Array.isArray(cached.data)) return null;
+    if (cached.source && cached.source !== "api") return null;
 
     const meta = cached.meta || {
       page: 1,
@@ -410,6 +388,7 @@ function ShopPage() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(() => !bootCache && !USE_FALLBACK_PRODUCTS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [productLoadError, setProductLoadError] = useState(false);
+  const [backgroundRefreshError, setBackgroundRefreshError] = useState(false);
   const [productPage, setProductPage] = useState(() => bootCache?.page || 1);
   const [productMeta, setProductMeta] = useState(() => bootCache?.meta || { page: 1, totalPages: 1, total: 0 });
   const [searchQuery, setSearchQuery] = useState("");
@@ -455,62 +434,88 @@ function ShopPage() {
     });
   }, [products]);
 
-  const fetchProducts = async ({ page = 1, append = false } = {}) => {
-    const params = buildProductParams(page, debouncedSearch);
+  const fetchProducts = async ({ page = 1, append = false, silent = false } = {}) => {
+    const params = {
+      page,
+      limit: PRODUCTS_PER_PAGE,
+      search: debouncedSearch || undefined
+    };
     const cacheKey = buildCacheKey("/store/products", { params });
     const cached = append ? null : getCacheSnapshot(cacheKey);
+    const hasVisibleCatalog = !append && (
+      (Array.isArray(cached?.data?.data) && cached.data.data.length > 0) ||
+      products.length > 0
+    );
     if (cached?.data?.data && !append) {
-      const { apiProducts, meta } = parseProductResponse(cached.data, page);
-      setProducts(apiProducts);
-      setProductMeta(meta);
+      setProducts(cached.data.data);
+      setProductMeta(cached.data.meta || { page, totalPages: 1, total: cached.data.data.length });
       setProductPage(page);
     }
     if (append) {
       setIsLoadingMore(true);
     } else {
-      setIsLoadingProducts(!cached && !hasBootCache);
+      if (!silent) {
+        setIsLoadingProducts(!cached && !hasBootCache);
+      }
       setProductLoadError(false);
+      setBackgroundRefreshError(false);
     }
     try {
-      const { data } = await swrGet("/store/products", { params, timeout: STORE_REQUEST_TIMEOUT_MS }, {
+      const { data } = await swrGet("/store/products", { params }, {
         ttlMs: 30 * 1000,
         onUpdate: append
           ? undefined
           : (payload) => {
-            const { apiProducts, meta } = parseProductResponse(payload, page);
+            const apiProducts = Array.isArray(payload?.data)
+              ? payload.data.filter((item) => item.isActive !== false)
+              : [];
             setProducts(apiProducts);
-            setProductMeta(meta);
+            setProductMeta(payload?.meta || { page, totalPages: 1, total: apiProducts.length });
             setProductPage(page);
           }
       });
-      const { apiProducts, meta } = parseProductResponse(data, page);
+      const apiProducts = Array.isArray(data?.data)
+        ? data.data.filter((item) => item.isActive !== false)
+        : [];
 
       setProducts((prev) => (append ? [...prev, ...apiProducts] : apiProducts));
-      setProductMeta(meta);
+      setProductMeta(data?.meta || { page, totalPages: 1, total: apiProducts.length });
       setProductPage(page);
       if (!append) {
         setProductLoadError(false);
+        setBackgroundRefreshError(false);
         setIsCacheStale(false);
       }
-      if (!append && typeof window !== "undefined") {
-        writeStoreCatalogSnapshot(apiProducts, meta);
+      if (!append && apiProducts.length > 0 && typeof window !== "undefined") {
+        writeStoreCatalogSnapshot(
+          apiProducts,
+          data?.meta || { page, totalPages: 1, total: apiProducts.length },
+        );
         setHasBootCache(true);
       }
     } catch {
       if (!append) {
-        setProductLoadError(true);
-        if (!products.length && !hasBootCache && !cached) {
-          setProducts(FALLBACK_PRODUCTS);
-          setProductMeta({ page: 1, totalPages: 1, total: FALLBACK_PRODUCTS.length });
-          setHasBootCache(true);
+        if (hasVisibleCatalog) {
+          setBackgroundRefreshError(true);
           setIsCacheStale(true);
-          if (typeof window !== "undefined") {
-            writeStoreCatalogSnapshot(FALLBACK_PRODUCTS, { page: 1, totalPages: 1, total: FALLBACK_PRODUCTS.length });
-          }
+          setProductLoadError(false);
+        } else {
+          setProductLoadError(true);
+          setBackgroundRefreshError(false);
+        }
+        if (!products.length && !hasBootCache && !cached) {
+          setProducts(USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : []);
+          setProductMeta({
+            page: 1,
+            totalPages: 1,
+            total: USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS.length : 0,
+          });
         }
       }
     } finally {
-      setIsLoadingProducts(false);
+      if (!silent || append) {
+        setIsLoadingProducts(false);
+      }
       setIsLoadingMore(false);
     }
   };
@@ -527,76 +532,29 @@ function ShopPage() {
   }, [debouncedSearch]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined") return undefined;
+    if (typeof window === "undefined") return undefined;
 
-    let isCancelled = false;
-
-    const refreshVisibleCatalog = async () => {
-      if (document.visibilityState === "hidden") return;
-
-      try {
-        const loadedPages = Math.max(1, productPage);
-        const pageResults = await Promise.all(
-          Array.from({ length: loadedPages }, (_, index) => api.get("/store/products", {
-            params: buildProductParams(index + 1, debouncedSearch),
-            timeout: STORE_REQUEST_TIMEOUT_MS,
-            headers: { "Cache-Control": "no-cache" },
-          })),
-        );
-
-        if (isCancelled) return;
-
-        const normalizedResults = pageResults.map((response, index) => (
-          parseProductResponse(response?.data, index + 1)
-        ));
-        const mergedProducts = normalizedResults.flatMap((result) => result.apiProducts);
-        const latestMeta = normalizedResults[normalizedResults.length - 1]?.meta || {
-          page: loadedPages,
-          totalPages: 1,
-          total: mergedProducts.length,
-        };
-
-        setProducts(mergedProducts);
-        setProductMeta(latestMeta);
-        setProductPage(loadedPages);
-        setProductLoadError(false);
-        setIsCacheStale(false);
-
-        const firstPageResult = normalizedResults[0];
-        if (firstPageResult) {
-          writeStoreCatalogSnapshot(firstPageResult.apiProducts, firstPageResult.meta);
-          setHasBootCache(true);
-        }
-      } catch {
-        // keep current view if background revalidation fails
+    const refreshCatalog = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
       }
+      fetchProducts({ page: 1, append: false, silent: true });
     };
 
     const handleStorage = (event) => {
       if (event.key === STORE_CATALOG_SYNC_KEY) {
-        refreshVisibleCatalog();
+        refreshCatalog();
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        refreshVisibleCatalog();
-      }
-    };
-
-    window.addEventListener("focus", refreshVisibleCatalog);
     window.addEventListener("storage", handleStorage);
-    window.addEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshVisibleCatalog);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshCatalog);
 
     return () => {
-      isCancelled = true;
-      window.removeEventListener("focus", refreshVisibleCatalog);
       window.removeEventListener("storage", handleStorage);
-      window.removeEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshVisibleCatalog);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener(STORE_CATALOG_INVALIDATION_EVENT, refreshCatalog);
     };
-  }, [debouncedSearch, productPage]);
+  }, [debouncedSearch, hasBootCache, products.length]);
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = deferredSearch.trim().toLowerCase();
@@ -1209,12 +1167,23 @@ function ShopPage() {
           </div>
         ) : (
           <>
-            {isCacheStale && !isLoadingProducts && filteredProducts.length > 0 && (
+            {backgroundRefreshError && filteredProducts.length > 0 ? (
+              <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200">
+                Koneksi katalog sedang tidak stabil. Menampilkan data terakhir.
+                <button
+                  type="button"
+                  onClick={() => fetchProducts({ page: 1, append: false })}
+                  className="ml-2 font-semibold text-amber-700 underline underline-offset-2 dark:text-amber-200"
+                >
+                  Muat ulang
+                </button>
+              </div>
+            ) : isCacheStale && !isLoadingProducts && filteredProducts.length > 0 ? (
               <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200">
                 Menampilkan data terakhir. Sedang memperbarui katalog.
               </div>
-            )}
-            {productLoadError && filteredProducts.length > 0 && (
+            ) : null}
+            {productLoadError && !backgroundRefreshError && filteredProducts.length > 0 && (
               <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/20 dark:text-rose-200">
                 Gagal memperbarui katalog. Menampilkan data terakhir.
                 <button
