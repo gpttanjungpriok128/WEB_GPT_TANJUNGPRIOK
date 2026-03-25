@@ -2,6 +2,7 @@ const express = require('express');
 const {
   register,
   login,
+  logout,
   me,
   loginWithGoogle,
   getGoogleClientConfig
@@ -18,6 +19,7 @@ const router = express.Router();
 
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
+router.post('/logout', logout);
 router.post('/google', googleLoginValidation, validate, loginWithGoogle);
 router.get('/google/client', getGoogleClientConfig);
 router.get('/me', authenticate, me);

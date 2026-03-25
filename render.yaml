@@ -30,9 +30,13 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: AUTH_COOKIE_NAME
+        value: gpt_auth_session
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: CLIENT_URL
+        sync: false
+      - key: PUBLIC_APP_URL
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
@@ -42,3 +46,9 @@ services:
         sync: false
       - key: CLOUDINARY_FOLDER
         value: gpt-tanjungpriok/articles
+      - key: CLOUDINARY_PRODUCT_FOLDER
+        value: gpt-tanjungpriok/products
+      - key: CLOUDINARY_GALLERY_FOLDER
+        value: gpt-tanjungpriok/galleries
+      - key: CLOUDINARY_REVIEW_FOLDER
+        value: gpt-tanjungpriok/reviews

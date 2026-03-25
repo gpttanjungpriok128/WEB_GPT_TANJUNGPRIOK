@@ -48,6 +48,25 @@ async function removeLocalUpload(file) {
   }
 }
 
+async function removePersistedArticleImage(publicPath) {
+  if (!publicPath || !String(publicPath).startsWith('/uploads/')) {
+    return;
+  }
+
+  const fileName = String(publicPath).split('/').pop();
+  if (!fileName) {
+    return;
+  }
+
+  try {
+    await fs.promises.unlink(`${__dirname}/../uploads/${fileName}`);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
 async function resolveArticleImage(file) {
   if (!file) {
     return null;
@@ -167,10 +186,12 @@ async function getArticleById(req, res, next) {
 }
 
 async function createArticle(req, res, next) {
+  let image = null;
+
   try {
     const { title, content } = req.body;
     const requestedStatus = req.body.status;
-    const image = await resolveArticleImage(req.file);
+    image = await resolveArticleImage(req.file);
 
     let status = 'pending';
     let approvedBy = null;
@@ -200,6 +221,7 @@ async function createArticle(req, res, next) {
 
     return res.status(201).json(article);
   } catch (error) {
+    await removePersistedArticleImage(image);
     return next(error);
   }
 }
@@ -218,7 +240,9 @@ async function updateArticle(req, res, next) {
     }
 
     if (req.file) {
+      const previousImage = article.image;
       article.image = await resolveArticleImage(req.file);
+      await removePersistedArticleImage(previousImage);
     }
 
     article.title = title ?? article.title;
@@ -292,7 +316,9 @@ async function deleteArticle(req, res, next) {
       return res.status(403).json({ message: 'Published article can only be deleted by admin' });
     }
 
+    const oldImage = article.image;
     await article.destroy();
+    await removePersistedArticleImage(oldImage);
     return res.status(200).json({ message: 'Article deleted' });
   } catch (error) {
     return next(error);

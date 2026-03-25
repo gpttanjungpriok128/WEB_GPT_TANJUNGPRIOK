@@ -1,6 +1,4 @@
-const API_ORIGIN = (import.meta.env.VITE_API_URL || "http://localhost:5000/api")
-  .replace(/\/api\/?$/, "")
-  .replace(/\/$/, "");
+import { API_ORIGIN } from "../config/env";
 
 function isAbsoluteUrl(value) {
   return /^https?:\/\//i.test(value);

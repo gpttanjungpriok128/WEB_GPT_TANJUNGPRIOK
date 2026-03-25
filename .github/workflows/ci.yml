@@ -17,8 +17,11 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      - run: npm test
+        env:
+          JWT_SECRET: ci-test-secret
       - name: Syntax Check
-        run: find . -name '*.js' | xargs -I{} node --check {}
+        run: find . -path './node_modules' -prune -o -name '*.js' -print | xargs -I{} node --check {}
 
   frontend-build:
     runs-on: ubuntu-latest

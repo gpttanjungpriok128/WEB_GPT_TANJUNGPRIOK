@@ -2,8 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { Op } = require('sequelize');
 const { Gallery } = require('../models');
+const { isCloudinaryConfigured, uploadLocalImageToCloudinary } = require('../services/cloudinaryService');
 
 const uploadsDir = path.join(__dirname, '..', 'uploads');
+const GALLERY_CLOUDINARY_FOLDER = process.env.CLOUDINARY_GALLERY_FOLDER || 'gpt-tanjungpriok/galleries';
 
 function getUploadedFiles(req) {
   const files = [];
@@ -25,12 +27,58 @@ function getUploadedFiles(req) {
   return files;
 }
 
-function toPublicImagePath(file) {
-  return `/uploads/${file.filename}`;
+function isRemoteUrl(value) {
+  return String(value).startsWith('http://') || String(value).startsWith('https://');
+}
+
+async function removeTempUpload(file) {
+  if (!file?.path || isRemoteUrl(file.path)) {
+    return;
+  }
+
+  try {
+    await fs.promises.unlink(file.path);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
+async function discardUploadedFiles(files = []) {
+  for (const file of files) {
+    try {
+      await removeTempUpload(file);
+    } catch {
+      // ignore temp cleanup errors
+    }
+  }
+}
+
+async function toPublicImagePath(file) {
+  if (!file) {
+    return null;
+  }
+
+  if (!isCloudinaryConfigured()) {
+    return `/uploads/${file.filename}`;
+  }
+
+  try {
+    return await uploadLocalImageToCloudinary(file.path, {
+      folder: GALLERY_CLOUDINARY_FOLDER
+    });
+  } finally {
+    await removeTempUpload(file);
+  }
 }
 
 async function removeImageFile(publicPath) {
   if (!publicPath) {
+    return;
+  }
+
+  if (isRemoteUrl(publicPath)) {
     return;
   }
 
@@ -146,20 +194,24 @@ async function getGalleryAlbumPhotos(req, res, next) {
 }
 
 async function createGallery(req, res, next) {
+  const files = getUploadedFiles(req);
+  let uploadedImagePaths = [];
+
   try {
     const title = String(req.body?.title || '').trim();
     if (!title) {
+      await discardUploadedFiles(files);
       return res.status(400).json({ message: 'Title is required' });
     }
 
-    const files = getUploadedFiles(req);
     if (!files.length) {
       return res.status(400).json({ message: 'At least one image is required' });
     }
 
-    const payload = files.map((file) => ({
+    uploadedImagePaths = await Promise.all(files.map((file) => toPublicImagePath(file)));
+    const payload = files.map((file, index) => ({
       title,
-      image: toPublicImagePath(file)
+      image: uploadedImagePaths[index]
     }));
 
     const galleries = await Gallery.bulkCreate(payload, { returning: true });
@@ -169,14 +221,22 @@ async function createGallery(req, res, next) {
       data: galleries
     });
   } catch (error) {
+    for (const imagePath of uploadedImagePaths) {
+      await removeImageFile(imagePath);
+    }
+    await discardUploadedFiles(files);
     return next(error);
   }
 }
 
 async function updateGallery(req, res, next) {
+  const files = getUploadedFiles(req);
+  let uploadedImagePath = null;
+
   try {
     const gallery = await Gallery.findByPk(req.params.id);
     if (!gallery) {
+      await discardUploadedFiles(files);
       return res.status(404).json({ message: 'Gallery not found' });
     }
 
@@ -189,10 +249,10 @@ async function updateGallery(req, res, next) {
       gallery.title = nextTitle;
     }
 
-    const files = getUploadedFiles(req);
     if (files.length) {
       const oldImage = gallery.image;
-      gallery.image = toPublicImagePath(files[0]);
+      uploadedImagePath = await toPublicImagePath(files[0]);
+      gallery.image = uploadedImagePath;
       await gallery.save();
       await removeImageFile(oldImage);
       return res.status(200).json(gallery);
@@ -201,6 +261,10 @@ async function updateGallery(req, res, next) {
     await gallery.save();
     return res.status(200).json(gallery);
   } catch (error) {
+    if (uploadedImagePath) {
+      await removeImageFile(uploadedImagePath);
+    }
+    await discardUploadedFiles(files);
     return next(error);
   }
 }

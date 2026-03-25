@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
+import { resolveApiAssetUrl } from "../config/env";
 import { useAuth } from "../context/AuthContext";
 import PageHero from "../components/PageHero";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
@@ -51,7 +52,6 @@ function GalleryPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [actionMessage, setActionMessage] = useState({ type: "", text: "" });
 
-  const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
   const canUpload = ["admin", "multimedia"].includes(user?.role);
   const isAdmin = user?.role === "admin";
   const ALBUM_PAGE_SIZE = 12;
@@ -416,7 +416,7 @@ function GalleryPage() {
             >
               <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-900 m-2 rounded-2xl shadow-inner border border-black/5 dark:border-white/5">
                 <img
-                  src={`${serverUrl}${album.cover.image}`}
+                  src={resolveApiAssetUrl(album.cover.image)}
                   alt={album.title}
                   loading="lazy"
                   decoding="async"
@@ -485,7 +485,7 @@ function GalleryPage() {
                     <div className="h-10 w-10 rounded-full border-[3px] border-white/40 border-t-white animate-spin" />
                   ) : activePhoto ? (
                     <img
-                      src={`${serverUrl}${activePhoto.image}`}
+                      src={resolveApiAssetUrl(activePhoto.image)}
                       alt={activePhoto.title}
                       loading="eager"
                       decoding="async"
@@ -548,7 +548,7 @@ function GalleryPage() {
                         }`}
                       >
                         <img
-                          src={`${serverUrl}${photo.image}`}
+                          src={resolveApiAssetUrl(photo.image)}
                           alt={photo.title}
                           loading="lazy"
                           decoding="async"

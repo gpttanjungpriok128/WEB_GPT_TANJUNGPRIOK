@@ -2,75 +2,88 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
+const LEGACY_TOKEN_STORAGE_KEY = 'token';
+
+function clearLegacyToken() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.removeItem(LEGACY_TOKEN_STORAGE_KEY);
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchMe() {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+    let isMounted = true;
+    clearLegacyToken();
 
+    async function fetchMe() {
       try {
         const { data } = await api.get('/auth/me');
-        setUser(data.user);
+        if (isMounted) {
+          setUser(data.user || null);
+        }
       } catch (error) {
-        localStorage.removeItem('token');
-        setToken(null);
-        setUser(null);
+        if (isMounted) {
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
     fetchMe();
-  }, [token]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const login = async (payload) => {
     const { data } = await api.post('/auth/login', payload);
-    localStorage.setItem('token', data.token);
-    setToken(data.token);
-    setUser(data.user);
+    clearLegacyToken();
+    setUser(data.user || null);
     return data;
   };
 
   const register = async (payload) => {
     const { data } = await api.post('/auth/register', payload);
-    localStorage.setItem('token', data.token);
-    setToken(data.token);
-    setUser(data.user);
+    clearLegacyToken();
+    setUser(data.user || null);
     return data;
   };
 
   const loginWithGoogle = async (credential) => {
     const { data } = await api.post('/auth/google', { credential });
-    localStorage.setItem('token', data.token);
-    setToken(data.token);
-    setUser(data.user);
+    clearLegacyToken();
+    setUser(data.user || null);
     return data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
+  const logout = async () => {
+    clearLegacyToken();
     setUser(null);
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      // Keep local auth state cleared even if logout request fails.
+    }
   };
 
   const value = useMemo(
     () => ({
       user,
-      token,
       loading,
       login,
       register,
       loginWithGoogle,
       logout
     }),
-    [user, token, loading]
+    [user, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

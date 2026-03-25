@@ -47,7 +47,7 @@ Starter fullstack website gereja dengan arsitektur modern, role-based access, ap
 - Email notification saat prayer request masuk (opsional via SMTP env)
 - CMS-style editor (rich text basic)
 - Dark mode toggle (persist localStorage)
-- Upload gambar renungan bisa disimpan permanen ke Cloudinary (opsional, disarankan untuk production)
+- Upload gambar memakai storage persisten Cloudinary untuk production gratis agar file tidak hilang saat redeploy
 
 ## Struktur Folder
 
@@ -273,7 +273,7 @@ Cara tercepat backend:
    - Host, Port, Database, User, Password
 2. Deploy backend dari folder `server` ke Render:
    - Build Command: `npm install`
-   - Start Command: `npm start`
+   - Start Command: `npm run migrate && npm start`
    - Env wajib:
      - `NODE_ENV=production`
      - `PORT=10000`
@@ -281,16 +281,20 @@ Cara tercepat backend:
      - `DB_SSL=true`
      - `DB_SSL_REJECT_UNAUTHORIZED=true`
      - `JWT_SECRET`, `JWT_EXPIRES_IN`
+     - `AUTH_COOKIE_NAME` (opsional, default `gpt_auth_session`)
      - `CLIENT_URL` (isi domain frontend Vercel)
+     - `PUBLIC_APP_URL` (isi domain frontend final untuk link invoice/order tracking)
      - `GOOGLE_CLIENT_ID` (jika login Google aktif)
-     - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (agar gambar renungan tidak hilang saat redeploy)
-     - `CLOUDINARY_FOLDER` (opsional, default `gpt-tanjungpriok/articles`)
+     - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+     - `CLOUDINARY_FOLDER`, `CLOUDINARY_PRODUCT_FOLDER`, `CLOUDINARY_GALLERY_FOLDER`, `CLOUDINARY_REVIEW_FOLDER`
+   - Catatan:
+     - Di production, endpoint upload multipart otomatis ditolak jika Cloudinary belum dikonfigurasi. Ini disengaja agar file tidak tersimpan ke disk sementara lalu hilang saat redeploy.
 3. Deploy frontend dari folder `client` ke Vercel:
    - Framework: Vite
-   - Env:
-     - `VITE_API_URL=https://<backend-render-domain>/api`
-     - `VITE_SERVER_URL=https://<backend-render-domain>`
+   - Env yang disarankan:
      - `VITE_GOOGLE_CLIENT_ID` (jika login Google aktif)
+     - `PUBLIC_API_URL=https://<backend-render-domain>/api` untuk build-time OG/sitemap generator
+   - `client/vercel.json` sudah merewrite `/api/*` dan `/uploads/*` ke backend Render agar browser tetap melihat semuanya sebagai same-origin.
 4. Update `CLIENT_URL` di backend Render dengan domain frontend final.
 5. Di Google OAuth, tambahkan domain frontend production ke `Authorized JavaScript origins`.
 

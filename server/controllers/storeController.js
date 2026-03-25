@@ -10,6 +10,7 @@ const {
   StoreSetting,
   User
 } = require('../models');
+const { isCloudinaryConfigured, uploadLocalImageToCloudinary } = require('../services/cloudinaryService');
 const { syncRevenueReportToSheet, isSheetsConfigured } = require('../services/sheetsService');
 const { invalidateCache } = require('../middleware/cacheMiddleware');
 
@@ -28,6 +29,8 @@ const ORDER_STATUSES = [
   'cancelled'
 ];
 const uploadsDir = path.join(__dirname, '..', 'uploads');
+const STORE_PRODUCT_CLOUDINARY_FOLDER = process.env.CLOUDINARY_PRODUCT_FOLDER || 'gpt-tanjungpriok/products';
+const STORE_REVIEW_CLOUDINARY_FOLDER = process.env.CLOUDINARY_REVIEW_FOLDER || 'gpt-tanjungpriok/reviews';
 
 function invalidateStoreCatalogCache() {
   invalidateCache((key) => key.includes('/store/products'));
@@ -53,13 +56,59 @@ function getUploadedFiles(req) {
   return [];
 }
 
-function toPublicImagePath(file) {
-  // Cloudinary returns full URL in path, local storage returns just filename
-  if (file.path && (file.path.startsWith('http://') || file.path.startsWith('https://'))) {
-    return file.path; // Cloudinary URL
+function isRemoteUrl(value) {
+  return String(value).startsWith('http://') || String(value).startsWith('https://');
+}
+
+async function removeTempUpload(file) {
+  if (!file?.path || isRemoteUrl(file.path)) {
+    return;
   }
-  // Local disk storage fallback
-  return `/uploads/${file.filename}`;
+
+  try {
+    await fs.promises.unlink(file.path);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
+async function discardUploadedFiles(files = []) {
+  for (const file of files) {
+    try {
+      await removeTempUpload(file);
+    } catch {
+      // ignore temp cleanup errors
+    }
+  }
+}
+
+async function toPublicImagePath(file, folder = STORE_PRODUCT_CLOUDINARY_FOLDER) {
+  if (!file) {
+    return null;
+  }
+
+  if (!isCloudinaryConfigured()) {
+    return `/uploads/${file.filename}`;
+  }
+
+  try {
+    return await uploadLocalImageToCloudinary(file.path, { folder });
+  } finally {
+    await removeTempUpload(file);
+  }
+}
+
+async function resolveUploadedImagePaths(files = [], folder) {
+  const uploadedPaths = [];
+  for (const file of files) {
+    const publicPath = await toPublicImagePath(file, folder);
+    if (publicPath) {
+      uploadedPaths.push(publicPath);
+    }
+  }
+  return uploadedPaths;
 }
 
 function normalizeProductImages(product) {
@@ -114,8 +163,7 @@ function buildInvoiceLink(appUrl, orderCode) {
 async function removeImageFile(publicPath) {
   if (!publicPath) return;
 
-  // Skip removal for Cloudinary URLs (they're handled by Cloudinary)
-  if (String(publicPath).startsWith('http://') || String(publicPath).startsWith('https://')) {
+  if (isRemoteUrl(publicPath)) {
     return;
   }
 
@@ -876,18 +924,17 @@ async function getProductReviews(req, res, next) {
 }
 
 async function createProductReview(req, res, next) {
+  const uploadedFiles = getUploadedFiles(req);
   let uploadedPaths = [];
 
   try {
-    const uploadedFiles = getUploadedFiles(req);
-    uploadedPaths = uploadedFiles.map(toPublicImagePath).filter(Boolean);
     const { slug } = req.params;
     const product = await StoreProduct.findOne({
       where: { slug: String(slug).toLowerCase().trim(), isActive: true }
     });
 
     if (!product) {
-      await removeImageFiles(uploadedPaths);
+      await discardUploadedFiles(uploadedFiles);
       return res.status(404).json({ message: 'Produk tidak ditemukan' });
     }
 
@@ -905,21 +952,21 @@ async function createProductReview(req, res, next) {
     });
 
     if (!order) {
-      await removeImageFiles(uploadedPaths);
+      await discardUploadedFiles(uploadedFiles);
       return res.status(404).json({
         message: 'Order tidak ditemukan. Pastikan kode pesanan dan nomor WhatsApp sesuai.'
       });
     }
 
     if (order.status === 'cancelled') {
-      await removeImageFiles(uploadedPaths);
+      await discardUploadedFiles(uploadedFiles);
       return res.status(400).json({ message: 'Order dibatalkan dan tidak bisa diberi ulasan.' });
     }
 
     const items = Array.isArray(order.items) ? order.items : [];
     const hasProduct = items.some((item) => Number(item.productId) === Number(product.id));
     if (!hasProduct) {
-      await removeImageFiles(uploadedPaths);
+      await discardUploadedFiles(uploadedFiles);
       return res.status(400).json({
         message: 'Produk ini tidak ada di pesanan yang dimasukkan.'
       });
@@ -933,10 +980,11 @@ async function createProductReview(req, res, next) {
     });
 
     if (existingReview) {
-      await removeImageFiles(uploadedPaths);
+      await discardUploadedFiles(uploadedFiles);
       return res.status(409).json({ message: 'Ulasan untuk produk ini sudah dikirim.' });
     }
 
+    uploadedPaths = await resolveUploadedImagePaths(uploadedFiles, STORE_REVIEW_CLOUDINARY_FOLDER);
     const review = await StoreProductReview.create({
       productId: product.id,
       orderId: order.id,
@@ -956,7 +1004,11 @@ async function createProductReview(req, res, next) {
       data: serializeReview(review)
     });
   } catch (error) {
-    await removeImageFiles(uploadedPaths);
+    if (uploadedPaths.length > 0) {
+      await removeImageFiles(uploadedPaths);
+    } else {
+      await discardUploadedFiles(uploadedFiles);
+    }
     return next(error);
   }
 }
@@ -1139,7 +1191,7 @@ async function getAdminProducts(req, res, next) {
 
 async function createAdminProduct(req, res, next) {
   const uploadedFiles = getUploadedFiles(req);
-  const uploadedPaths = uploadedFiles.map(toPublicImagePath);
+  let uploadedPaths = [];
 
   try {
     if (!uploadedFiles.length) {
@@ -1149,16 +1201,17 @@ async function createAdminProduct(req, res, next) {
     const payload = buildProductPayload(req.body, req.user.id);
     applyStockConfiguration(payload, req.body);
     if (!payload.slug) {
-      await removeImageFiles(uploadedPaths);
+      await discardUploadedFiles(uploadedFiles);
       return res.status(400).json({ message: 'Slug produk tidak valid' });
     }
 
     const slugUnique = await ensureUniqueSlug(payload.slug);
     if (!slugUnique) {
-      await removeImageFiles(uploadedPaths);
+      await discardUploadedFiles(uploadedFiles);
       return res.status(409).json({ message: 'Slug produk sudah dipakai. Gunakan nama/slug lain.' });
     }
 
+    uploadedPaths = await resolveUploadedImagePaths(uploadedFiles, STORE_PRODUCT_CLOUDINARY_FOLDER);
     payload.imageUrls = uploadedPaths;
     payload.imageUrl = uploadedPaths[0] || null;
 
@@ -1169,19 +1222,23 @@ async function createAdminProduct(req, res, next) {
       data: serializeProduct(product)
     });
   } catch (error) {
-    await removeImageFiles(uploadedPaths);
+    if (uploadedPaths.length > 0) {
+      await removeImageFiles(uploadedPaths);
+    } else {
+      await discardUploadedFiles(uploadedFiles);
+    }
     return next(error);
   }
 }
 
 async function updateAdminProduct(req, res, next) {
   const uploadedFiles = getUploadedFiles(req);
-  const uploadedPaths = uploadedFiles.map(toPublicImagePath);
+  let uploadedPaths = [];
 
   try {
     const product = await StoreProduct.findByPk(req.params.id);
     if (!product) {
-      await removeImageFiles(uploadedPaths);
+      await discardUploadedFiles(uploadedFiles);
       return res.status(404).json({ message: 'Produk tidak ditemukan' });
     }
 
@@ -1192,12 +1249,13 @@ async function updateAdminProduct(req, res, next) {
     if (payload.slug) {
       const slugUnique = await ensureUniqueSlug(payload.slug, product.id);
       if (!slugUnique) {
-        await removeImageFiles(uploadedPaths);
+        await discardUploadedFiles(uploadedFiles);
         return res.status(409).json({ message: 'Slug produk sudah dipakai. Gunakan slug lain.' });
       }
     }
 
-    if (uploadedPaths.length > 0) {
+    if (uploadedFiles.length > 0) {
+      uploadedPaths = await resolveUploadedImagePaths(uploadedFiles, STORE_PRODUCT_CLOUDINARY_FOLDER);
       payload.imageUrls = uploadedPaths;
       payload.imageUrl = uploadedPaths[0] || null;
     }
@@ -1214,7 +1272,11 @@ async function updateAdminProduct(req, res, next) {
       data: serializeProduct(product)
     });
   } catch (error) {
-    await removeImageFiles(uploadedPaths);
+    if (uploadedPaths.length > 0) {
+      await removeImageFiles(uploadedPaths);
+    } else {
+      await discardUploadedFiles(uploadedFiles);
+    }
     return next(error);
   }
 }

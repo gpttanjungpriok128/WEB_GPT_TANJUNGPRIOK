@@ -2,6 +2,7 @@ const app = require('./app');
 const bcrypt = require('bcrypt');
 const { spawn } = require('child_process');
 const { sequelize, LiveStreamSetting, User, Schedule } = require('./models');
+const { isCloudinaryConfigured } = require('./services/cloudinaryService');
 
 const DEFAULT_PORT = Number(process.env.PORT || 5000);
 
@@ -179,9 +180,6 @@ async function bootstrap() {
   try {
     await runPendingMigrations();
     await sequelize.authenticate();
-    if (process.env.NODE_ENV !== 'production') {
-      await sequelize.sync();
-    }
 
     await LiveStreamSetting.findOrCreate({
       where: { id: 1 },
@@ -191,6 +189,10 @@ async function bootstrap() {
     const shouldSeedDefaultUsers = process.env.NODE_ENV !== 'production' || isTrue(process.env.SEED_DEFAULT_USERS);
     if (shouldSeedDefaultUsers) {
       await ensureDefaultUsers();
+    }
+
+    if (process.env.NODE_ENV === 'production' && !isCloudinaryConfigured()) {
+      console.warn('Cloudinary belum dikonfigurasi. Endpoint upload multipart akan menolak request di production.');
     }
 
     await ensureDefaultSchedules(isTrue(process.env.SEED_DEFAULT_SCHEDULES));

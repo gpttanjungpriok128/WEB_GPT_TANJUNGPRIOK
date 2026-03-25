@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { User } = require('../models');
 const { generateToken } = require('../utils/jwt');
+const { clearAuthCookie, setAuthCookie } = require('../utils/authCookie');
 
 function serializeUser(user) {
   return {
@@ -10,6 +11,16 @@ function serializeUser(user) {
     email: user.email,
     role: user.role
   };
+}
+
+function respondWithAuthenticatedUser(req, res, { statusCode, message, user }) {
+  const token = generateToken({ id: user.id, role: user.role });
+  setAuthCookie(req, res, token);
+
+  return res.status(statusCode).json({
+    message,
+    user: serializeUser(user)
+  });
 }
 
 async function register(req, res, next) {
@@ -26,11 +37,10 @@ async function register(req, res, next) {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, password: hashedPassword, role: 'jemaat' });
 
-    const token = generateToken({ id: user.id, role: user.role });
-    return res.status(201).json({
+    return respondWithAuthenticatedUser(req, res, {
+      statusCode: 201,
       message: 'Register berhasil',
-      token,
-      user: serializeUser(user)
+      user
     });
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
@@ -55,11 +65,10 @@ async function login(req, res, next) {
       return res.status(401).json({ message: 'Email atau password salah' });
     }
 
-    const token = generateToken({ id: user.id, role: user.role });
-    return res.status(200).json({
+    return respondWithAuthenticatedUser(req, res, {
+      statusCode: 200,
       message: 'Login berhasil',
-      token,
-      user: serializeUser(user)
+      user
     });
   } catch (error) {
     return next(error);
@@ -154,11 +163,10 @@ async function loginWithGoogle(req, res, next) {
       });
     }
 
-    const token = generateToken({ id: user.id, role: user.role });
-    return res.status(200).json({
+    return respondWithAuthenticatedUser(req, res, {
+      statusCode: 200,
       message: 'Login Google berhasil',
-      token,
-      user: serializeUser(user)
+      user
     });
   } catch (error) {
     if (error.statusCode) {
@@ -173,4 +181,9 @@ async function loginWithGoogle(req, res, next) {
   }
 }
 
-module.exports = { register, login, me, loginWithGoogle, getGoogleClientConfig };
+function logout(req, res) {
+  clearAuthCookie(req, res);
+  return res.status(200).json({ message: 'Logout berhasil' });
+}
+
+module.exports = { register, login, logout, me, loginWithGoogle, getGoogleClientConfig };

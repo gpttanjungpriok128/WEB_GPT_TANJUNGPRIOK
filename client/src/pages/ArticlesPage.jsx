@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { resolveApiAssetUrl } from "../config/env";
 import PageHero from "../components/PageHero";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 
@@ -28,7 +29,6 @@ function ArticlesPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const openArticleId = searchParams.get("open");
-  const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
 
   useEffect(() => {
     if (!openArticleId) return;
@@ -86,9 +86,7 @@ function ArticlesPage() {
     article?.approvedAt || article?.updatedAt || article?.createdAt;
 
   const resolveImageUrl = (imagePath) => {
-    if (!imagePath) return "";
-    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
-    return `${serverUrl}${imagePath}`;
+    return resolveApiAssetUrl(imagePath);
   };
 
   return (

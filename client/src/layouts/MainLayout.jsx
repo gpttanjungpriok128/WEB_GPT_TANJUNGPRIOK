@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { API_ORIGIN } from "../config/env";
 import { useTheme } from "../context/ThemeContext";
 import BrandLogo from "../components/BrandLogo";
 import {
@@ -19,18 +20,6 @@ import {
   SparklesIcon,
   SunIcon,
 } from "../components/SiteIcons";
-
-function resolveApiOrigin() {
-  const raw = import.meta.env.VITE_API_URL || "";
-  if (!raw) return "";
-
-  try {
-    const url = new URL(raw, window.location.origin);
-    return url.origin;
-  } catch {
-    return "";
-  }
-}
 
 function ensureHintLink({ rel, href, crossOrigin }) {
   if (!href) return;
@@ -190,11 +179,10 @@ function MainLayout({ children }) {
   }, [handleScroll]);
 
   useEffect(() => {
-    const apiOrigin = resolveApiOrigin();
-    if (!apiOrigin || apiOrigin === window.location.origin) return;
+    if (!API_ORIGIN || API_ORIGIN === window.location.origin) return;
 
-    ensureHintLink({ rel: "preconnect", href: apiOrigin, crossOrigin: true });
-    ensureHintLink({ rel: "dns-prefetch", href: apiOrigin });
+    ensureHintLink({ rel: "preconnect", href: API_ORIGIN, crossOrigin: true });
+    ensureHintLink({ rel: "dns-prefetch", href: API_ORIGIN });
   }, []);
 
   useEffect(() => {

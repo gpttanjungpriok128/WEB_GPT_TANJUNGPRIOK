@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { resolveApiAssetUrl } from "../config/env";
 import {
   ArrowRightIcon,
   BookIcon,
@@ -111,7 +112,6 @@ function HomePage() {
     if (typeof window === "undefined") return false;
     return Boolean(getCacheSnapshot(FEATURED_ARTICLE_CACHE_KEY));
   });
-  const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
 
   const communityCards = useMemo(
     () => COMMUNITY_LINKS.filter((item) => !item.requiresAuth || user),
@@ -164,10 +164,7 @@ function HomePage() {
   const stripHtml = (html = "") => String(html).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
   const resolveImageUrl = (imagePath) => {
-    if (!imagePath) return "";
-    if (imagePath.startsWith("http")) return imagePath;
-    if (!imagePath.startsWith("/")) return `${serverUrl}/${imagePath}`;
-    return `${serverUrl}${imagePath}`;
+    return resolveApiAssetUrl(imagePath);
   };
 
   return (

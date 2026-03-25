@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { GOOGLE_CLIENT_ID } from "../config/env";
 import api from "../services/api";
 
 function LoginPage() {
   const navigate = useNavigate();
   const { login, loginWithGoogle } = useAuth();
-  const envGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const googleButtonRef = useRef(null);
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState(envGoogleClientId || "");
+  const [googleClientId, setGoogleClientId] = useState(GOOGLE_CLIENT_ID || "");
 
   const redirectAfterLogin = useCallback(
     (role) => {
@@ -43,8 +43,8 @@ function LoginPage() {
   );
 
   useEffect(() => {
-    if (envGoogleClientId) {
-      setGoogleClientId(envGoogleClientId);
+    if (GOOGLE_CLIENT_ID) {
+      setGoogleClientId(GOOGLE_CLIENT_ID);
       return;
     }
 
@@ -66,7 +66,7 @@ function LoginPage() {
     return () => {
       isUnmounted = true;
     };
-  }, [envGoogleClientId]);
+  }, []);
 
   useEffect(() => {
     if (!googleClientId) {

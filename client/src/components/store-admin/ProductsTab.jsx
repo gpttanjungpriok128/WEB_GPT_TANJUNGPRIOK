@@ -1,9 +1,9 @@
 import { useState, useRef, useMemo, useEffect } from "react";
+import { API_ORIGIN } from "../../config/env";
 import api from "../../services/api";
 import { formatRupiah } from "../../utils/storeFormatters";
 import { invalidateStoreCatalogCache } from "../../utils/storeCatalogCache";
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") || "http://localhost:5000";
 const DEFAULT_SIZES = ["S", "M", "L", "XL"];
 const PRODUCT_ACTIVE_OPTIONS = [
   { value: "", label: "Semua Status" },
@@ -70,7 +70,7 @@ function toLocalDatetimeInput(value) {
 function resolveImageUrl(src) {
   if (!src) return "";
   if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("blob:")) return src;
-  return `${API_BASE}${src.startsWith("/") ? "" : "/"}${src}`;
+  return `${API_ORIGIN}${src.startsWith("/") ? "" : "/"}${src}`;
 }
 
 export default function ProductsTab({ isActive, onRefreshAnalytics }) {

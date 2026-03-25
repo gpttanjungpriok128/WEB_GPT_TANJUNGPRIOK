@@ -25,7 +25,7 @@ const {
 } = require('../controllers/storeController');
 const { authenticate, optionalAuthenticate, authorizeRoles } = require('../middleware/authMiddleware');
 const { cacheResponse } = require('../middleware/cacheMiddleware');
-const { uploadImage } = require('../middleware/uploadMiddleware');
+const { requirePersistentUploadStorage, uploadImage } = require('../middleware/uploadMiddleware');
 const { validate } = require('../middleware/validationMiddleware');
 const {
   createOrderValidation,
@@ -66,6 +66,7 @@ router.get(
 router.post(
   '/products/:slug/reviews',
   optionalAuthenticate,
+  requirePersistentUploadStorage,
   uploadImage.array('images', 3),
   createReviewValidation,
   validate,
@@ -76,8 +77,8 @@ router.get('/orders/track', trackPublicOrder);
 router.get('/my-orders', authenticate, getMyOrders);
 
 router.get('/admin/products', authenticate, authorizeRoles('admin'), getAdminProducts);
-router.post('/admin/products', authenticate, authorizeRoles('admin'), uploadImage.array('images', 8), createProductValidation, validate, createAdminProduct);
-router.put('/admin/products/:id', authenticate, authorizeRoles('admin'), uploadImage.array('images', 8), updateProductValidation, validate, updateAdminProduct);
+router.post('/admin/products', authenticate, authorizeRoles('admin'), requirePersistentUploadStorage, uploadImage.array('images', 8), createProductValidation, validate, createAdminProduct);
+router.put('/admin/products/:id', authenticate, authorizeRoles('admin'), requirePersistentUploadStorage, uploadImage.array('images', 8), updateProductValidation, validate, updateAdminProduct);
 router.delete('/admin/products/:id', authenticate, authorizeRoles('admin'), deleteAdminProduct);
 router.get('/admin/orders', authenticate, authorizeRoles('admin'), getAdminOrders);
 router.get('/admin/reports/revenue', authenticate, authorizeRoles('admin'), getAdminRevenueReport);

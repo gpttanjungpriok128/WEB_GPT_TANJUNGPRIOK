@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../services/api";
+import { resolveApiAssetUrl } from "../config/env";
 import DOMPurify from "dompurify";
 import "../styles.article-detail.css";
 
@@ -9,7 +10,6 @@ function ArticleDetailPage() {
   const [article, setArticle] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5001";
 
   useEffect(() => {
     let active = true;
@@ -59,9 +59,7 @@ function ArticleDetailPage() {
   }, [article?.content]);
 
   const resolveImageUrl = (imagePath) => {
-    if (!imagePath) return "";
-    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
-    return `${serverUrl}${imagePath}`;
+    return resolveApiAssetUrl(imagePath);
   };
 
   return (

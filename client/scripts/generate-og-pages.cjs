@@ -138,11 +138,15 @@ async function main() {
       process.env.VITE_PUBLIC_URL ||
       "https://gpttanjungpriok.vercel.app"
   );
-  const apiBaseRaw = normalizeBaseUrl(
-    process.env.VITE_API_URL ||
-      process.env.PUBLIC_API_URL ||
-      "https://linguistic-alameda-gpttanjungpriok-e69cc92f.koyeb.app/api"
+  const configuredApiUrl = normalizeBaseUrl(
+    process.env.PUBLIC_API_URL ||
+      process.env.API_PROXY_TARGET ||
+      process.env.VITE_API_URL ||
+      "https://web-gpt-tanjungpriok-api.onrender.com/api"
   );
+  const apiBaseRaw = /^https?:\/\//i.test(configuredApiUrl)
+    ? configuredApiUrl
+    : "https://web-gpt-tanjungpriok-api.onrender.com/api";
   const apiBase = apiBaseRaw.endsWith("/api") ? apiBaseRaw : `${apiBaseRaw}/api`;
   const apiOrigin = apiBaseRaw.replace(/\/api\/?$/, "");
 
