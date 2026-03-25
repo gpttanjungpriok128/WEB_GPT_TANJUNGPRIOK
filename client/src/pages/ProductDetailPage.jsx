@@ -486,9 +486,14 @@ function getImageWithFallback(product, fallbackProducts) {
 
   const validUrls = rawUrls.filter((url) => typeof url === "string" && url.trim() !== "");
 
+  // Return valid URLs if they exist
+  if (validUrls.length > 0) {
+    return validUrls;
+  }
+
   // Try to find a fallback product by slug to use its images if no valid urls exist
-  if (validUrls.length === 0) {
-    const fallbackProduct = fallbackProducts.find((p) => p.slug === product.slug);
+  if (fallbackProducts && Array.isArray(fallbackProducts) && fallbackProducts.length > 0) {
+    const fallbackProduct = fallbackProducts.find((p) => p && p.slug === product.slug);
     if (
       fallbackProduct &&
       Array.isArray(fallbackProduct.imageUrls) &&
@@ -496,10 +501,10 @@ function getImageWithFallback(product, fallbackProducts) {
     ) {
       return fallbackProduct.imageUrls;
     }
-    return [storePlaceholderImage];
   }
 
-  return validUrls;
+  // Last resort: use placeholder
+  return [storePlaceholderImage];
 }
 
 function getDefaultSize(product) {
@@ -1028,20 +1033,16 @@ function ProductDetailPage() {
 
   const handleImageError = (index) => {
     setFailedImages((prev) => new Set([...prev, index]));
-    // Use fallback image
-    if (
-      !images[index]?.startsWith("http") &&
-      !images[index]?.startsWith("data:")
-    ) {
-      const fallbackIdx = images.findIndex(
-        (img, i) =>
-          i !== index &&
-          !failedImages.has(i) &&
-          (img.startsWith("http") || img.startsWith("data:")),
-      );
-      if (fallbackIdx !== -1) {
-        setSelectedImageIndex(fallbackIdx);
-      }
+    
+    // Try to find the next valid image to display
+    const validIndices = images
+      .map((_, i) => i)
+      .filter(i => !failedImages.has(i) && i !== index);
+    
+    if (validIndices.length > 0) {
+      // Pick the first valid image or the one closest to current
+      const nextIndex = validIndices.includes(0) ? 0 : validIndices[0];
+      setSelectedImageIndex(nextIndex);
     }
   };
 
@@ -1435,7 +1436,7 @@ function ProductDetailPage() {
                 }`}
               >
                 <img
-                  src={resolveStoreImageUrl(image)}
+                  src={resolveStoreImageUrl(image) || storePlaceholderImage}
                   alt={`Foto ${index + 1}`}
                   width={140}
                   height={140}
@@ -1444,6 +1445,7 @@ function ProductDetailPage() {
                   onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
                   onError={(event) => {
                     event.currentTarget.classList.add("is-loaded");
+                    event.currentTarget.src = storePlaceholderImage;
                     handleImageError(index);
                   }}
                   className="image-soft h-16 w-full rounded-[0.8rem] bg-white object-cover dark:bg-brand-900/80"
@@ -1469,7 +1471,7 @@ function ProductDetailPage() {
                 Zoom
               </button>
               <img
-                src={resolveStoreImageUrl(images[selectedImageIndex])}
+                src={resolveStoreImageUrl(images[selectedImageIndex]) || storePlaceholderImage}
                 alt={product.name}
                 width={1200}
                 height={1500}
@@ -1477,6 +1479,7 @@ function ProductDetailPage() {
                 onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
                 onError={(event) => {
                   event.currentTarget.classList.add("is-loaded");
+                  event.currentTarget.src = storePlaceholderImage;
                   handleImageError(selectedImageIndex);
                 }}
                 loading="eager"
@@ -1500,7 +1503,7 @@ function ProductDetailPage() {
                     }`}
                   >
                     <img
-                      src={resolveStoreImageUrl(image)}
+                      src={resolveStoreImageUrl(image) || storePlaceholderImage}
                       alt={`Foto ${index + 1}`}
                       width={180}
                       height={180}
@@ -1509,6 +1512,7 @@ function ProductDetailPage() {
                       onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
                       onError={(event) => {
                         event.currentTarget.classList.add("is-loaded");
+                        event.currentTarget.src = storePlaceholderImage;
                         handleImageError(index);
                       }}
                       className="image-soft h-16 w-full rounded-[0.8rem] bg-white object-cover dark:bg-brand-900/80"
@@ -1792,6 +1796,7 @@ function ProductDetailPage() {
             {showcaseProducts.map((item) => {
               const relatedPrice = Number(item.finalPrice ?? item.basePrice ?? 0);
               const relatedImage = getImageWithFallback(item, FALLBACK_PRODUCTS)[0];
+              const resolvedImageUrl = resolveStoreImageUrl(relatedImage);
 
               return (
                 <Link
@@ -1801,12 +1806,15 @@ function ProductDetailPage() {
                 >
                   <div className="overflow-hidden rounded-[1.9rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,245,247,0.95))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.06)] transition-transform duration-300 group-hover:-translate-y-1 dark:bg-[linear-gradient(180deg,rgba(18,23,20,0.98),rgba(9,13,12,0.96))]">
                     <img
-                      src={resolveStoreImageUrl(relatedImage)}
+                      src={resolvedImageUrl || storePlaceholderImage}
                       alt={item.name}
                       width={720}
                       height={860}
                       loading="lazy"
                       decoding="async"
+                      onError={(event) => {
+                        event.currentTarget.src = storePlaceholderImage;
+                      }}
                       className="image-soft aspect-[4/5] w-full object-contain mix-blend-multiply dark:mix-blend-normal"
                     />
                   </div>
@@ -1843,12 +1851,15 @@ function ProductDetailPage() {
             </div>
             <div className="image-zoom-body">
               <img
-                src={resolveStoreImageUrl(images[selectedImageIndex])}
+                src={resolveStoreImageUrl(images[selectedImageIndex]) || storePlaceholderImage}
                 alt={product.name}
                 className="image-zoom-media"
                 style={{ width: `${zoomScale * 100}%` }}
                 loading="eager"
                 decoding="async"
+                onError={(event) => {
+                  event.currentTarget.src = storePlaceholderImage;
+                }}
               />
               <p className="image-zoom-hint">Gunakan tombol + untuk memperbesar.</p>
             </div>
