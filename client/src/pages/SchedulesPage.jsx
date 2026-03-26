@@ -42,6 +42,111 @@ function parseScheduleDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function parseScheduleTime(value = "") {
+  const match = String(value).match(/(\d{1,2})[:.](\d{2})/);
+  if (!match) return null;
+
+  return {
+    hours: Number(match[1]),
+    minutes: Number(match[2]),
+  };
+}
+
+function toScheduleDateString(date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getScheduleDateTime(dateValue, timeValue) {
+  const baseDate = dateValue instanceof Date ? new Date(dateValue) : parseScheduleDate(dateValue);
+  if (!baseDate) return null;
+
+  const parsedTime = parseScheduleTime(timeValue);
+  if (parsedTime) {
+    baseDate.setHours(parsedTime.hours, parsedTime.minutes, 0, 0);
+  } else {
+    baseDate.setHours(23, 59, 59, 999);
+  }
+
+  return baseDate;
+}
+
+function hasSchedulePassed(dateValue, timeValue, reference = new Date()) {
+  const scheduleDateTime = getScheduleDateTime(dateValue, timeValue);
+  if (!scheduleDateTime) return false;
+  return scheduleDateTime.getTime() < reference.getTime();
+}
+
+function getRecurringWeekNumbers(description = "") {
+  const normalized = String(description).toLowerCase();
+  if (!normalized.includes("minggu ke-")) return [];
+
+  return [...normalized.matchAll(/ke-(\d)/g)]
+    .map((match) => Number(match[1]))
+    .filter((value, index, values) => Number.isInteger(value) && value > 0 && value < 6 && values.indexOf(value) === index)
+    .sort((left, right) => left - right);
+}
+
+function getNthWeekdayOfMonth(year, month, weekday, occurrence) {
+  const firstDayOfMonth = new Date(year, month, 1);
+  const offset = (weekday - firstDayOfMonth.getDay() + 7) % 7;
+  const dayOfMonth = 1 + offset + ((occurrence - 1) * 7);
+  const candidate = new Date(year, month, dayOfMonth);
+
+  if (candidate.getMonth() !== month) return null;
+  return candidate;
+}
+
+function resolveWeeklyScheduleDate(baseDateValue, timeValue, reference = new Date()) {
+  const baseDate = parseScheduleDate(baseDateValue);
+  if (!baseDate) return baseDateValue;
+
+  const nextDate = new Date(baseDate);
+  while (hasSchedulePassed(nextDate, timeValue, reference)) {
+    nextDate.setDate(nextDate.getDate() + 7);
+  }
+
+  return toScheduleDateString(nextDate);
+}
+
+function resolveMonthlyScheduleDate(baseDateValue, timeValue, weekNumbers, reference = new Date()) {
+  const baseDate = parseScheduleDate(baseDateValue);
+  if (!baseDate || weekNumbers.length === 0) return baseDateValue;
+
+  const weekday = baseDate.getDay();
+
+  for (let monthOffset = 0; monthOffset < 18; monthOffset += 1) {
+    const cursor = new Date(reference.getFullYear(), reference.getMonth() + monthOffset, 1);
+    const nextCandidate = weekNumbers
+      .map((weekNumber) => getNthWeekdayOfMonth(cursor.getFullYear(), cursor.getMonth(), weekday, weekNumber))
+      .filter(Boolean)
+      .find((candidate) => !hasSchedulePassed(candidate, timeValue, reference));
+
+    if (nextCandidate) {
+      return toScheduleDateString(nextCandidate);
+    }
+  }
+
+  return baseDateValue;
+}
+
+function resolveScheduleDate(item, reference = new Date()) {
+  const description = String(item?.description || "").toLowerCase();
+  const weekNumbers = getRecurringWeekNumbers(description);
+
+  if (weekNumbers.length > 0) {
+    return resolveMonthlyScheduleDate(item?.date, item?.time, weekNumbers, reference);
+  }
+
+  if (description.includes("setiap")) {
+    return resolveWeeklyScheduleDate(item?.date, item?.time, reference);
+  }
+
+  return item?.date;
+}
+
 function formatFullDate(value) {
   const date = parseScheduleDate(value);
   if (!date) return "-";
@@ -62,9 +167,10 @@ function formatShortDate(value) {
   });
 }
 
-function getTemporalState(value) {
+function getTemporalState(value, timeValue, reference = new Date()) {
   const date = parseScheduleDate(value);
-  if (!date) {
+  const scheduleDateTime = getScheduleDateTime(value, timeValue);
+  if (!date || !scheduleDateTime) {
     return {
       key: "unknown",
       label: "Tanggal belum valid",
@@ -72,12 +178,19 @@ function getTemporalState(value) {
     };
   }
 
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+  const startOfToday = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate());
+  const endOfToday = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate(), 23, 59, 59, 999);
   const endOfWeek = new Date(startOfToday);
   endOfWeek.setDate(endOfWeek.getDate() + 6);
   endOfWeek.setHours(23, 59, 59, 999);
+
+  if (scheduleDateTime.getTime() < reference.getTime()) {
+    return {
+      key: "past",
+      label: "Sudah lewat",
+      accent: "border-brand-200 bg-brand-100 text-brand-700 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300",
+    };
+  }
 
   if (date >= startOfToday && date <= endOfToday) {
     return {
@@ -116,6 +229,15 @@ function SchedulesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [copyFeedback, setCopyFeedback] = useState("");
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, 60 * 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     const fetchSchedules = async () => {
@@ -153,18 +275,23 @@ function SchedulesPage() {
   const scheduleEntries = useMemo(
     () =>
       [...items]
-        .map((item) => ({
-          ...item,
-          category: getCategory(item.title),
-          temporal: getTemporalState(item.date),
-          parsedDate: parseScheduleDate(item.date),
-        }))
+        .map((item) => {
+          const resolvedDate = resolveScheduleDate(item, now);
+
+          return {
+            ...item,
+            date: resolvedDate,
+            category: getCategory(item.title),
+            temporal: getTemporalState(resolvedDate, item.time, now),
+            parsedDate: parseScheduleDate(resolvedDate),
+          };
+        })
         .sort((left, right) => {
           const leftTime = left.parsedDate?.getTime() || 0;
           const rightTime = right.parsedDate?.getTime() || 0;
           return leftTime - rightTime;
         }),
-    [items],
+    [items, now],
   );
 
   const summary = useMemo(
