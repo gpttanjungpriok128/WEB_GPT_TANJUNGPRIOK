@@ -281,6 +281,7 @@ const SORT_LABELS = {
   stock: "Stok Terbanyak",
   name: "Nama A-Z",
 };
+const SIZE_FILTER_OPTIONS = ["all", "S", "M", "L", "XL"];
 const SHOP_SECTION_SHELL = "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
 const SHOP_SECTION_LABEL = "text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600/80 dark:text-emerald-200/70";
 const PRODUCTS_PER_PAGE = 16;
@@ -394,7 +395,9 @@ function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
+  const [sizeFilter, setSizeFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
+  const [catalogFeedback, setCatalogFeedback] = useState("");
   const promoVideoSrc = normalizeYouTubeUrl(PROMO_VIDEO_URL);
   const [isPromoVideoActive, setIsPromoVideoActive] = useState(false);
   const [hasBootCache, setHasBootCache] = useState(() => Boolean(bootCache));
@@ -417,6 +420,7 @@ function ShopPage() {
   useEffect(() => {
     if (!isCartHydrated) return;
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+    window.dispatchEvent(new Event("cartUpdated"));
   }, [cartItems, isCartHydrated]);
 
   useEffect(() => {
@@ -580,6 +584,14 @@ function ShopPage() {
       nextProducts = nextProducts.filter((product) => Boolean(product.promoIsActive));
     }
 
+    if (sizeFilter !== "all") {
+      nextProducts = nextProducts.filter((product) =>
+        getAvailableSizes(product)
+          .map((size) => normalizeSizeLabel(size))
+          .includes(sizeFilter),
+      );
+    }
+
     nextProducts.sort((left, right) => {
       if (sortBy === "price-low") {
         return Number(left.finalPrice ?? left.basePrice ?? 0) - Number(right.finalPrice ?? right.basePrice ?? 0);
@@ -597,7 +609,7 @@ function ShopPage() {
     });
 
     return nextProducts;
-  }, [availabilityFilter, products, deferredSearch, sortBy]);
+  }, [availabilityFilter, products, deferredSearch, sizeFilter, sortBy]);
 
   const totalStockAll = useMemo(
     () => products.reduce((sum, product) => sum + getTotalStock(product), 0),
@@ -616,9 +628,21 @@ function ShopPage() {
     (total, item) => total + item.quantity,
     0,
   );
+  const catalogSummary = useMemo(
+    () => ({
+      ready: filteredProducts.filter((product) => getTotalStock(product) > 0).length,
+      promo: filteredProducts.filter((product) => Boolean(product.promoIsActive)).length,
+      lowStock: filteredProducts.filter((product) => {
+        const stock = getTotalStock(product);
+        return stock > 0 && stock < 6;
+      }).length,
+    }),
+    [filteredProducts],
+  );
   const availabilityLabel = AVAILABILITY_LABELS[availabilityFilter] || "Semua Produk";
   const sortLabel = SORT_LABELS[sortBy] || "Terbaru";
   const activeSearchLabel = deferredSearch.trim();
+  const sizeFilterLabel = sizeFilter === "all" ? "Semua ukuran" : `Size ${sizeFilter}`;
 
   const updateSelection = (productId, key, value) => {
     setSelections((previous) => ({
@@ -688,6 +712,8 @@ function ShopPage() {
         },
       ];
     });
+    setCatalogFeedback(`${product.name} size ${normalizeSizeLabel(size)} ditambahkan ke keranjang.`);
+    window.setTimeout(() => setCatalogFeedback(""), 2500);
   };
 
   const updateCartQuantity = (variantKey, nextQuantity) => {
@@ -904,6 +930,8 @@ function ShopPage() {
               <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
               <span>{availabilityLabel}</span>
               <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
+              <span>{sizeFilterLabel}</span>
+              <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
               <span>{sortLabel}</span>
               {activeSearchLabel && (
                 <>
@@ -1080,8 +1108,78 @@ function ShopPage() {
                 </div>
               </label>
             </div>
+
+            <div className="grid gap-4 rounded-[1.5rem] border border-brand-200/80 bg-white/[0.82] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    Filter Ukuran
+                  </p>
+                  <p className="mt-1 text-sm text-brand-600 dark:text-brand-300">
+                    Fokuskan katalog ke size yang benar-benar tersedia untuk dipakai sekarang.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {SIZE_FILTER_OPTIONS.map((sizeOption) => (
+                    <button
+                      key={sizeOption}
+                      type="button"
+                      onClick={() => setSizeFilter(sizeOption)}
+                      className={`min-h-[40px] rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                        sizeFilter === sizeOption
+                          ? "border-primary bg-primary text-white"
+                          : "border-brand-200 bg-white text-brand-700 hover:border-brand-300 hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                      }`}
+                    >
+                      {sizeOption === "all" ? "Semua" : sizeOption}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  {
+                    label: "Produk Siap",
+                    value: String(catalogSummary.ready),
+                    helper: "Masih ada stok aktif",
+                  },
+                  {
+                    label: "Sedang Promo",
+                    value: String(catalogSummary.promo),
+                    helper: "Harga spesial yang sedang berjalan",
+                  },
+                  {
+                    label: "Stok Menipis",
+                    value: String(catalogSummary.lowStock),
+                    helper: "Produk dengan stok kurang dari 6 pcs",
+                  },
+                ].map((card) => (
+                  <div
+                    key={card.label}
+                    className="rounded-[1.15rem] border border-brand-200/80 bg-brand-50/70 p-3 dark:border-brand-700 dark:bg-brand-900/30"
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                      {card.label}
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-brand-900 dark:text-white">
+                      {card.value}
+                    </p>
+                    <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                      {card.helper}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
         </div>
+
+        {catalogFeedback && (
+          <section className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300">
+            {catalogFeedback}
+          </section>
+        )}
 
         {isLoadingProducts && products.length === 0 ? (
           <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -1145,7 +1243,7 @@ function ShopPage() {
                   Semua produk sedang kosong. Pantau terus, kami akan restock segera.
                 </p>
               </>
-            ) : availabilityFilter !== "all" && !searchQuery.trim() ? (
+            ) : (availabilityFilter !== "all" || sizeFilter !== "all") && !searchQuery.trim() ? (
               <>
                 <h3 className="text-xl font-bold text-brand-900 dark:text-white">
                   Tidak ada produk sesuai filter
@@ -1197,105 +1295,175 @@ function ShopPage() {
             )}
             <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {filteredProducts.map((product, index) => {
-              const effectivePrice = Number(
-                product.finalPrice ?? product.basePrice ?? 0,
-              );
-              const totalStock = getTotalStock(product);
-              const ratingAverage = Number(product.ratingAverage || 0);
-              const ratingCount = Number(product.ratingCount || 0);
-              const availableSizes = getAvailableSizes(product).map((size) => normalizeSizeLabel(size));
-              const availableSizePreview = availableSizes.length > 0
-                ? availableSizes.slice(0, 3).join(" / ")
-                : "Akan hadir";
-              const stockToneClass = totalStock <= 0
-                ? "text-rose-600 dark:text-rose-300"
-                : totalStock < 6
-                  ? "text-amber-700 dark:text-amber-300"
-                  : "text-emerald-700 dark:text-emerald-300";
-              const stockLabel = totalStock <= 0
-                ? "Habis"
-                : totalStock < 6
-                  ? `Sisa ${totalStock}`
-                  : `${totalStock} pcs`;
-              const compactMeta = `${availableSizes.length > 0 ? `Ukuran ${availableSizePreview}` : "Ukuran menyusul"}${product.color ? ` · ${product.color}` : ""}`;
+                const effectivePrice = Number(
+                  product.finalPrice ?? product.basePrice ?? 0,
+                );
+                const totalStock = getTotalStock(product);
+                const ratingAverage = Number(product.ratingAverage || 0);
+                const ratingCount = Number(product.ratingCount || 0);
+                const availableSizes = getAvailableSizes(product).map((size) => normalizeSizeLabel(size));
+                const availableSizePreview = availableSizes.length > 0
+                  ? availableSizes.slice(0, 3).join(" / ")
+                  : "Akan hadir";
+                const stockToneClass = totalStock <= 0
+                  ? "text-rose-600 dark:text-rose-300"
+                  : totalStock < 6
+                    ? "text-amber-700 dark:text-amber-300"
+                    : "text-emerald-700 dark:text-emerald-300";
+                const stockLabel = totalStock <= 0
+                  ? "Habis"
+                  : totalStock < 6
+                    ? `Sisa ${totalStock}`
+                    : `${totalStock} pcs`;
+                const compactMeta = `${availableSizes.length > 0 ? `Ukuran ${availableSizePreview}` : "Ukuran menyusul"}${product.color ? ` · ${product.color}` : ""}`;
+                const selection = selections[product.id] || {
+                  size: getDefaultSize(product),
+                  quantity: 1,
+                };
+                const selectedSize = selection.size || getDefaultSize(product);
+                const selectedSizeStock = getStockForSize(product, selectedSize);
 
-              return (
-                <Link
-                  key={product.id}
-                  to={`/shop/${product.slug}`}
-                  className="product-card group card-soft flex flex-col overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_28px_60px_rgba(15,23,42,0.12)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]"
-                >
-                  <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] p-2.5 dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:p-3">
-                    <div className="pointer-events-none absolute inset-2.5 rounded-[1.2rem] border border-emerald-950/[0.08] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:border-emerald-900/30 dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))]" />
-                    <img
-                      src={resolveStoreImageUrl(product.imageUrl)}
-                      alt={product.name}
-                      width="800"
-                      height="800"
-                      sizes="(min-width: 1280px) 18vw, (min-width: 1024px) 22vw, (min-width: 768px) 30vw, 50vw"
-                      loading={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "eager" : "lazy"}
-                      fetchPriority={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "high" : "low"}
-                      decoding="async"
-                      className="image-soft relative z-[1] h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
-                      onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
-                      onError={(event) => event.currentTarget.classList.add("is-loaded")}
-                    />
-                  </div>
-                  <div className="flex flex-1 flex-col gap-3 p-3.5 sm:p-4.5">
-                    <div className="space-y-1.5">
-                      <h3 className="text-sm font-bold leading-snug text-brand-900 transition-colors group-hover:text-primary dark:text-white sm:text-base">
-                        {product.name}
-                      </h3>
-                      <p className="line-clamp-1 text-[11px] leading-5 text-brand-500 dark:text-brand-400 sm:line-clamp-2 sm:text-xs">
-                        {compactMeta}
-                      </p>
-                    </div>
-                    {ratingCount > 0 && (
-                      <div className="hidden items-center gap-1.5 text-[11px] text-brand-500 dark:text-brand-400 sm:flex sm:text-xs">
-                        <div className="flex items-center gap-0.5">
-                          {renderStars(ratingAverage, "text-[10px]")}
-                        </div>
-                        <span>{ratingAverage.toFixed(1)} ({ratingCount})</span>
-                      </div>
-                    )}
-
-                    <div className="mt-auto flex items-end justify-between gap-3 border-t border-brand-100 pt-3 dark:border-brand-800">
-                      <div className="min-w-0">
-                        {product.verse && (
-                          <p className="mb-1 hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400 sm:block">
-                            {product.verse}
-                          </p>
-                        )}
-                        <div>
-                          {product.promoIsActive &&
-                          Number(product.discountAmount) > 0 ? (
-                            <div className="flex flex-col">
-                              <span className="text-[11px] text-brand-500 line-through dark:text-brand-400 sm:text-xs">
-                                {formatRupiah(Number(product.basePrice) || 0)}
-                              </span>
-                              <span className="text-base font-black text-rose-500 sm:text-[1.05rem]">
-                                {formatRupiah(effectivePrice)}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-base font-black text-brand-900 dark:text-white sm:text-[1.05rem]">
-                              {formatRupiah(effectivePrice)}
+                return (
+                  <article
+                    key={product.id}
+                    className="product-card group card-soft flex flex-col overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_28px_60px_rgba(15,23,42,0.12)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]"
+                  >
+                    <Link
+                      to={`/shop/${product.slug}`}
+                      className="flex flex-1 flex-col"
+                    >
+                      <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] p-2.5 dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:p-3">
+                        <div className="pointer-events-none absolute inset-2.5 rounded-[1.2rem] border border-emerald-950/[0.08] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:border-emerald-900/30 dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))]" />
+                        <div className="absolute left-4 top-4 z-[2] flex flex-wrap gap-2">
+                          {product.promoIsActive && (
+                            <span className="rounded-full bg-rose-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
+                              Promo
+                            </span>
+                          )}
+                          {totalStock > 0 && totalStock < 6 && (
+                            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                              Hampir Habis
                             </span>
                           )}
                         </div>
+                        <img
+                          src={resolveStoreImageUrl(product.imageUrl)}
+                          alt={product.name}
+                          width="800"
+                          height="800"
+                          sizes="(min-width: 1280px) 18vw, (min-width: 1024px) 22vw, (min-width: 768px) 30vw, 50vw"
+                          loading={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "eager" : "lazy"}
+                          fetchPriority={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "high" : "low"}
+                          decoding="async"
+                          className="image-soft relative z-[1] h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                          onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
+                          onError={(event) => event.currentTarget.classList.add("is-loaded")}
+                        />
                       </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                          Stok
+                      <div className="flex flex-1 flex-col gap-3 p-3.5 sm:p-4.5">
+                        <div className="space-y-1.5">
+                          <h3 className="text-sm font-bold leading-snug text-brand-900 transition-colors group-hover:text-primary dark:text-white sm:text-base">
+                            {product.name}
+                          </h3>
+                          <p className="line-clamp-1 text-[11px] leading-5 text-brand-500 dark:text-brand-400 sm:line-clamp-2 sm:text-xs">
+                            {compactMeta}
+                          </p>
+                        </div>
+                        {ratingCount > 0 && (
+                          <div className="hidden items-center gap-1.5 text-[11px] text-brand-500 dark:text-brand-400 sm:flex sm:text-xs">
+                            <div className="flex items-center gap-0.5">
+                              {renderStars(ratingAverage, "text-[10px]")}
+                            </div>
+                            <span>{ratingAverage.toFixed(1)} ({ratingCount})</span>
+                          </div>
+                        )}
+
+                        <div className="mt-auto flex items-end justify-between gap-3 border-t border-brand-100 pt-3 dark:border-brand-800">
+                          <div className="min-w-0">
+                            {product.verse && (
+                              <p className="mb-1 hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400 sm:block">
+                                {product.verse}
+                              </p>
+                            )}
+                            <div>
+                              {product.promoIsActive &&
+                              Number(product.discountAmount) > 0 ? (
+                                <div className="flex flex-col">
+                                  <span className="text-[11px] text-brand-500 line-through dark:text-brand-400 sm:text-xs">
+                                    {formatRupiah(Number(product.basePrice) || 0)}
+                                  </span>
+                                  <span className="text-base font-black text-rose-500 sm:text-[1.05rem]">
+                                    {formatRupiah(effectivePrice)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-base font-black text-brand-900 dark:text-white sm:text-[1.05rem]">
+                                  {formatRupiah(effectivePrice)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                              Stok
+                            </p>
+                            <p className={`mt-1 text-sm font-semibold ${stockToneClass}`}>
+                              {stockLabel}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+
+                    <div className="border-t border-brand-100 px-3.5 pb-3.5 pt-3 dark:border-brand-800 sm:px-4.5 sm:pb-4.5">
+                      <div className="flex flex-wrap gap-2">
+                        {availableSizes.length > 0 ? (
+                          availableSizes.slice(0, 4).map((size) => (
+                            <button
+                              key={`${product.id}-${size}`}
+                              type="button"
+                              onClick={() => updateSelection(product.id, "size", size)}
+                              className={`min-h-[36px] rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
+                                selectedSize === size
+                                  ? "border-primary bg-primary text-white"
+                                  : "border-brand-200 bg-white text-brand-700 hover:border-brand-300 hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                              }`}
+                            >
+                              {size}
+                            </button>
+                          ))
+                        ) : (
+                          <span className="text-xs text-brand-500 dark:text-brand-400">
+                            Ukuran belum tersedia
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                          {selectedSizeStock > 0
+                            ? `Size ${selectedSize} tersedia ${selectedSizeStock} pcs`
+                            : "Pilih detail produk untuk melihat batch berikutnya"}
                         </p>
-                        <p className={`mt-1 text-sm font-semibold ${stockToneClass}`}>
-                          {stockLabel}
-                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => addToCart(product)}
+                            disabled={selectedSizeStock <= 0}
+                            className="inline-flex min-h-[40px] items-center justify-center rounded-[1rem] bg-primary px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-primary/90 disabled:opacity-50"
+                          >
+                            Tambah
+                          </button>
+                          <Link
+                            to={`/shop/${product.slug}`}
+                            className="inline-flex min-h-[40px] items-center justify-center rounded-[1rem] border border-brand-200 bg-white px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                          >
+                            Detail
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              );
+                  </article>
+                );
               })}
             </div>
             {productLoadError && filteredProducts.length === 0 && (

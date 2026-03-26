@@ -13,9 +13,18 @@ import { clampQuantity, getStockForSize } from "../utils/storeStock";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const TRACKING_STORAGE_KEY = "gpt_tanjungpriok_last_order_tracking_v1";
+const CHECKOUT_DRAFT_STORAGE_KEY = "gpt_tanjungpriok_checkout_draft_v1";
 const DEFAULT_SHIPPING_COST = 15000;
 const CART_SECTION_SHELL = "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
 const CART_LABEL = "text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600/80 dark:text-emerald-200/70";
+const DEFAULT_CHECKOUT_FORM = {
+  name: "",
+  phone: "",
+  address: "",
+  shippingMethod: "Kurir Jabodetabek",
+  paymentMethod: "Transfer Bank",
+  notes: "",
+};
 
 const formatRupiah = (amount) =>
   new Intl.NumberFormat("id-ID", {
@@ -184,6 +193,20 @@ function normalizeCartItem(item = {}) {
   };
 }
 
+function readCheckoutDraft() {
+  if (typeof window === "undefined") return { ...DEFAULT_CHECKOUT_FORM };
+
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(CHECKOUT_DRAFT_STORAGE_KEY) || "null");
+    return {
+      ...DEFAULT_CHECKOUT_FORM,
+      ...(saved && typeof saved === "object" ? saved : {}),
+    };
+  } catch {
+    return { ...DEFAULT_CHECKOUT_FORM };
+  }
+}
+
 function CartPage() {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState(() => readInitialCartItems());
@@ -198,15 +221,9 @@ function CartPage() {
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutInfo, setCheckoutInfo] = useState("");
   const [latestOrderCode, setLatestOrderCode] = useState("");
+  const [latestOrderPhone, setLatestOrderPhone] = useState("");
   const [checkoutFieldErrors, setCheckoutFieldErrors] = useState({});
-  const [checkoutForm, setCheckoutForm] = useState({
-    name: "",
-    phone: "",
-    address: "",
-    shippingMethod: "Kurir Jabodetabek",
-    paymentMethod: "Transfer Bank",
-    notes: "",
-  });
+  const [checkoutForm, setCheckoutForm] = useState(() => readCheckoutDraft());
   const nameInputRef = useRef(null);
   const phoneInputRef = useRef(null);
   const addressInputRef = useRef(null);
@@ -215,6 +232,10 @@ function CartPage() {
     const normalizedItems = readInitialCartItems();
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(normalizedItems));
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(CHECKOUT_DRAFT_STORAGE_KEY, JSON.stringify(checkoutForm));
+  }, [checkoutForm]);
 
   // Load shipping cost from store settings (public meta)
   useEffect(() => {
@@ -241,11 +262,45 @@ function CartPage() {
   const subtotal = useMemo(() => {
     return selectedItemsList.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [selectedItemsList]);
+  const selectedUnits = useMemo(
+    () => selectedItemsList.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0),
+    [selectedItemsList],
+  );
 
   const isPickupAtChurch = checkoutForm.shippingMethod.toLowerCase().includes("ambil");
   const shipping = selectedItemsList.length > 0 ? (isPickupAtChurch ? 0 : shippingCost) : 0;
   const grandTotal = subtotal + shipping;
   const selectedCount = selectedItemsList.length;
+  const checkoutAddressLabel = isPickupAtChurch
+    ? "Catatan Pickup"
+    : "Alamat Pengiriman";
+  const checkoutAddressPlaceholder = isPickupAtChurch
+    ? "Opsional: patokan, jadwal hadir, atau nama penerima"
+    : "Alamat lengkap pengiriman";
+  const checkoutAddressHelper = isPickupAtChurch
+    ? "Kosongkan bila langsung ambil di gereja. Sistem akan menandai order ini sebagai pickup."
+    : "Tulis alamat yang jelas agar admin mudah menyiapkan pengiriman.";
+  const checkoutActionLabel = isPickupAtChurch
+    ? "Checkout Pickup & Konfirmasi"
+    : "Checkout & Konfirmasi WhatsApp";
+  const shippingMethodHelper = isPickupAtChurch
+    ? "Pickup di gereja, ongkir gratis."
+    : `Kurir Jabodetabek, ongkir ${formatRupiah(shippingCost)}.`;
+
+  useEffect(() => {
+    if (!isPickupAtChurch) return;
+
+    setCheckoutFieldErrors((previous) => {
+      if (!previous.address) return previous;
+      const next = { ...previous };
+      delete next.address;
+      return next;
+    });
+
+    setCheckoutError((previous) =>
+      previous === "Alamat wajib diisi" ? "" : previous,
+    );
+  }, [isPickupAtChurch]);
 
   // Toggle item selection
   const toggleItemSelect = (index) => {
@@ -330,13 +385,15 @@ function CartPage() {
     }
 
     const nextErrors = {};
+    const normalizedAddress = checkoutForm.address.trim();
+    const fallbackPickupAddress = "Ambil di Gereja GPT Tanjung Priok";
     if (!checkoutForm.name.trim()) {
       nextErrors.name = "Nama lengkap wajib diisi";
     }
     if (!checkoutForm.phone.trim()) {
       nextErrors.phone = "No. WhatsApp wajib diisi";
     }
-    if (!checkoutForm.address.trim()) {
+    if (!isPickupAtChurch && !normalizedAddress) {
       nextErrors.address = "Alamat wajib diisi";
     }
     if (Object.keys(nextErrors).length > 0) {
@@ -374,7 +431,7 @@ function CartPage() {
       const payload = {
         name: checkoutForm.name.trim(),
         phone: checkoutForm.phone.trim(),
-        address: checkoutForm.address.trim(),
+        address: isPickupAtChurch ? normalizedAddress || fallbackPickupAddress : normalizedAddress,
         shippingMethod: checkoutForm.shippingMethod,
         paymentMethod: checkoutForm.paymentMethod,
         notes: checkoutForm.notes.trim(),
@@ -397,10 +454,11 @@ function CartPage() {
 
       setCheckoutInfo(
         orderCode
-          ? `Pesanan ${orderCode} berhasil dibuat. Lanjutkan konfirmasi via WhatsApp. Estimasi pre-order 5 hari kerja.`
-          : "Pesanan berhasil dibuat. Lanjutkan konfirmasi via WhatsApp. Estimasi pre-order 5 hari kerja.",
+          ? `Pesanan ${orderCode} berhasil dibuat. ${isPickupAtChurch ? "Order ditandai pickup di gereja." : "Order siap lanjut ke konfirmasi via WhatsApp."} Estimasi pre-order 5 hari kerja.`
+          : `Pesanan berhasil dibuat. ${isPickupAtChurch ? "Order ditandai pickup di gereja." : "Lanjutkan konfirmasi via WhatsApp."} Estimasi pre-order 5 hari kerja.`,
       );
       setLatestOrderCode(orderCode || "");
+      setLatestOrderPhone(checkoutForm.phone.trim());
       window.localStorage.setItem(
         TRACKING_STORAGE_KEY,
         JSON.stringify({
@@ -408,6 +466,11 @@ function CartPage() {
           phone: checkoutForm.phone.trim(),
         }),
       );
+      setCheckoutForm((previous) => ({
+        ...previous,
+        address: isPickupAtChurch ? "" : previous.address,
+        notes: "",
+      }));
 
       if (whatsappLink) {
         window.open(whatsappLink, "_blank", "noopener,noreferrer");
@@ -497,7 +560,7 @@ function CartPage() {
               {formatRupiah(grandTotal)}
             </p>
             <p className="text-[11px] text-brand-500 dark:text-brand-400">
-              {selectedCount} item • Ongkir {shipping > 0 ? formatRupiah(shipping) : "Gratis"}
+              {selectedUnits} pcs • Ongkir {shipping > 0 ? formatRupiah(shipping) : "Gratis"}
             </p>
           </div>
           <span className="rounded-full border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
@@ -510,7 +573,7 @@ function CartPage() {
           disabled={isSubmittingOrder || selectedCount === 0}
           className="btn-primary min-h-[44px] w-full !rounded-[1rem] !px-4 !py-2.5 text-sm font-semibold disabled:opacity-60"
         >
-          {isSubmittingOrder ? "Processing..." : "Checkout WhatsApp"}
+          {isSubmittingOrder ? "Processing..." : checkoutActionLabel}
         </button>
       </div>
     </div>
@@ -794,12 +857,12 @@ function CartPage() {
 
                 <label className="space-y-1.5 lg:col-span-2">
                   <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                    Alamat Pengiriman
+                    {checkoutAddressLabel}
                   </span>
                   <div className="input-leading-shell input-leading-shell-textarea">
                     <AddressFieldIcon className="input-leading-icon" />
                     <textarea
-                      placeholder="Alamat lengkap pengiriman"
+                      placeholder={checkoutAddressPlaceholder}
                       ref={addressInputRef}
                       className={`input-modern min-h-[120px] resize-y ${checkoutFieldErrors.address ? "input-error" : ""}`}
                       value={checkoutForm.address}
@@ -807,6 +870,9 @@ function CartPage() {
                       aria-invalid={Boolean(checkoutFieldErrors.address)}
                     />
                   </div>
+                  <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                    {checkoutAddressHelper}
+                  </p>
                   {checkoutFieldErrors.address && (
                     <p className="text-[11px] font-semibold text-rose-500">
                       {checkoutFieldErrors.address}
@@ -831,6 +897,9 @@ function CartPage() {
                       </select>
                       <SelectChevronIcon className="input-trailing-icon" />
                     </div>
+                    <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                      {shippingMethodHelper}
+                    </p>
                   </label>
 
                   <label className="space-y-1.5">
@@ -851,6 +920,33 @@ function CartPage() {
                       <SelectChevronIcon className="input-trailing-icon" />
                     </div>
                   </label>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3 lg:col-span-2">
+                  <div className="rounded-[1.15rem] border border-brand-200/80 bg-brand-50/70 p-3 dark:border-brand-700 dark:bg-brand-900/30">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                      Barang Dipilih
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
+                      {selectedCount} varian • {selectedUnits} pcs
+                    </p>
+                  </div>
+                  <div className="rounded-[1.15rem] border border-brand-200/80 bg-brand-50/70 p-3 dark:border-brand-700 dark:bg-brand-900/30">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                      Pengiriman
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
+                      {isPickupAtChurch ? "Pickup di Gereja" : "Kurir Jabodetabek"}
+                    </p>
+                  </div>
+                  <div className="rounded-[1.15rem] border border-brand-200/80 bg-brand-50/70 p-3 dark:border-brand-700 dark:bg-brand-900/30">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                      Pembayaran
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
+                      {checkoutForm.paymentMethod}
+                    </p>
+                  </div>
                 </div>
 
                 <label className="space-y-1.5 lg:col-span-2">
@@ -875,7 +971,7 @@ function CartPage() {
                 disabled={isSubmittingOrder || selectedCount === 0}
                 className="checkout-desktop btn-primary mt-5 hidden w-full items-center justify-center !rounded-[1.2rem] !px-4 !py-3 text-white disabled:opacity-50 sm:inline-flex"
               >
-                {isSubmittingOrder ? "Processing..." : "Checkout & Konfirmasi WhatsApp"}
+                {isSubmittingOrder ? "Processing..." : checkoutActionLabel}
               </button>
               <p className="mt-3 text-[11px] text-brand-500 dark:text-brand-400 sm:hidden">
                 Gunakan tombol checkout di bar bawah untuk menyimpan order dan lanjut ke WhatsApp.
@@ -893,7 +989,7 @@ function CartPage() {
 
                 {latestOrderCode && (
                   <Link
-                    to={`/track-order?orderCode=${encodeURIComponent(latestOrderCode)}`}
+                    to={`/track-order?orderCode=${encodeURIComponent(latestOrderCode)}&phone=${encodeURIComponent(latestOrderPhone || checkoutForm.phone.trim())}`}
                     className="inline-flex w-full items-center justify-center rounded-[1.1rem] border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/15 sm:w-auto"
                   >
                     Lacak Status Pesanan
@@ -917,7 +1013,7 @@ function CartPage() {
 
               <div className="space-y-3 rounded-[1.5rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-brand-600 dark:text-brand-300">Subtotal ({selectedCount} item)</span>
+                  <span className="text-brand-600 dark:text-brand-300">Subtotal ({selectedUnits} pcs)</span>
                   <span className="font-semibold text-brand-900 dark:text-white">
                     {formatRupiah(subtotal)}
                   </span>
@@ -929,6 +1025,20 @@ function CartPage() {
                   </span>
                 </div>
                 <div className="h-px bg-brand-200 dark:bg-brand-700" />
+                <div className="grid gap-2 rounded-[1.1rem] border border-brand-200/80 bg-brand-50/70 p-3 text-sm dark:border-brand-700 dark:bg-brand-900/30">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-brand-500 dark:text-brand-400">Pengiriman</span>
+                    <span className="font-semibold text-brand-900 dark:text-white">
+                      {checkoutForm.shippingMethod}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-brand-500 dark:text-brand-400">Pembayaran</span>
+                    <span className="font-semibold text-brand-900 dark:text-white">
+                      {checkoutForm.paymentMethod}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex items-end justify-between gap-3">
                   <span className="text-base font-semibold text-brand-900 dark:text-white">Total</span>
                   <span className="text-[2rem] font-semibold tracking-[-0.04em] text-primary">
@@ -939,7 +1049,9 @@ function CartPage() {
 
               <div className="space-y-3">
                 <p className="rounded-[1.2rem] border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm leading-6 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
-                  Lengkapi data checkout di bawah daftar produk, lalu lanjutkan ke konfirmasi WhatsApp.
+                  {isPickupAtChurch
+                    ? "Pickup diproses tanpa ongkir. Anda tetap akan menerima kode order dan bisa lanjut konfirmasi via WhatsApp."
+                    : "Lengkapi data checkout di bawah daftar produk, lalu lanjutkan ke konfirmasi WhatsApp."}
                 </p>
 
                 <div className="grid gap-3">

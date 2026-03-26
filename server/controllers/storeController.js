@@ -1101,11 +1101,15 @@ async function createOrder(req, res, next) {
     }
 
     const shippingMethod = String(req.body.shippingMethod || 'Kurir').trim();
+    const isPickupOrder = shippingMethod.toLowerCase().includes('ambil');
     const baseShippingCost = Number(settings.shippingCost) || DEFAULT_SHIPPING_COST;
-    const shippingCost = shippingMethod.toLowerCase().includes('ambil')
+    const shippingCost = isPickupOrder
       ? 0
       : baseShippingCost;
     const totalAmount = subtotal + shippingCost;
+    const customerAddress = isPickupOrder
+      ? String(req.body.address || '').trim() || 'Ambil di Gereja GPT Tanjung Priok'
+      : String(req.body.address || '').trim();
 
     const orderCode = await generateOrderCode(transaction);
     const order = await StoreOrder.create({
@@ -1113,7 +1117,7 @@ async function createOrder(req, res, next) {
       userId: req.user?.id || null,
       customerName: String(req.body.name || '').trim(),
       customerPhone: normalizePhone(req.body.phone),
-      customerAddress: String(req.body.address || '').trim(),
+      customerAddress,
       shippingMethod,
       paymentMethod: String(req.body.paymentMethod || 'Transfer Bank').trim(),
       notes: req.body.notes ? String(req.body.notes).trim() : null,

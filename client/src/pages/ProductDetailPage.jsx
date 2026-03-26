@@ -327,6 +327,43 @@ const DETAIL_BENEFITS = [
     Icon: DeliveryBadgeIcon,
   },
 ];
+const DETAIL_PURCHASE_POINTS = [
+  {
+    key: "pickup",
+    label: "Pickup",
+    title: "Bisa ambil di gereja",
+    description: "Tidak kena ongkir dan order tetap punya kode tracking.",
+  },
+  {
+    key: "shipping",
+    label: "Kurir",
+    title: "Kurir Jabodetabek",
+    description: "Ongkir dihitung saat checkout dan tetap bisa dipantau statusnya.",
+  },
+  {
+    key: "timeline",
+    label: "Proses",
+    title: "Estimasi 5 hari kerja",
+    description: "Batch produksi dan packing berjalan setelah order dikonfirmasi.",
+  },
+];
+const DETAIL_FAQS = [
+  {
+    key: "size",
+    question: "Kalau ukuran yang dipilih habis bagaimana?",
+    answer: "Pilih size lain yang masih tersedia. Jika butuh ukuran tertentu, cek kembali batch berikutnya atau pantau katalog dari halaman shop.",
+  },
+  {
+    key: "pickup",
+    question: "Bisa pickup tanpa isi alamat detail?",
+    answer: "Bisa. Saat checkout pilih `Ambil di Gereja`, lalu alamat bisa dikosongkan atau diisi catatan pickup seperlunya.",
+  },
+  {
+    key: "tracking",
+    question: "Setelah checkout saya cek status di mana?",
+    answer: "Setelah order dibuat, Anda dapat buka `Pesanan Saya` atau halaman `Lacak Pesanan` memakai kode order dan nomor WhatsApp.",
+  },
+];
 
 const SkeletonBlock = ({ className = "" }) => (
   <div
@@ -1595,6 +1632,31 @@ function ProductDetailPage() {
                 )}
               </div>
 
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[1.15rem] border border-brand-200/80 bg-brand-50/70 p-3 dark:border-brand-700 dark:bg-brand-900/30">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    Rating
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-brand-950 dark:text-white">
+                    {ratingCount > 0 ? `${ratingAverage.toFixed(1)} / 5` : "Belum ada ulasan"}
+                  </p>
+                  <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                    {ratingCount > 0 ? `${ratingCount} ulasan pembeli` : "Jadilah pembeli pertama yang menilai"}
+                  </p>
+                </div>
+                <div className="rounded-[1.15rem] border border-brand-200/80 bg-brand-50/70 p-3 dark:border-brand-700 dark:bg-brand-900/30">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    Stok Aktif
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-brand-950 dark:text-white">
+                    {totalStock > 0 ? `${totalStock} pcs ready` : "Stok sedang habis"}
+                  </p>
+                  <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                    {readySizeCount} dari {sizes.length} ukuran masih tersedia
+                  </p>
+                </div>
+              </div>
+
               <div className="max-w-xl border-b border-brand-200/70 pb-4 dark:border-brand-800">
                 <button
                   type="button"
@@ -1704,6 +1766,25 @@ function ProductDetailPage() {
               </div>
             </div>
 
+            <div className="grid gap-3 border-t border-brand-200/70 pt-5 dark:border-brand-800 sm:grid-cols-3">
+              {DETAIL_PURCHASE_POINTS.map((item) => (
+                <article
+                  key={item.key}
+                  className="rounded-[1.15rem] border border-brand-200/80 bg-brand-50/70 p-3 dark:border-brand-700 dark:bg-brand-900/30"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    {item.label}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-brand-950 dark:text-white">
+                    {item.title}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-brand-500 dark:text-brand-400">
+                    {item.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+
             {feedback && (
               <div
                 className={`rounded-[1rem] border px-4 py-3 text-sm font-medium ${
@@ -1808,6 +1889,32 @@ function ProductDetailPage() {
                   Ukuran di atas XL tersedia dengan alur preorder.
                 </p>
               )}
+            </div>
+
+            <div className="mt-6 space-y-3 border-t border-brand-200/70 pt-5 dark:border-brand-800">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-brand-500 dark:text-brand-400">
+                  FAQ Singkat
+                </p>
+                <h3 className="mt-2 text-xl font-semibold tracking-[-0.04em] text-brand-950 dark:text-white">
+                  Pertanyaan yang paling sering muncul sebelum checkout
+                </h3>
+              </div>
+              <div className="grid gap-3">
+                {DETAIL_FAQS.map((item) => (
+                  <article
+                    key={item.key}
+                    className="rounded-[1.15rem] border border-brand-200/80 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-950/20"
+                  >
+                    <p className="text-sm font-semibold text-brand-950 dark:text-white">
+                      {item.question}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-brand-600 dark:text-brand-300">
+                      {item.answer}
+                    </p>
+                  </article>
+                ))}
+              </div>
             </div>
           </article>
 

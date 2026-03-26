@@ -15,7 +15,12 @@ const ORDER_STATUSES = [
 const createOrderValidation = [
   body('name').trim().notEmpty().withMessage('Nama pemesan wajib diisi'),
   body('phone').trim().notEmpty().withMessage('Nomor WhatsApp wajib diisi'),
-  body('address').trim().notEmpty().withMessage('Alamat pengiriman wajib diisi'),
+  body('address').custom((value, { req }) => {
+    const shippingMethod = String(req.body.shippingMethod || '').toLowerCase();
+    if (shippingMethod.includes('ambil')) return true;
+    if (String(value || '').trim()) return true;
+    throw new Error('Alamat pengiriman wajib diisi');
+  }),
   body('shippingMethod').optional().trim().isLength({ min: 2 }).withMessage('Metode pengiriman tidak valid'),
   body('paymentMethod').optional().trim().isLength({ min: 2 }).withMessage('Metode pembayaran tidak valid'),
   body('notes').optional().isString().withMessage('Catatan tidak valid'),
