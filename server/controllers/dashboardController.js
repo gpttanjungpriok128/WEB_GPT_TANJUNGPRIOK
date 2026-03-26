@@ -15,11 +15,35 @@ const {
   buildLowStockProducts,
   buildExcerpt
 } = require('../utils/dashboard');
+const { isMissingRelationError } = require('../utils/database');
 
 async function getDashboardStats(req, res, next) {
   try {
     const recentWindowStart = new Date();
     recentWindowStart.setDate(recentWindowStart.getDate() - 7);
+
+    let unreadContactMessages = 0;
+    let contactMessages = 0;
+    let contactInbox = [];
+
+    try {
+      [unreadContactMessages, contactMessages, contactInbox] = await Promise.all([
+        ContactMessage.count({ where: { isRead: false } }),
+        ContactMessage.count(),
+        ContactMessage.findAll({
+          attributes: ['id', 'name', 'email', 'subject', 'message', 'isRead', 'createdAt'],
+          order: [
+            ['isRead', 'ASC'],
+            ['createdAt', 'DESC']
+          ],
+          limit: 5
+        })
+      ]);
+    } catch (error) {
+      if (!isMissingRelationError(error, ContactMessage.getTableName())) {
+        throw error;
+      }
+    }
 
     const [
       users,
@@ -28,8 +52,6 @@ async function getDashboardStats(req, res, next) {
       draftArticles,
       galleries,
       unreadPrayerRequests,
-      unreadContactMessages,
-      contactMessages,
       schedules,
       congregationMembers,
       newCongregationMembers,
@@ -41,7 +63,6 @@ async function getDashboardStats(req, res, next) {
       recentOrders,
       pendingArticleList,
       prayerInbox,
-      contactInbox,
       recentMembers,
       activeProducts
     ] = await Promise.all([
@@ -51,8 +72,6 @@ async function getDashboardStats(req, res, next) {
       Article.count({ where: { status: 'draft' } }),
       Gallery.count(),
       PrayerRequest.count({ where: { isRead: false } }),
-      ContactMessage.count({ where: { isRead: false } }),
-      ContactMessage.count(),
       Schedule.count(),
       CongregationMember.count(),
       CongregationMember.count({ where: { createdAt: { [Op.gte]: recentWindowStart } } }),
@@ -81,14 +100,6 @@ async function getDashboardStats(req, res, next) {
       }),
       PrayerRequest.findAll({
         attributes: ['id', 'name', 'request', 'isRead', 'createdAt'],
-        order: [
-          ['isRead', 'ASC'],
-          ['createdAt', 'DESC']
-        ],
-        limit: 5
-      }),
-      ContactMessage.findAll({
-        attributes: ['id', 'name', 'email', 'subject', 'message', 'isRead', 'createdAt'],
         order: [
           ['isRead', 'ASC'],
           ['createdAt', 'DESC']

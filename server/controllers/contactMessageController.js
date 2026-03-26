@@ -1,5 +1,10 @@
 const { ContactMessage } = require('../models');
 const { sendContactMessageNotification } = require('../services/emailService');
+const { isMissingRelationError } = require('../utils/database');
+
+function getContactFeatureUnavailableMessage() {
+  return 'Inbox kontak belum siap di server. Sementara gunakan WhatsApp atau email yang tersedia di halaman kontak.';
+}
 
 async function createContactMessage(req, res, next) {
   try {
@@ -21,6 +26,10 @@ async function createContactMessage(req, res, next) {
       }
     });
   } catch (error) {
+    if (isMissingRelationError(error, ContactMessage.getTableName())) {
+      return res.status(503).json({ message: getContactFeatureUnavailableMessage() });
+    }
+
     return next(error);
   }
 }
@@ -36,6 +45,10 @@ async function getContactMessages(req, res, next) {
 
     return res.status(200).json(data);
   } catch (error) {
+    if (isMissingRelationError(error, ContactMessage.getTableName())) {
+      return res.status(503).json({ message: getContactFeatureUnavailableMessage() });
+    }
+
     return next(error);
   }
 }
@@ -57,6 +70,10 @@ async function markContactMessageRead(req, res, next) {
       data: contactMessage
     });
   } catch (error) {
+    if (isMissingRelationError(error, ContactMessage.getTableName())) {
+      return res.status(503).json({ message: getContactFeatureUnavailableMessage() });
+    }
+
     return next(error);
   }
 }
