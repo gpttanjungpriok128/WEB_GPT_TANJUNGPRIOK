@@ -1727,7 +1727,7 @@ function ProductDetailPage() {
                 </div>
               </div>
 
-              <div className="max-w-xl border-b border-brand-200/70 pb-4 dark:border-brand-800">
+              <div className="max-w-xl pb-4">
                 <button
                   type="button"
                   onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}

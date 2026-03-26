@@ -570,17 +570,6 @@ function ShopPage() {
     (total, item) => total + item.quantity,
     0,
   );
-  const catalogSummary = useMemo(
-    () => ({
-      ready: filteredProducts.filter((product) => getTotalStock(product) > 0).length,
-      promo: filteredProducts.filter((product) => Boolean(product.promoIsActive)).length,
-      lowStock: filteredProducts.filter((product) => {
-        const stock = getTotalStock(product);
-        return stock > 0 && stock < 6;
-      }).length,
-    }),
-    [filteredProducts],
-  );
   const availabilityLabel = AVAILABILITY_LABELS[availabilityFilter] || "Semua Produk";
   const sortLabel = SORT_LABELS[sortBy] || "Terbaru";
   const activeSearchLabel = deferredSearch.trim();
@@ -949,50 +938,6 @@ function ShopPage() {
               </label>
             </div>
 
-            <div className="grid gap-4 rounded-[1.5rem] border border-brand-200/80 bg-white/[0.82] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                  Ringkasan Katalog
-                </p>
-                <p className="mt-1 text-sm text-brand-600 dark:text-brand-300">
-                  Fokus ke produk siap, promo aktif, dan stok yang mulai menipis.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {[
-                  {
-                    label: "Produk Siap",
-                    value: String(catalogSummary.ready),
-                    helper: "Masih ada stok aktif",
-                  },
-                  {
-                    label: "Sedang Promo",
-                    value: String(catalogSummary.promo),
-                    helper: "Harga spesial yang sedang berjalan",
-                  },
-                  {
-                    label: "Stok Menipis",
-                    value: String(catalogSummary.lowStock),
-                    helper: "Produk dengan stok kurang dari 6 pcs",
-                  },
-                ].map((card) => (
-                  <div
-                    key={card.label}
-                    className="rounded-[1.15rem] border border-brand-200/80 bg-brand-50/70 p-3 dark:border-brand-700 dark:bg-brand-900/30"
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                      {card.label}
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-brand-900 dark:text-white">
-                      {card.value}
-                    </p>
-                    <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
-                      {card.helper}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
           </section>
         </div>
 
@@ -1170,7 +1115,7 @@ function ShopPage() {
                           </div>
                         </div>
 
-                        <div className="mt-auto grid grid-cols-2 gap-3 border-t border-brand-100 pt-3 dark:border-brand-800">
+                        <div className="mt-auto grid grid-cols-2 gap-3 pt-1">
                           <div className="min-w-0">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
                               Harga
