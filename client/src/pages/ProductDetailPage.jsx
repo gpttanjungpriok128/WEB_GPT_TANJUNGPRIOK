@@ -2013,7 +2013,7 @@ function ProductDetailPage() {
             </Link>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
             {showcaseProducts.map((item) => {
               if (!item || !item.id) return null;
               
@@ -2026,7 +2026,7 @@ function ProductDetailPage() {
                 <Link
                   key={item.id}
                   to={`/shop/${item.slug}`}
-                  className="group block"
+                  className="group block min-w-[76vw] shrink-0 snap-start sm:min-w-[20rem] md:min-w-0"
                 >
                   <div className="overflow-hidden rounded-[1.9rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,245,247,0.95))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.06)] transition-transform duration-300 group-hover:-translate-y-1 dark:bg-[linear-gradient(180deg,rgba(18,23,20,0.98),rgba(9,13,12,0.96))]">
                     <img

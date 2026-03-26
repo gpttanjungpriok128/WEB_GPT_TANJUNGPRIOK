@@ -4,11 +4,14 @@ import api from "../services/api";
 import PageHero from "../components/PageHero";
 import StoreOrderProgress from "../components/StoreOrderProgress";
 import StoreOrderInvoice from "../components/StoreOrderInvoice";
+import { useAuth } from "../context/AuthContext";
 import { normalizeStoreImagePath } from "../utils/storeImage";
 import { ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
 import { clampQuantity, getStockForSize, normalizeSizeKey } from "../utils/storeStock";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
+const LOGIN_REQUIRED_MESSAGE = "Masuk dulu untuk melihat pesanan akun Anda.";
+const SESSION_EXPIRED_MESSAGE = "Sesi login Anda sudah berakhir. Silakan login lagi untuk melihat pesanan.";
 
 const ORDER_FILTERS = [
   { value: "active", label: "Perlu Dipantau" },
@@ -60,6 +63,7 @@ function readStoredCart() {
 }
 
 function MyOrdersPage() {
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -71,6 +75,13 @@ function MyOrdersPage() {
   const [reorderLoadingId, setReorderLoadingId] = useState(null);
 
   const fetchMyOrders = async (search = "") => {
+    if (!user) {
+      setOrders([]);
+      setError("");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -85,7 +96,11 @@ function MyOrdersPage() {
       setOrders(Array.isArray(data?.data) ? data.data : []);
     } catch (err) {
       setOrders([]);
-      setError(err?.response?.data?.message || "Gagal memuat data pesanan.");
+      if (err?.response?.status === 401) {
+        setError(SESSION_EXPIRED_MESSAGE);
+      } else {
+        setError(err?.response?.data?.message || "Gagal memuat data pesanan.");
+      }
     } finally {
       setLoading(false);
     }
@@ -100,8 +115,15 @@ function MyOrdersPage() {
   }, [searchInput]);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setOrders([]);
+      setError("");
+      setLoading(false);
+      return;
+    }
     fetchMyOrders(searchQuery);
-  }, [searchQuery]);
+  }, [authLoading, searchQuery, user]);
 
   const activeOrders = useMemo(
     () => orders.filter((order) => order.status !== "completed" && order.status !== "cancelled"),
@@ -320,6 +342,8 @@ function MyOrdersPage() {
         : orderFilter === "completed"
           ? "Belum ada pesanan selesai"
           : "Belum ada pesanan";
+  const isAuthPromptVisible = !authLoading && (!user || error === SESSION_EXPIRED_MESSAGE);
+  const isPageLoading = authLoading || loading;
 
   return (
     <div className="relative">
@@ -465,15 +489,35 @@ function MyOrdersPage() {
           </section>
         )}
 
-        {error && (
+        {error && !isAuthPromptVisible && (
           <section className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300">
             {error}
           </section>
         )}
 
-        {loading ? (
+        {isPageLoading ? (
           <section className="flex justify-center py-16">
             <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-brand-200 border-t-primary" />
+          </section>
+        ) : isAuthPromptVisible ? (
+          <section className="rounded-[2rem] border border-brand-200 bg-white/80 p-10 text-center dark:border-brand-700 dark:bg-brand-900/40">
+            <p className="text-base font-semibold text-brand-800 dark:text-brand-200">
+              {!user ? LOGIN_REQUIRED_MESSAGE : SESSION_EXPIRED_MESSAGE}
+            </p>
+            <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
+              Login dipakai untuk menghubungkan riwayat checkout dengan akun Anda, atau Anda tetap bisa cek pesanan secara manual lewat tracking.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link to="/login" className="btn-primary inline-block">
+                {!user ? "Login Sekarang" : "Login Lagi"}
+              </Link>
+              <Link
+                to="/track-order"
+                className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+              >
+                Cek Tracking Manual
+              </Link>
+            </div>
           </section>
         ) : filteredOrders.length === 0 ? (
           <section className="rounded-[2rem] border border-brand-200 bg-white/80 p-10 text-center dark:border-brand-700 dark:bg-brand-900/40">
