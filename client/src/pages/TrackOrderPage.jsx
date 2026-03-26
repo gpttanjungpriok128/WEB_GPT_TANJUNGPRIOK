@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import PageHero from "../components/PageHero";
 import StoreOrderProgress from "../components/StoreOrderProgress";
 import StoreOrderInvoice from "../components/StoreOrderInvoice";
 import { ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
+import { useAuth } from "../context/AuthContext";
 
 const TRACKING_STORAGE_KEY = "gpt_tanjungpriok_last_order_tracking_v1";
-const TRACK_SECTION_SHELL = "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
-const TRACK_LABEL = "text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600/80 dark:text-emerald-200/70";
+const TRACKING_HISTORY_KEY = "gpt_tanjungpriok_tracking_history_v1";
+const TRACK_SECTION_SHELL =
+  "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
+const TRACK_LABEL =
+  "text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600/80 dark:text-emerald-200/70";
 const TRACK_EMPTY_STEPS = [
   {
     key: "checkout",
@@ -62,11 +66,11 @@ const PhoneFieldIcon = ({ className = "h-4 w-4" }) => (
   </svg>
 );
 
-function readInitialTrackingForm(initialOrderCode = "") {
+function readInitialTrackingForm(initialOrderCode = "", initialPhone = "") {
   if (typeof window === "undefined") {
     return {
       orderCode: initialOrderCode,
-      phone: "",
+      phone: initialPhone,
     };
   }
 
@@ -74,14 +78,30 @@ function readInitialTrackingForm(initialOrderCode = "") {
     const saved = JSON.parse(window.localStorage.getItem(TRACKING_STORAGE_KEY) || "null");
     return {
       orderCode: initialOrderCode || saved?.orderCode || "",
-      phone: saved?.phone || "",
+      phone: initialPhone || saved?.phone || "",
     };
   } catch {
     return {
       orderCode: initialOrderCode,
-      phone: "",
+      phone: initialPhone,
     };
   }
+}
+
+function readTrackingHistory() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(TRACKING_HISTORY_KEY) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeTrackingHistory(entries) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TRACKING_HISTORY_KEY, JSON.stringify(entries.slice(0, 3)));
 }
 
 function formatDateTime(value) {
@@ -97,21 +117,68 @@ function formatDateTime(value) {
   });
 }
 
+function formatRupiah(value) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
+}
+
 function TrackOrderPage() {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const initialOrderCode =
     searchParams.get("orderCode") ||
     searchParams.get("code") ||
     searchParams.get("order") ||
     "";
-  const [form, setForm] = useState(() => readInitialTrackingForm(initialOrderCode));
+  const initialPhone = searchParams.get("phone") || "";
+  const [form, setForm] = useState(() => readInitialTrackingForm(initialOrderCode, initialPhone));
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [copyFeedback, setCopyFeedback] = useState("");
+  const [trackingHistory, setTrackingHistory] = useState(() => readTrackingHistory());
+
+  const totalItems = useMemo(
+    () => (Array.isArray(order?.items) ? order.items.reduce((total, item) => total + (Number(item.quantity) || 0), 0) : 0),
+    [order],
+  );
 
   const handleFieldChange = (field, value) => {
     setForm((previous) => ({ ...previous, [field]: value }));
     setError("");
+  };
+
+  const persistLookup = (nextOrder, orderCode, phone) => {
+    if (typeof window === "undefined") return;
+
+    const payload = {
+      orderCode,
+      phone,
+      customerName: nextOrder?.customerName || "",
+      status: nextOrder?.status || "new",
+      createdAt: nextOrder?.createdAt || new Date().toISOString(),
+    };
+
+    window.localStorage.setItem(
+      TRACKING_STORAGE_KEY,
+      JSON.stringify({
+        orderCode,
+        phone,
+      }),
+    );
+
+    const nextHistory = [
+      payload,
+      ...trackingHistory.filter(
+        (entry) => !(entry.orderCode === payload.orderCode && entry.phone === payload.phone),
+      ),
+    ].slice(0, 3);
+
+    setTrackingHistory(nextHistory);
+    writeTrackingHistory(nextHistory);
   };
 
   const handleTrackOrder = async (event) => {
@@ -120,27 +187,52 @@ function TrackOrderPage() {
     setError("");
 
     try {
+      const orderCode = form.orderCode.trim();
+      const phone = form.phone.trim();
       const { data } = await api.get("/store/orders/track", {
         params: {
-          orderCode: form.orderCode.trim(),
-          phone: form.phone.trim(),
+          orderCode,
+          phone,
         },
       });
 
-      setOrder(data?.data || null);
-      window.localStorage.setItem(
-        TRACKING_STORAGE_KEY,
-        JSON.stringify({
-          orderCode: form.orderCode.trim(),
-          phone: form.phone.trim(),
-        }),
-      );
+      const nextOrder = data?.data || null;
+      setOrder(nextOrder);
+      persistLookup(nextOrder, orderCode, phone);
     } catch (err) {
       setOrder(null);
       setError(err?.response?.data?.message || "Pesanan tidak berhasil ditemukan.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleApplyHistory = (entry) => {
+    setForm({
+      orderCode: entry.orderCode || "",
+      phone: entry.phone || "",
+    });
+    setError("");
+    setCopyFeedback("");
+  };
+
+  const handleCopyOrderCode = async () => {
+    if (!order?.orderCode || typeof navigator === "undefined" || !navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(order.orderCode);
+      setCopyFeedback("Kode order berhasil disalin.");
+      window.setTimeout(() => setCopyFeedback(""), 2500);
+    } catch {
+      setCopyFeedback("Tidak bisa menyalin kode order.");
+    }
+  };
+
+  const clearSavedLookups = () => {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(TRACKING_STORAGE_KEY);
+    window.localStorage.removeItem(TRACKING_HISTORY_KEY);
+    setTrackingHistory([]);
+    setCopyFeedback("");
   };
 
   return (
@@ -157,102 +249,131 @@ function TrackOrderPage() {
           <article className={TRACK_SECTION_SHELL}>
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_35%),linear-gradient(145deg,rgba(255,255,255,0.06),transparent_58%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(52,211,153,0.08),transparent_34%),linear-gradient(145deg,rgba(255,255,255,0.03),transparent_58%)]" />
             <div className="relative">
-            <p className={TRACK_LABEL}>
-              Order Tracking
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
-              Cek status pembelian
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-brand-600 dark:text-brand-300">
-              Gunakan kode pesanan yang Anda dapat setelah checkout dan nomor WhatsApp yang dipakai saat pemesanan.
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              <span className="rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
-                Realtime status
-              </span>
-              <span className="rounded-full border border-brand-200 bg-white/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
-                Invoice siap
-              </span>
-            </div>
-
-            <form onSubmit={handleTrackOrder} className="mt-5 grid gap-4 lg:grid-cols-2">
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                  Kode Pesanan
-                </span>
-                <div className="input-leading-shell">
-                  <OrderCodeIcon className="input-leading-icon" />
-                  <input
-                    className="input-modern !rounded-[1.15rem]"
-                    placeholder="Kode pesanan, contoh GTS-20260310-0001"
-                    value={form.orderCode}
-                    onChange={(event) => handleFieldChange("orderCode", event.target.value.toUpperCase())}
-                    required
-                  />
-                </div>
-              </label>
-              <label className="space-y-1.5">
-                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                  WhatsApp
-                </span>
-                <div className="input-leading-shell">
-                  <PhoneFieldIcon className="input-leading-icon" />
-                  <input
-                    className="input-modern !rounded-[1.15rem]"
-                    placeholder="Nomor WhatsApp saat checkout"
-                    inputMode="tel"
-                    value={form.phone}
-                    onChange={(event) => handleFieldChange("phone", event.target.value)}
-                    required
-                  />
-                </div>
-              </label>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full !rounded-[1.2rem] !py-3 disabled:opacity-60 lg:col-span-2"
-              >
-                {loading ? "Melacak Pesanan..." : "Lacak Pesanan"}
-              </button>
-            </form>
-
-            {error && (
-              <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300">
-                {error}
+              <p className={TRACK_LABEL}>Order Tracking</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
+                Cek status pembelian
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-brand-600 dark:text-brand-300">
+                Gunakan kode pesanan yang Anda dapat setelah checkout dan nomor WhatsApp yang dipakai saat pemesanan.
               </p>
-            )}
 
-            <div className="mt-5 rounded-[1.5rem] border border-brand-200 bg-white/[0.72] p-4 text-sm leading-7 text-brand-600 dark:border-brand-700 dark:bg-white/[0.03] dark:text-brand-300">
-              Status order bergerak dari `Order Masuk` → `Dikonfirmasi` → `Dikemas`.
-              Untuk kurir lanjut ke `Dalam Pengiriman` → `Selesai`, sedangkan ambil di gereja lanjut ke `Siap Diambil` → `Sudah Diambil`.
-            </div>
-
-            <div className="mt-4 rounded-[1.5rem] border border-blue-200 bg-blue-50 p-4 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-700/80 dark:text-blue-200/80">
-                Cara Menemukan Kode Pesanan
-              </p>
-              <ul className="mt-2 space-y-1">
-                <li>• Kode pesanan muncul setelah checkout dan dikirim via WhatsApp.</li>
-                <li>• Format kode: GTS-YYYYMMDD-XXXX (contoh: GTS-20260310-0001).</li>
-                <li>• Jika belum ada, cek kembali chat konfirmasi atau hubungi admin GTshirt.</li>
-              </ul>
-            </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[1.35rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
-                  <p className={TRACK_LABEL}>Pesanan</p>
-                  <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
-                    Pantau status pesanan dengan mudah.
-                  </p>
-                </div>
-              <div className="rounded-[1.35rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
-                <p className={TRACK_LABEL}>Support</p>
-                <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
-                  Cocok untuk kurir, pickup gereja, dan preorder komunitas.
-                </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span className="rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
+                  Realtime status
+                </span>
+                <span className="rounded-full border border-brand-200 bg-white/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                  Invoice siap
+                </span>
               </div>
-            </div>
+
+              <form onSubmit={handleTrackOrder} className="mt-5 grid gap-4 lg:grid-cols-2">
+                <label className="space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    Kode Pesanan
+                  </span>
+                  <div className="input-leading-shell">
+                    <OrderCodeIcon className="input-leading-icon" />
+                    <input
+                      className="input-modern !rounded-[1.15rem]"
+                      placeholder="Kode pesanan, contoh GTS-20260310-0001"
+                      value={form.orderCode}
+                      onChange={(event) => handleFieldChange("orderCode", event.target.value.toUpperCase())}
+                      required
+                    />
+                  </div>
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                    WhatsApp
+                  </span>
+                  <div className="input-leading-shell">
+                    <PhoneFieldIcon className="input-leading-icon" />
+                    <input
+                      className="input-modern !rounded-[1.15rem]"
+                      placeholder="Nomor WhatsApp saat checkout"
+                      inputMode="tel"
+                      value={form.phone}
+                      onChange={(event) => handleFieldChange("phone", event.target.value)}
+                      required
+                    />
+                  </div>
+                </label>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full !rounded-[1.2rem] !py-3 disabled:opacity-60 lg:col-span-2"
+                >
+                  {loading ? "Melacak Pesanan..." : "Lacak Pesanan"}
+                </button>
+              </form>
+
+              {error && (
+                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:border-rose-900/70 dark:bg-rose-900/20 dark:text-rose-300">
+                  {error}
+                </p>
+              )}
+
+              <div className="mt-5 rounded-[1.5rem] border border-brand-200 bg-white/[0.72] p-4 text-sm leading-7 text-brand-600 dark:border-brand-700 dark:bg-white/[0.03] dark:text-brand-300">
+                Status order bergerak dari `Order Masuk` → `Dikonfirmasi` → `Dikemas`.
+                Untuk kurir lanjut ke `Dalam Pengiriman` → `Selesai`, sedangkan ambil di gereja lanjut ke `Siap Diambil` → `Sudah Diambil`.
+              </div>
+
+              <div className="mt-4 rounded-[1.5rem] border border-blue-200 bg-blue-50 p-4 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-700/80 dark:text-blue-200/80">
+                  Cara Menemukan Kode Pesanan
+                </p>
+                <ul className="mt-2 space-y-1">
+                  <li>• Kode pesanan muncul setelah checkout dan dikirim via WhatsApp.</li>
+                  <li>• Format kode: GTS-YYYYMMDD-XXXX.</li>
+                  <li>• Jika belum ada, cek kembali chat konfirmasi atau buka halaman Pesanan Saya.</li>
+                </ul>
+              </div>
+
+              {trackingHistory.length > 0 && (
+                <div className="mt-4 rounded-[1.5rem] border border-brand-200 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className={TRACK_LABEL}>Lookup terakhir</p>
+                      <p className="mt-1 text-sm text-brand-600 dark:text-brand-300">
+                        Gunakan ulang kode order yang baru Anda cek tanpa mengetik ulang.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearSavedLookups}
+                      className="text-xs font-semibold text-brand-500 transition hover:text-brand-900 dark:text-brand-400 dark:hover:text-white"
+                    >
+                      Hapus Riwayat
+                    </button>
+                  </div>
+                  <div className="mt-4 grid gap-3">
+                    {trackingHistory.map((entry) => (
+                      <button
+                        key={`${entry.orderCode}-${entry.phone}`}
+                        type="button"
+                        onClick={() => handleApplyHistory(entry)}
+                        className="rounded-[1.2rem] border border-brand-200 bg-white/90 px-4 py-3 text-left transition hover:border-brand-300 hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:hover:bg-brand-800/40"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-brand-900 dark:text-white">
+                            {entry.orderCode}
+                          </p>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                              ORDER_STATUS_BADGE[entry.status] || ORDER_STATUS_BADGE.new
+                            }`}
+                          >
+                            {ORDER_STATUS_LABEL[entry.status] || entry.status}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                          {entry.customerName || "Pelanggan"} • {entry.phone}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </article>
         </section>
@@ -295,12 +416,14 @@ function TrackOrderPage() {
                   <Link to="/shop" className="btn-primary !rounded-[1.2rem]">
                     Belanja GTshirt
                   </Link>
-                  <Link
-                    to="/cart"
-                    className="btn-outline !rounded-[1.2rem]"
-                  >
+                  <Link to="/cart" className="btn-outline !rounded-[1.2rem]">
                     Ke Keranjang
                   </Link>
+                  {user && (
+                    <Link to="/my-orders" className="btn-outline !rounded-[1.2rem]">
+                      Pesanan Saya
+                    </Link>
+                  )}
                 </div>
               </div>
             </article>
@@ -309,45 +432,157 @@ function TrackOrderPage() {
               <article className={TRACK_SECTION_SHELL}>
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.1),transparent_34%)]" />
                 <div className="relative">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className={TRACK_LABEL}>
-                      Kode Pesanan
-                    </p>
-                    <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
-                      {order.orderCode}
-                    </h2>
-                    <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
-                      Dibuat {formatDateTime(order.createdAt)}
-                    </p>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className={TRACK_LABEL}>Kode Pesanan</p>
+                      <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
+                        {order.orderCode}
+                      </h2>
+                      <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
+                        Dibuat {formatDateTime(order.createdAt)}
+                      </p>
+                    </div>
+                    <span
+                      className={`status-pill rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        ORDER_STATUS_BADGE[order.status] || ORDER_STATUS_BADGE.new
+                      }`}
+                    >
+                      {ORDER_STATUS_LABEL[order.status] || order.status}
+                    </span>
                   </div>
-                  <span className={`status-pill rounded-full px-3 py-1.5 text-xs font-semibold ${ORDER_STATUS_BADGE[order.status] || ORDER_STATUS_BADGE.new}`}>
-                    {ORDER_STATUS_LABEL[order.status] || order.status}
-                  </span>
-                </div>
 
-                <div className="mt-6">
-                  <StoreOrderProgress status={order.status} shippingMethod={order.shippingMethod} />
-                </div>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-[1.35rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
+                      <p className={TRACK_LABEL}>Total</p>
+                      <p className="mt-2 text-lg font-semibold text-brand-900 dark:text-white">
+                        {formatRupiah(order.totalAmount)}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.35rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
+                      <p className={TRACK_LABEL}>Item</p>
+                      <p className="mt-2 text-lg font-semibold text-brand-900 dark:text-white">
+                        {totalItems} pcs
+                      </p>
+                    </div>
+                    <div className="rounded-[1.35rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
+                      <p className={TRACK_LABEL}>Pengiriman</p>
+                      <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
+                        {order.shippingMethod || "-"}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.35rem] border border-brand-200/80 bg-white/[0.72] p-4 dark:border-brand-700 dark:bg-white/[0.03]">
+                      <p className={TRACK_LABEL}>Pembayaran</p>
+                      <p className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
+                        {order.paymentMethod || "-"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <StoreOrderProgress status={order.status} shippingMethod={order.shippingMethod} />
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopyOrderCode}
+                      className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                    >
+                      Salin Kode
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleTrackOrder}
+                      disabled={loading}
+                      className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 disabled:opacity-60 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                    >
+                      Refresh Status
+                    </button>
+                    {user && (
+                      <Link to="/my-orders" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90">
+                        Pesanan Saya
+                      </Link>
+                    )}
+                  </div>
+
+                  {copyFeedback && (
+                    <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300">
+                      {copyFeedback}
+                    </p>
+                  )}
                 </div>
               </article>
 
               <article className={TRACK_SECTION_SHELL}>
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.08),transparent_34%)]" />
                 <div className="relative">
-                <p className={TRACK_LABEL}>Customer Detail</p>
-                <div className="mt-4 grid gap-3 text-sm text-brand-700 dark:text-brand-300 sm:grid-cols-2">
-                  <p><span className="font-semibold text-brand-900 dark:text-white">Nama:</span> {order.customerName}</p>
-                  <p><span className="font-semibold text-brand-900 dark:text-white">WhatsApp:</span> {order.customerPhone}</p>
-                  <p><span className="font-semibold text-brand-900 dark:text-white">Pengiriman:</span> {order.shippingMethod}</p>
-                  <p><span className="font-semibold text-brand-900 dark:text-white">Pembayaran:</span> {order.paymentMethod}</p>
-                  <p className="sm:col-span-2"><span className="font-semibold text-brand-900 dark:text-white">Alamat:</span> {order.customerAddress}</p>
-                  {order.notes && (
-                    <p className="sm:col-span-2"><span className="font-semibold text-brand-900 dark:text-white">Catatan:</span> {order.notes}</p>
-                  )}
-                </div>
+                  <p className={TRACK_LABEL}>Customer Detail</p>
+                  <div className="mt-4 grid gap-3 text-sm text-brand-700 dark:text-brand-300 sm:grid-cols-2">
+                    <p><span className="font-semibold text-brand-900 dark:text-white">Nama:</span> {order.customerName}</p>
+                    <p><span className="font-semibold text-brand-900 dark:text-white">WhatsApp:</span> {order.customerPhone}</p>
+                    <p><span className="font-semibold text-brand-900 dark:text-white">Pengiriman:</span> {order.shippingMethod}</p>
+                    <p><span className="font-semibold text-brand-900 dark:text-white">Pembayaran:</span> {order.paymentMethod}</p>
+                    <p className="sm:col-span-2"><span className="font-semibold text-brand-900 dark:text-white">Alamat:</span> {order.customerAddress}</p>
+                    {order.notes && (
+                      <p className="sm:col-span-2"><span className="font-semibold text-brand-900 dark:text-white">Catatan:</span> {order.notes}</p>
+                    )}
+                  </div>
                 </div>
               </article>
+
+              {Array.isArray(order.items) && order.items.length > 0 && (
+                <article className={TRACK_SECTION_SHELL}>
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_34%)]" />
+                  <div className="relative">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className={TRACK_LABEL}>Item Pesanan</p>
+                        <h3 className="mt-2 text-xl font-semibold text-brand-900 dark:text-white">
+                          Ringkasan barang
+                        </h3>
+                      </div>
+                      <Link to="/shop" className="rounded-full border border-brand-200 bg-white/85 px-4 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/60">
+                        Belanja Lagi
+                      </Link>
+                    </div>
+                    <div className="mt-5 space-y-3">
+                      {order.items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="rounded-[1.2rem] border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-bold text-brand-900 dark:text-white">
+                                {item.productName}
+                              </p>
+                              <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                                Size {item.size} • {item.color || "-"}
+                              </p>
+                            </div>
+                            <p className="text-sm font-semibold text-primary">
+                              {item.quantity} x {formatRupiah(item.unitPrice)}
+                            </p>
+                          </div>
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-sm text-brand-600 dark:text-brand-300">
+                              Subtotal item: <span className="font-semibold text-brand-900 dark:text-white">{formatRupiah(item.lineTotal)}</span>
+                            </p>
+                            {item.productSlug && (
+                              <Link
+                                to={`/shop/${item.productSlug}`}
+                                className="text-xs font-semibold text-primary transition hover:text-primary-light"
+                              >
+                                Lihat Produk
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              )}
 
               <StoreOrderInvoice order={order} />
             </>
