@@ -1084,21 +1084,23 @@ function ShopPage() {
                       to={`/shop/${product.slug}`}
                       className="flex flex-1 flex-col"
                     >
-                      <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] p-2.5 dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:p-3">
-                        <div className="pointer-events-none absolute inset-2.5 rounded-[1.2rem] border border-emerald-950/[0.08] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:border-emerald-900/30 dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))]" />
-                        <img
-                          src={resolveStoreImageUrl(product.imageUrl)}
-                          alt={product.name}
-                          width="800"
-                          height="800"
-                          sizes="(min-width: 1280px) 18vw, (min-width: 1024px) 22vw, (min-width: 768px) 30vw, 50vw"
-                          loading={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "eager" : "lazy"}
-                          fetchPriority={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "high" : "low"}
-                          decoding="async"
-                          className="image-soft relative z-[1] h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
-                          onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
-                          onError={(event) => event.currentTarget.classList.add("is-loaded")}
-                        />
+                      <div className="relative aspect-square overflow-hidden rounded-t-[1.45rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:rounded-t-[1.8rem]">
+                        <div className="pointer-events-none absolute inset-0 rounded-t-[1.45rem] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))] sm:rounded-t-[1.8rem]" />
+                        <div className="relative z-[1] h-full w-full p-2.5 sm:p-3">
+                          <img
+                            src={resolveStoreImageUrl(product.imageUrl)}
+                            alt={product.name}
+                            width="800"
+                            height="800"
+                            sizes="(min-width: 1280px) 18vw, (min-width: 1024px) 22vw, (min-width: 768px) 30vw, 50vw"
+                            loading={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "eager" : "lazy"}
+                            fetchPriority={index < INITIAL_EAGER_PRODUCT_IMAGE_COUNT ? "high" : "low"}
+                            decoding="async"
+                            className="image-soft h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                            onLoad={(event) => event.currentTarget.classList.add("is-loaded")}
+                            onError={(event) => event.currentTarget.classList.add("is-loaded")}
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-1 flex-col gap-4 border-t border-brand-100 px-3.5 py-4 dark:border-brand-800 sm:px-4.5 sm:py-4.5">
                         <div className="space-y-2">

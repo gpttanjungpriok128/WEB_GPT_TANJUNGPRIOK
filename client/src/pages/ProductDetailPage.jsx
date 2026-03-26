@@ -2029,24 +2029,26 @@ function ProductDetailPage() {
                   className="group block w-[13.5rem] shrink-0 snap-start sm:w-[15rem] md:w-auto"
                 >
                   <article className="overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/30 group-hover:shadow-[0_24px_50px_rgba(15,23,42,0.1)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]">
-                    <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] p-2.5 dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:p-3">
-                      <div className="pointer-events-none absolute inset-2.5 rounded-[1.2rem] border border-emerald-950/[0.08] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:border-emerald-900/30 dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))]" />
-                      <img
-                        src={finalImageUrl}
-                        alt={item.name}
-                        width={720}
-                        height={860}
-                        loading="lazy"
-                        decoding="async"
-                        onError={(event) => {
-                          event.currentTarget.src = storePlaceholderImage;
-                          event.currentTarget.classList.add("is-loaded");
-                        }}
-                        onLoad={(event) => {
-                          event.currentTarget.classList.add("is-loaded");
-                        }}
-                        className="image-soft relative z-[1] h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
-                      />
+                    <div className="relative aspect-square overflow-hidden rounded-t-[1.45rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:rounded-t-[1.8rem]">
+                      <div className="pointer-events-none absolute inset-0 rounded-t-[1.45rem] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))] sm:rounded-t-[1.8rem]" />
+                      <div className="relative z-[1] h-full w-full p-2.5 sm:p-3">
+                        <img
+                          src={finalImageUrl}
+                          alt={item.name}
+                          width={720}
+                          height={860}
+                          loading="lazy"
+                          decoding="async"
+                          onError={(event) => {
+                            event.currentTarget.src = storePlaceholderImage;
+                            event.currentTarget.classList.add("is-loaded");
+                          }}
+                          onLoad={(event) => {
+                            event.currentTarget.classList.add("is-loaded");
+                          }}
+                          className="image-soft h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
                     </div>
                     <div className="flex flex-col gap-3 border-t border-brand-100 px-3.5 py-4 dark:border-brand-800 sm:px-4.5 sm:py-4.5">
                       <h3 className="line-clamp-2 text-sm font-bold leading-snug tracking-[-0.02em] text-brand-900 dark:text-white sm:text-base">
