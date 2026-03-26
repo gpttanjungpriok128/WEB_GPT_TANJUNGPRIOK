@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ShopHero from "../components/ShopHero";
 import storePlaceholderImage from "../img/logo1.png";
-import { normalizeStoreImagePath, resolveStoreImageUrl } from "../utils/storeImage";
-import { clampQuantity, getStockForSize, getTotalStock } from "../utils/storeStock";
+import { resolveStoreImageUrl } from "../utils/storeImage";
+import { getTotalStock } from "../utils/storeStock";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 import {
   STORE_CATALOG_INVALIDATION_EVENT,
@@ -85,19 +85,6 @@ const formatRupiah = (amount) =>
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(amount);
-
-const renderStars = (value, className = "text-xs") => {
-  const safeValue = Math.max(0, Math.min(5, Number(value) || 0));
-  const filledCount = Math.round(safeValue);
-  return [...Array(5)].map((_, index) => (
-    <span
-      key={index}
-      className={`${className} ${index < filledCount ? "text-amber-400" : "text-brand-200 dark:text-brand-700"}`}
-    >
-      ★
-    </span>
-  ));
-};
 
 const InstagramIcon = ({ className = "h-5 w-5" }) => (
   <svg
@@ -364,18 +351,6 @@ function getCatalogSizes(product) {
     : [];
 }
 
-function getDefaultSize(product) {
-  const sizes = getCatalogSizes(product);
-  if (!sizes.length) return "M";
-
-  const firstAvailable = sizes.find((size) => getStockForSize(product, size) > 0);
-  return firstAvailable || sizes[0] || "M";
-}
-
-function getAvailableSizes(product) {
-  return getCatalogSizes(product).filter((size) => getStockForSize(product, size) > 0);
-}
-
 function ShopPage() {
   const { user } = useAuth();
   const bootCache = useMemo(() => readShopBootCache(), []);
@@ -395,8 +370,6 @@ function ShopPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
-  const [catalogFeedback, setCatalogFeedback] = useState("");
-  const [selectedCatalogSizes, setSelectedCatalogSizes] = useState({});
   const promoVideoSrc = normalizeYouTubeUrl(PROMO_VIDEO_URL);
   const [isPromoVideoActive, setIsPromoVideoActive] = useState(false);
   const [hasBootCache, setHasBootCache] = useState(() => Boolean(bootCache));
@@ -611,112 +584,6 @@ function ShopPage() {
   const availabilityLabel = AVAILABILITY_LABELS[availabilityFilter] || "Semua Produk";
   const sortLabel = SORT_LABELS[sortBy] || "Terbaru";
   const activeSearchLabel = deferredSearch.trim();
-
-  const getSelectedCatalogSize = (product) => {
-    const sizes = getCatalogSizes(product);
-    const savedSize = selectedCatalogSizes[product.id];
-    if (savedSize) {
-      const matchedSize = sizes.find(
-        (size) => normalizeSizeLabel(size) === normalizeSizeLabel(savedSize),
-      );
-      if (matchedSize && getStockForSize(product, matchedSize) > 0) return matchedSize;
-    }
-    return getDefaultSize(product);
-  };
-
-  const handleCatalogSizeSelect = (productId, size) => {
-    setSelectedCatalogSizes((previous) => ({
-      ...previous,
-      [productId]: size,
-    }));
-  };
-
-  const addToCart = (product, selectedSize) => {
-    const matchedSize = getCatalogSizes(product).find(
-      (size) => normalizeSizeLabel(size) === normalizeSizeLabel(selectedSize),
-    );
-    const size = matchedSize || getDefaultSize(product);
-    const sizeStock = getStockForSize(product, size);
-    if (sizeStock <= 0) return;
-
-    const quantity = clampQuantity(1, sizeStock);
-    const variantKey = `${product.id}-${size}`;
-    const normalizedPrimaryImage = normalizeStoreImagePath(product.imageUrl);
-    const normalizedImageUrls = Array.isArray(product.imageUrls)
-      ? product.imageUrls.map(normalizeStoreImagePath).filter(Boolean)
-      : normalizedPrimaryImage
-        ? [normalizedPrimaryImage]
-        : [];
-
-    setCartItems((previous) => {
-      const existingItemIndex = previous.findIndex(
-        (item) => item.variantKey === variantKey,
-      );
-
-      if (existingItemIndex >= 0) {
-        return previous.map((item, index) => {
-          if (index !== existingItemIndex) return item;
-          const nextQty = clampQuantity(item.quantity + quantity, sizeStock);
-          return {
-            ...item,
-            quantity: nextQty,
-            image: item.image || normalizedPrimaryImage,
-            imageUrls: Array.isArray(item.imageUrls) && item.imageUrls.length > 0
-              ? item.imageUrls
-              : normalizedImageUrls,
-            stock: sizeStock,
-            stockBySize: product.stockBySize || {},
-          };
-        });
-      }
-
-      return [
-        ...previous,
-        {
-          variantKey,
-          productId: product.id,
-          name: product.name,
-          price: Number(product.finalPrice ?? product.basePrice ?? 0),
-          image: normalizedPrimaryImage,
-          imageUrls: normalizedImageUrls,
-          size,
-          color: product.color || "-",
-          quantity,
-          stock: sizeStock,
-          stockBySize: product.stockBySize || {},
-        },
-      ];
-    });
-    setCatalogFeedback(`${product.name} ukuran ${normalizeSizeLabel(size)} ditambahkan ke keranjang.`);
-    window.setTimeout(() => setCatalogFeedback(""), 2500);
-  };
-
-  const updateCartQuantity = (variantKey, nextQuantity) => {
-    const safeQuantity = Number(nextQuantity);
-    if (!Number.isFinite(safeQuantity) || safeQuantity < 1) {
-      setCartItems((previous) =>
-        previous.filter((item) => item.variantKey !== variantKey),
-      );
-      return;
-    }
-
-    setCartItems((previous) =>
-      previous.map((item) => {
-        if (item.variantKey !== variantKey) return item;
-        const boundedQty = clampQuantity(safeQuantity, item.stock || 99);
-        return { ...item, quantity: boundedQty };
-      }),
-    );
-  };
-
-  const removeFromCart = (variantKey) => {
-    setCartItems((previous) =>
-      previous.filter((item) => item.variantKey !== variantKey),
-    );
-  };
-
-
-
   // Cart page is now a separate route at /cart
 
   return (
@@ -1129,12 +996,6 @@ function ShopPage() {
           </section>
         </div>
 
-        {catalogFeedback && (
-          <section className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-900/20 dark:text-emerald-300">
-            {catalogFeedback}
-          </section>
-        )}
-
         {isLoadingProducts && products.length === 0 ? (
           <div className="shop-grid grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: 8 }).map((_, index) => (
@@ -1253,10 +1114,7 @@ function ShopPage() {
                   product.finalPrice ?? product.basePrice ?? 0,
                 );
                 const totalStock = getTotalStock(product);
-                const ratingAverage = Number(product.ratingAverage || 0);
-                const ratingCount = Number(product.ratingCount || 0);
                 const catalogSizes = getCatalogSizes(product);
-                const availableSizes = getAvailableSizes(product);
                 const sizePreview = catalogSizes.length > 0
                   ? catalogSizes.slice(0, 4).map((size) => normalizeSizeLabel(size)).join(" / ")
                   : "Ukuran menyusul";
@@ -1270,17 +1128,12 @@ function ShopPage() {
                   : totalStock < 6
                     ? `Sisa ${totalStock}`
                     : `${totalStock} pcs`;
-                const compactMeta = `${catalogSizes.length > 0 ? `Ukuran ${sizePreview}` : "Ukuran menyusul"}${product.color ? ` · ${product.color}` : ""}`;
-                const selectedSize = getSelectedCatalogSize(product);
-                const selectedSizeStock = getStockForSize(product, selectedSize);
-                const sizeSummary = catalogSizes.length > 0
-                  ? sizePreview
-                  : "Cek detail produk";
+                const sizeSummary = catalogSizes.length > 0 ? sizePreview : "Ukuran menyusul";
 
                 return (
                   <article
                     key={product.id}
-                    className="product-card group card-soft relative flex flex-col overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_28px_60px_rgba(15,23,42,0.12)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]"
+                    className="product-card group card-soft relative overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_50px_rgba(15,23,42,0.1)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]"
                   >
                     <Link
                       to={`/shop/${product.slug}`}
@@ -1288,18 +1141,6 @@ function ShopPage() {
                     >
                       <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] p-2.5 dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:p-3">
                         <div className="pointer-events-none absolute inset-2.5 rounded-[1.2rem] border border-emerald-950/[0.08] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:border-emerald-900/30 dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))]" />
-                        <div className="absolute left-4 top-4 z-[2] flex max-w-[calc(100%-2rem)] flex-wrap gap-2">
-                          {product.promoIsActive && (
-                            <span className="rounded-full bg-rose-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
-                              Promo
-                            </span>
-                          )}
-                          {totalStock > 0 && totalStock < 6 && (
-                            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                              Hampir Habis
-                            </span>
-                          )}
-                        </div>
                         <img
                           src={resolveStoreImageUrl(product.imageUrl)}
                           alt={product.name}
@@ -1314,48 +1155,29 @@ function ShopPage() {
                           onError={(event) => event.currentTarget.classList.add("is-loaded")}
                         />
                       </div>
-                      <div className="flex flex-1 flex-col gap-3 p-3.5 sm:p-4.5">
-                        <div className="space-y-1.5">
+                      <div className="flex flex-1 flex-col gap-4 border-t border-brand-100 px-3.5 py-4 dark:border-brand-800 sm:px-4.5 sm:py-4.5">
+                        <div className="space-y-2">
                           <h3 className="text-sm font-bold leading-snug text-brand-900 transition-colors group-hover:text-primary dark:text-white sm:text-base">
                             {product.name}
                           </h3>
-                          <p className="line-clamp-1 text-[11px] leading-5 text-brand-500 dark:text-brand-400 sm:line-clamp-2 sm:text-xs">
-                            {compactMeta}
-                          </p>
-                        </div>
-                        {ratingCount > 0 && (
-                          <div className="hidden items-center gap-1.5 text-[11px] text-brand-500 dark:text-brand-400 sm:flex sm:text-xs">
-                            <div className="flex items-center gap-0.5">
-                              {renderStars(ratingAverage, "text-[10px]")}
-                            </div>
-                            <span>{ratingAverage.toFixed(1)} ({ratingCount})</span>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                              Ukuran
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-brand-700 dark:text-brand-200">
+                              {sizeSummary}
+                            </p>
                           </div>
-                        )}
+                        </div>
 
-                        <div className="mt-auto flex items-end justify-between gap-3 border-t border-brand-100 pt-3 dark:border-brand-800">
+                        <div className="mt-auto grid grid-cols-2 gap-3 border-t border-brand-100 pt-3 dark:border-brand-800">
                           <div className="min-w-0">
-                            {product.verse && (
-                              <p className="mb-1 hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400 sm:block">
-                                {product.verse}
-                              </p>
-                            )}
-                            <div>
-                              {product.promoIsActive &&
-                              Number(product.discountAmount) > 0 ? (
-                                <div className="flex flex-col">
-                                  <span className="text-[11px] text-brand-500 line-through dark:text-brand-400 sm:text-xs">
-                                    {formatRupiah(Number(product.basePrice) || 0)}
-                                  </span>
-                                  <span className="text-base font-black text-rose-500 sm:text-[1.05rem]">
-                                    {formatRupiah(effectivePrice)}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-base font-black text-brand-900 dark:text-white sm:text-[1.05rem]">
-                                  {formatRupiah(effectivePrice)}
-                                </span>
-                              )}
-                            </div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                              Harga
+                            </p>
+                            <p className="mt-1 text-base font-black text-brand-900 dark:text-white sm:text-[1.05rem]">
+                              {formatRupiah(effectivePrice)}
+                            </p>
                           </div>
                           <div className="text-right">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
@@ -1368,74 +1190,6 @@ function ShopPage() {
                         </div>
                       </div>
                     </Link>
-
-                    <div className="border-t border-brand-100 px-3.5 pb-3.5 pt-3 dark:border-brand-800 sm:px-4.5 sm:pb-4.5">
-                      <div className="rounded-[1.05rem] border border-brand-200/80 bg-brand-50/80 px-3 py-2.5 dark:border-brand-700 dark:bg-brand-900/30">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                              Pilih Ukuran
-                            </p>
-                            <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">
-                              {sizeSummary}
-                            </p>
-                          </div>
-                          {selectedSizeStock > 0 && (
-                            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700 shadow-sm dark:bg-brand-950/70 dark:text-emerald-300">
-                              {normalizeSizeLabel(selectedSize)} • {selectedSizeStock} pcs
-                            </span>
-                          )}
-                        </div>
-                        {catalogSizes.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {catalogSizes.map((size) => {
-                              const sizeStock = getStockForSize(product, size);
-                              const isOutOfStock = sizeStock <= 0;
-                              const isSelected =
-                                normalizeSizeLabel(selectedSize) === normalizeSizeLabel(size);
-
-                              return (
-                                <button
-                                  key={`${product.id}-${size}`}
-                                  type="button"
-                                  onClick={() => handleCatalogSizeSelect(product.id, size)}
-                                  disabled={isOutOfStock}
-                                  className={`inline-flex min-h-[40px] min-w-[48px] items-center justify-center rounded-[0.9rem] border px-3 py-2 text-sm font-semibold transition ${
-                                    isSelected
-                                      ? "border-primary bg-primary text-white shadow-[0_12px_22px_rgba(9,89,76,0.2)]"
-                                      : "border-brand-200 bg-white text-brand-700 hover:border-brand-400 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200"
-                                  } ${isOutOfStock ? "cursor-not-allowed opacity-35" : ""}`}
-                                  title={isOutOfStock ? `Ukuran ${size} habis` : `Ukuran ${size} tersedia`}
-                                >
-                                  {normalizeSizeLabel(size)}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                        <p className="mt-3 text-[11px] text-brand-500 dark:text-brand-400">
-                          {availableSizes.length > 0
-                            ? `Tambah cepat akan memakai ukuran ${normalizeSizeLabel(selectedSize)} yang sedang dipilih.`
-                            : "Stok ukuran sedang habis. Lihat detail produk untuk cek batch berikutnya."}
-                        </p>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => addToCart(product, selectedSize)}
-                          disabled={selectedSizeStock <= 0}
-                          className="inline-flex min-h-[42px] w-full items-center justify-center rounded-[1rem] bg-primary px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-primary/90 disabled:opacity-50"
-                        >
-                          Tambah
-                        </button>
-                        <Link
-                          to={`/shop/${product.slug}`}
-                          className="inline-flex min-h-[42px] items-center justify-center rounded-[1rem] border border-brand-200 bg-white px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-                        >
-                          Detail
-                        </Link>
-                      </div>
-                    </div>
                   </article>
                 );
               })}
