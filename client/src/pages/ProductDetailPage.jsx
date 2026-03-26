@@ -2026,34 +2026,42 @@ function ProductDetailPage() {
                 <Link
                   key={item.id}
                   to={`/shop/${item.slug}`}
-                  className="group block min-w-[62vw] shrink-0 snap-start sm:min-w-[18rem] md:min-w-0"
+                  className="group block w-[13.5rem] shrink-0 snap-start sm:w-[15rem] md:w-auto"
                 >
-                  <div className="overflow-hidden rounded-[1.5rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,245,247,0.95))] p-3 shadow-[0_20px_48px_rgba(15,23,42,0.06)] transition-transform duration-300 group-hover:-translate-y-1 dark:bg-[linear-gradient(180deg,rgba(18,23,20,0.98),rgba(9,13,12,0.96))] sm:rounded-[1.9rem] sm:p-4">
-                    <img
-                      src={finalImageUrl}
-                      alt={item.name}
-                      width={720}
-                      height={860}
-                      loading="lazy"
-                      decoding="async"
-                      onError={(event) => {
-                        event.currentTarget.src = storePlaceholderImage;
-                        event.currentTarget.classList.add("is-loaded");
-                      }}
-                      onLoad={(event) => {
-                        event.currentTarget.classList.add("is-loaded");
-                      }}
-                      className="image-soft aspect-[4/5] w-full object-contain mix-blend-multiply dark:mix-blend-normal"
-                    />
-                  </div>
-                  <div className="px-1 pt-3 sm:pt-4">
-                    <h3 className="line-clamp-2 text-lg font-medium tracking-[-0.04em] text-brand-950 dark:text-white sm:text-[1.4rem]">
-                      {item.name}
-                    </h3>
-                    <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
-                      {formatRupiah(relatedPrice)}
-                    </p>
-                  </div>
+                  <article className="overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/30 group-hover:shadow-[0_24px_50px_rgba(15,23,42,0.1)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]">
+                    <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] p-2.5 dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:p-3">
+                      <div className="pointer-events-none absolute inset-2.5 rounded-[1.2rem] border border-emerald-950/[0.08] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:border-emerald-900/30 dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))]" />
+                      <img
+                        src={finalImageUrl}
+                        alt={item.name}
+                        width={720}
+                        height={860}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(event) => {
+                          event.currentTarget.src = storePlaceholderImage;
+                          event.currentTarget.classList.add("is-loaded");
+                        }}
+                        onLoad={(event) => {
+                          event.currentTarget.classList.add("is-loaded");
+                        }}
+                        className="image-soft relative z-[1] h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-3 border-t border-brand-100 px-3.5 py-4 dark:border-brand-800 sm:px-4.5 sm:py-4.5">
+                      <h3 className="line-clamp-2 text-sm font-bold leading-snug tracking-[-0.02em] text-brand-900 dark:text-white sm:text-base">
+                        {item.name}
+                      </h3>
+                      <div className="border-t border-brand-100 pt-3 dark:border-brand-800">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                          Harga
+                        </p>
+                        <p className="mt-1 text-base font-black text-brand-900 dark:text-white sm:text-[1.05rem]">
+                          {formatRupiah(relatedPrice)}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
                 </Link>
               );
             })}
