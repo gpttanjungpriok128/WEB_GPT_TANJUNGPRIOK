@@ -4,7 +4,11 @@ import api from "../services/api";
 import PageHero from "../components/PageHero";
 import StoreOrderProgress from "../components/StoreOrderProgress";
 import StoreOrderInvoice from "../components/StoreOrderInvoice";
+import { normalizeStoreImagePath } from "../utils/storeImage";
 import { ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
+import { clampQuantity, getStockForSize, normalizeSizeKey } from "../utils/storeStock";
+
+const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 
 const ORDER_FILTERS = [
   { value: "active", label: "Perlu Dipantau" },
@@ -44,6 +48,17 @@ function formatShortDate(value) {
   });
 }
 
+function readStoredCart() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
 function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -53,6 +68,7 @@ function MyOrdersPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [copyFeedback, setCopyFeedback] = useState("");
+  const [reorderLoadingId, setReorderLoadingId] = useState(null);
 
   const fetchMyOrders = async (search = "") => {
     setLoading(true);
@@ -158,6 +174,140 @@ function MyOrdersPage() {
       window.setTimeout(() => setCopyFeedback(""), 2500);
     } catch {
       setCopyFeedback("Browser tidak bisa menyalin kode pesanan.");
+    }
+  };
+
+  const handleReorder = async (order) => {
+    if (!order?.id || !Array.isArray(order.items) || order.items.length === 0) {
+      setCopyFeedback("Pesanan ini belum punya item yang bisa dibeli lagi.");
+      window.setTimeout(() => setCopyFeedback(""), 2500);
+      return;
+    }
+
+    const itemsWithSlug = order.items.filter((item) => item?.productSlug);
+    if (itemsWithSlug.length === 0) {
+      setCopyFeedback("Produk pada pesanan ini sudah tidak tersedia untuk dibeli ulang.");
+      window.setTimeout(() => setCopyFeedback(""), 2500);
+      return;
+    }
+
+    setReorderLoadingId(order.id);
+
+    try {
+      const responses = await Promise.allSettled(
+        itemsWithSlug.map((item) => api.get(`/store/products/${item.productSlug}`)),
+      );
+
+      const productMap = new Map();
+      responses.forEach((result, index) => {
+        if (result.status === "fulfilled" && result.value?.data?.data) {
+          productMap.set(itemsWithSlug[index].productSlug, result.value.data.data);
+        }
+      });
+
+      const nextCart = [...readStoredCart()];
+      let addedItems = 0;
+      let skippedItems = 0;
+
+      order.items.forEach((item) => {
+        if (!item?.productSlug) {
+          skippedItems += 1;
+          return;
+        }
+
+        const product = productMap.get(item.productSlug);
+        if (!product) {
+          skippedItems += 1;
+          return;
+        }
+
+        const requestedSize = normalizeSizeKey(item.size);
+        const availableSizes = Array.isArray(product.sizes)
+          ? product.sizes.map((size) => normalizeSizeKey(size)).filter(Boolean)
+          : [];
+        const fallbackSize =
+          availableSizes.find((size) => getStockForSize(product, size) > 0) ||
+          availableSizes[0] ||
+          "M";
+        const size =
+          requestedSize && getStockForSize(product, requestedSize) > 0
+            ? requestedSize
+            : fallbackSize;
+        const sizeStock = getStockForSize(product, size);
+
+        if (sizeStock <= 0) {
+          skippedItems += 1;
+          return;
+        }
+
+        const normalizedPrimaryImage = normalizeStoreImagePath(product.imageUrl);
+        const normalizedImageUrls = Array.isArray(product.imageUrls)
+          ? product.imageUrls.map(normalizeStoreImagePath).filter(Boolean)
+          : normalizedPrimaryImage
+            ? [normalizedPrimaryImage]
+            : [];
+        const quantity = clampQuantity(item.quantity || 1, sizeStock);
+        const variantKey = `${product.id}-${size}`;
+        const existingItemIndex = nextCart.findIndex(
+          (cartItem) => cartItem.variantKey === variantKey,
+        );
+
+        if (existingItemIndex >= 0) {
+          const existingItem = nextCart[existingItemIndex];
+          nextCart[existingItemIndex] = {
+            ...existingItem,
+            productId: product.id,
+            name: product.name,
+            price: Number(product.finalPrice ?? product.basePrice ?? item.unitPrice ?? 0),
+            image: existingItem.image || normalizedPrimaryImage,
+            imageUrls:
+              Array.isArray(existingItem.imageUrls) && existingItem.imageUrls.length > 0
+                ? existingItem.imageUrls
+                : normalizedImageUrls,
+            size,
+            color: product.color || item.color || "-",
+            quantity: clampQuantity((existingItem.quantity || 0) + quantity, sizeStock),
+            stock: sizeStock,
+            stockBySize: product.stockBySize || {},
+          };
+        } else {
+          nextCart.push({
+            variantKey,
+            productId: product.id,
+            name: product.name,
+            price: Number(product.finalPrice ?? product.basePrice ?? item.unitPrice ?? 0),
+            image: normalizedPrimaryImage,
+            imageUrls: normalizedImageUrls,
+            size,
+            color: product.color || item.color || "-",
+            quantity,
+            stock: sizeStock,
+            stockBySize: product.stockBySize || {},
+          });
+        }
+
+        addedItems += 1;
+      });
+
+      if (addedItems === 0) {
+        setCopyFeedback("Belum ada item yang ready untuk dibeli lagi saat ini.");
+        window.setTimeout(() => setCopyFeedback(""), 2800);
+        return;
+      }
+
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(nextCart));
+      window.dispatchEvent(new Event("cartUpdated"));
+      setCopyFeedback(
+        skippedItems > 0
+          ? `${addedItems} item dimasukkan ke keranjang, ${skippedItems} item dilewati karena stok atau produknya tidak tersedia.`
+          : `${addedItems} item dimasukkan ke keranjang.`,
+      );
+      window.setTimeout(() => setCopyFeedback(""), 3200);
+    } catch {
+      setCopyFeedback("Gagal menyiapkan pesanan untuk dibeli lagi.");
+      window.setTimeout(() => setCopyFeedback(""), 2800);
+    } finally {
+      setReorderLoadingId(null);
     }
   };
 
@@ -283,6 +433,14 @@ function MyOrdersPage() {
                 <p>Pembayaran: {latestActiveOrder.paymentMethod || "-"}</p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleReorder(latestActiveOrder)}
+                  disabled={reorderLoadingId === latestActiveOrder.id}
+                  className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 disabled:opacity-60 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                >
+                  {reorderLoadingId === latestActiveOrder.id ? "Menyiapkan..." : "Beli Lagi"}
+                </button>
                 <Link
                   to={`/track-order?orderCode=${encodeURIComponent(latestActiveOrder.orderCode)}&phone=${encodeURIComponent(latestActiveOrder.customerPhone || "")}`}
                   className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
@@ -440,6 +598,14 @@ function MyOrdersPage() {
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleReorder(order)}
+                      disabled={reorderLoadingId === order.id}
+                      className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 disabled:opacity-60 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                    >
+                      {reorderLoadingId === order.id ? "Menyiapkan..." : "Beli Lagi"}
+                    </button>
                     <Link
                       to={`/track-order?orderCode=${encodeURIComponent(order.orderCode)}&phone=${encodeURIComponent(order.customerPhone || "")}`}
                       className="rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"

@@ -14,6 +14,12 @@ import {
   getTotalStock,
   normalizeSizeKey,
 } from "../utils/storeStock";
+import {
+  readStoreWishlist,
+  STORE_WISHLIST_STORAGE_KEY,
+  STORE_WISHLIST_UPDATED_EVENT,
+  toggleStoreWishlist,
+} from "../utils/storeWishlist";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const REVIEW_IMAGE_LIMIT = 3;
@@ -302,6 +308,21 @@ const ShoppingCartIcon = ({ className = "h-4 w-4" }) => (
     <circle cx="9" cy="21" r="1" />
     <circle cx="20" cy="21" r="1" />
     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+  </svg>
+);
+
+const WishlistIcon = ({ filled = false, className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 20s-6.5-3.8-6.5-9.25A3.75 3.75 0 0 1 12 8a3.75 3.75 0 0 1 6.5 2.75C18.5 16.2 12 20 12 20Z" />
   </svg>
 );
 
@@ -657,6 +678,7 @@ function ProductDetailPage() {
   const touchDeltaRef = useRef({ x: 0, y: 0 });
   const prefetchedDetailImagesRef = useRef(new Set());
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistIds, setWishlistIds] = useState(() => readStoreWishlist());
 
   useEffect(() => {
     const updateCartCount = () => {
@@ -681,6 +703,25 @@ function ProductDetailPage() {
     return () => {
       window.removeEventListener("storage", updateCartCount);
       window.removeEventListener("cartUpdated", updateCartCount);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const syncWishlist = () => setWishlistIds(readStoreWishlist());
+    const handleStorage = (event) => {
+      if (event.key === STORE_WISHLIST_STORAGE_KEY) {
+        syncWishlist();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(STORE_WISHLIST_UPDATED_EVENT, syncWishlist);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(STORE_WISHLIST_UPDATED_EVENT, syncWishlist);
     };
   }, []);
 
@@ -1059,6 +1100,20 @@ function ProductDetailPage() {
     }
   };
 
+  const handleToggleWishlist = () => {
+    if (!product) return;
+
+    const nextWishlist = toggleStoreWishlist(product.id);
+    const isSaved = nextWishlist.includes(Number(product.id));
+    setWishlistIds(nextWishlist);
+    setFeedback(
+      isSaved
+        ? `${product.name} disimpan ke wishlist.`
+        : `${product.name} dihapus dari wishlist.`,
+    );
+    setTimeout(() => setFeedback(""), 2500);
+  };
+
   const scrollToSizeGuide = () => {
     if (typeof document === "undefined") return;
     document.getElementById("size-guide-info")?.scrollIntoView({
@@ -1117,6 +1172,7 @@ function ProductDetailPage() {
     reviewForm.orderCode.trim().length > 0 &&
     reviewForm.phone.trim().length > 0 &&
     Number(reviewForm.rating) >= 1;
+  const isWishlisted = wishlistIds.includes(Number(product.id));
 
   const handleImageError = (index) => {
     setFailedImages((prev) => new Set([...prev, index]));
@@ -1492,6 +1548,20 @@ function ProductDetailPage() {
               </div>
               <span className="hidden sm:inline">Keranjang</span>
             </Link>
+            <button
+              type="button"
+              onClick={handleToggleWishlist}
+              className={`inline-flex items-center gap-2 text-xs font-medium transition ${
+                isWishlisted
+                  ? "text-rose-500 dark:text-rose-300"
+                  : "text-brand-600 hover:text-brand-900 dark:text-brand-300 dark:hover:text-white"
+              }`}
+            >
+              <WishlistIcon filled={isWishlisted} className="h-4.5 w-4.5" />
+              <span className="hidden sm:inline">
+                {isWishlisted ? "Wishlisted" : "Wishlist"}
+              </span>
+            </button>
             <button
               type="button"
               onClick={handleShare}

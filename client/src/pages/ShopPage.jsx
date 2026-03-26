@@ -11,6 +11,12 @@ import {
   STORE_CATALOG_SYNC_KEY,
   writeStoreCatalogSnapshot,
 } from "../utils/storeCatalogCache";
+import {
+  readStoreWishlist,
+  STORE_WISHLIST_STORAGE_KEY,
+  STORE_WISHLIST_UPDATED_EVENT,
+  toggleStoreWishlist,
+} from "../utils/storeWishlist";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const PROMO_VIDEO_URL = "https://youtu.be/oOOdw2ulGIg";
@@ -281,13 +287,27 @@ const SORT_LABELS = {
   stock: "Stok Terbanyak",
   name: "Nama A-Z",
 };
-const SIZE_FILTER_OPTIONS = ["all", "S", "M", "L", "XL"];
 const SHOP_SECTION_SHELL = "relative overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,248,0.92))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,rgba(8,16,12,0.94),rgba(6,12,9,0.92))] sm:p-6";
 const SHOP_SECTION_LABEL = "text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600/80 dark:text-emerald-200/70";
 const PRODUCTS_PER_PAGE = 16;
 const PRODUCT_CACHE_KEY = "gpt_tanjungpriok_shop_catalog_v1";
 const PRODUCT_CACHE_TTL = 1000 * 60 * 10;
 const USE_FALLBACK_PRODUCTS = import.meta.env.MODE === "development";
+
+const HeartIcon = ({ filled = false, className = "h-4 w-4" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 20s-6.5-3.8-6.5-9.25A3.75 3.75 0 0 1 12 8a3.75 3.75 0 0 1 6.5 2.75C18.5 16.2 12 20 12 20Z" />
+  </svg>
+);
 
 const readShopBootCache = () => {
   if (typeof window === "undefined") return null;
@@ -383,7 +403,6 @@ function ShopPage() {
     if (bootCache?.data) return bootCache.data;
     return USE_FALLBACK_PRODUCTS ? FALLBACK_PRODUCTS : [];
   });
-  const [selections, setSelections] = useState({});
   const [cartItems, setCartItems] = useState([]);
   const [isCartHydrated, setIsCartHydrated] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(() => !bootCache && !USE_FALLBACK_PRODUCTS);
@@ -395,9 +414,9 @@ function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
-  const [sizeFilter, setSizeFilter] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
   const [catalogFeedback, setCatalogFeedback] = useState("");
+  const [wishlistIds, setWishlistIds] = useState(() => readStoreWishlist());
   const promoVideoSrc = normalizeYouTubeUrl(PROMO_VIDEO_URL);
   const [isPromoVideoActive, setIsPromoVideoActive] = useState(false);
   const [hasBootCache, setHasBootCache] = useState(() => Boolean(bootCache));
@@ -424,19 +443,23 @@ function ShopPage() {
   }, [cartItems, isCartHydrated]);
 
   useEffect(() => {
-    setSelections((previous) => {
-      const next = { ...previous };
-      for (const product of products) {
-        if (!next[product.id]) {
-          next[product.id] = {
-            size: getDefaultSize(product),
-            quantity: 1,
-          };
-        }
+    if (typeof window === "undefined") return undefined;
+
+    const syncWishlist = () => setWishlistIds(readStoreWishlist());
+    const handleStorage = (event) => {
+      if (event.key === STORE_WISHLIST_STORAGE_KEY) {
+        syncWishlist();
       }
-      return next;
-    });
-  }, [products]);
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(STORE_WISHLIST_UPDATED_EVENT, syncWishlist);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(STORE_WISHLIST_UPDATED_EVENT, syncWishlist);
+    };
+  }, []);
 
   const fetchProducts = async ({ page = 1, append = false, silent = false } = {}) => {
     const params = {
@@ -584,14 +607,6 @@ function ShopPage() {
       nextProducts = nextProducts.filter((product) => Boolean(product.promoIsActive));
     }
 
-    if (sizeFilter !== "all") {
-      nextProducts = nextProducts.filter((product) =>
-        getAvailableSizes(product)
-          .map((size) => normalizeSizeLabel(size))
-          .includes(sizeFilter),
-      );
-    }
-
     nextProducts.sort((left, right) => {
       if (sortBy === "price-low") {
         return Number(left.finalPrice ?? left.basePrice ?? 0) - Number(right.finalPrice ?? right.basePrice ?? 0);
@@ -609,7 +624,7 @@ function ShopPage() {
     });
 
     return nextProducts;
-  }, [availabilityFilter, products, deferredSearch, sizeFilter, sortBy]);
+  }, [availabilityFilter, products, deferredSearch, sortBy]);
 
   const totalStockAll = useMemo(
     () => products.reduce((sum, product) => sum + getTotalStock(product), 0),
@@ -628,6 +643,49 @@ function ShopPage() {
     (total, item) => total + item.quantity,
     0,
   );
+  const cartProductIds = useMemo(
+    () => new Set(cartItems.map((item) => Number(item.productId)).filter((value) => Number.isInteger(value))),
+    [cartItems],
+  );
+  const wishlistProducts = useMemo(
+    () => products.filter((product) => wishlistIds.includes(Number(product.id))),
+    [products, wishlistIds],
+  );
+  const recommendedProducts = useMemo(() => {
+    const seedProducts = products.filter(
+      (product) =>
+        wishlistIds.includes(Number(product.id)) || cartProductIds.has(Number(product.id)),
+    );
+    const preferredColors = new Set(
+      seedProducts
+        .map((product) => String(product.color || "").trim().toLowerCase())
+        .filter(Boolean),
+    );
+
+    return [...products]
+      .filter(
+        (product) =>
+          !wishlistIds.includes(Number(product.id)) &&
+          !cartProductIds.has(Number(product.id)),
+      )
+      .sort((left, right) => {
+        const scoreProduct = (product) => {
+          const totalStock = getTotalStock(product);
+          const isPreferredColor = preferredColors.has(String(product.color || "").trim().toLowerCase());
+          return (
+            (isPreferredColor ? 25 : 0) +
+            (product.promoIsActive ? 18 : 0) +
+            (totalStock > 0 ? 12 : -30) +
+            Math.min(totalStock, 20) +
+            (Number(product.ratingAverage || 0) * 4) +
+            Math.min(Number(product.ratingCount || 0), 12)
+          );
+        };
+
+        return scoreProduct(right) - scoreProduct(left);
+      })
+      .slice(0, 4);
+  }, [cartProductIds, products, wishlistIds]);
   const catalogSummary = useMemo(
     () => ({
       ready: filteredProducts.filter((product) => getTotalStock(product) > 0).length,
@@ -642,29 +700,13 @@ function ShopPage() {
   const availabilityLabel = AVAILABILITY_LABELS[availabilityFilter] || "Semua Produk";
   const sortLabel = SORT_LABELS[sortBy] || "Terbaru";
   const activeSearchLabel = deferredSearch.trim();
-  const sizeFilterLabel = sizeFilter === "all" ? "Semua ukuran" : `Size ${sizeFilter}`;
-
-  const updateSelection = (productId, key, value) => {
-    setSelections((previous) => ({
-      ...previous,
-      [productId]: {
-        ...previous[productId],
-        [key]: value,
-      },
-    }));
-  };
 
   const addToCart = (product) => {
-    const selection = selections[product.id] || {
-      size: getDefaultSize(product),
-      quantity: 1,
-    };
-
-    const size = selection.size || getDefaultSize(product);
+    const size = getDefaultSize(product);
     const sizeStock = getStockForSize(product, size);
     if (sizeStock <= 0) return;
 
-    const quantity = clampQuantity(selection.quantity, sizeStock);
+    const quantity = clampQuantity(1, sizeStock);
     const variantKey = `${product.id}-${size}`;
     const normalizedPrimaryImage = normalizeStoreImagePath(product.imageUrl);
     const normalizedImageUrls = Array.isArray(product.imageUrls)
@@ -713,6 +755,21 @@ function ShopPage() {
       ];
     });
     setCatalogFeedback(`${product.name} size ${normalizeSizeLabel(size)} ditambahkan ke keranjang.`);
+    window.setTimeout(() => setCatalogFeedback(""), 2500);
+  };
+
+  const handleToggleWishlist = (product, event) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    const nextWishlist = toggleStoreWishlist(product.id);
+    const isSaved = nextWishlist.includes(Number(product.id));
+    setWishlistIds(nextWishlist);
+    setCatalogFeedback(
+      isSaved
+        ? `${product.name} disimpan ke wishlist.`
+        : `${product.name} dihapus dari wishlist.`,
+    );
     window.setTimeout(() => setCatalogFeedback(""), 2500);
   };
 
@@ -930,9 +987,13 @@ function ShopPage() {
               <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
               <span>{availabilityLabel}</span>
               <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
-              <span>{sizeFilterLabel}</span>
-              <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
               <span>{sortLabel}</span>
+              {wishlistProducts.length > 0 && (
+                <>
+                  <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
+                  <span>Wishlist {wishlistProducts.length}</span>
+                </>
+              )}
               {activeSearchLabel && (
                 <>
                   <span className="h-1 w-1 rounded-full bg-brand-300 dark:bg-brand-600" />
@@ -1113,30 +1174,27 @@ function ShopPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
-                    Filter Ukuran
+                    Ringkasan Katalog
                   </p>
                   <p className="mt-1 text-sm text-brand-600 dark:text-brand-300">
-                    Fokuskan katalog ke size yang benar-benar tersedia untuk dipakai sekarang.
+                    Fokus ke produk siap, promo aktif, dan stok yang mulai menipis.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {SIZE_FILTER_OPTIONS.map((sizeOption) => (
-                    <button
-                      key={sizeOption}
-                      type="button"
-                      onClick={() => setSizeFilter(sizeOption)}
-                      className={`min-h-[40px] rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
-                        sizeFilter === sizeOption
-                          ? "border-primary bg-primary text-white"
-                          : "border-brand-200 bg-white text-brand-700 hover:border-brand-300 hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-                      }`}
-                    >
-                      {sizeOption === "all" ? "Semua" : sizeOption}
-                    </button>
-                  ))}
-                </div>
+                {wishlistProducts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      document.getElementById("wishlist-section")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      })
+                    }
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-brand-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                  >
+                    Wishlist {wishlistProducts.length}
+                  </button>
+                )}
               </div>
-
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
                   {
@@ -1181,8 +1239,126 @@ function ShopPage() {
           </section>
         )}
 
+        {(wishlistProducts.length > 0 || recommendedProducts.length > 0) && (
+          <section className="grid gap-4 xl:grid-cols-2">
+            {wishlistProducts.length > 0 && (
+              <article
+                id="wishlist-section"
+                className={`${SHOP_SECTION_SHELL} space-y-4`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className={SHOP_SECTION_LABEL}>Wishlist</p>
+                    <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
+                      Produk yang Anda simpan
+                    </h3>
+                    <p className="mt-2 text-sm leading-7 text-brand-600 dark:text-brand-300">
+                      Simpan produk untuk dibeli nanti tanpa kehilangan fokus saat memilih.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-brand-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-700 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                    {wishlistProducts.length} item
+                  </span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {wishlistProducts.slice(0, 4).map((product) => (
+                    <Link
+                      key={`wishlist-${product.id}`}
+                      to={`/shop/${product.slug}`}
+                      className="group rounded-[1.35rem] border border-brand-200/80 bg-white/90 p-3 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md dark:border-brand-700 dark:bg-brand-900/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1rem] bg-brand-50 dark:bg-brand-900/50">
+                          <img
+                            src={resolveStoreImageUrl(product.imageUrl) || storePlaceholderImage}
+                            alt={product.name}
+                            className="image-soft h-full w-full object-contain"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="line-clamp-2 text-sm font-semibold text-brand-900 dark:text-white">
+                            {product.name}
+                          </p>
+                          <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                            {product.color || "GTshirt collection"}
+                          </p>
+                          <p className="mt-2 text-sm font-semibold text-primary">
+                            {formatRupiah(Number(product.finalPrice ?? product.basePrice ?? 0))}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </article>
+            )}
+
+            {recommendedProducts.length > 0 && (
+              <article className={`${SHOP_SECTION_SHELL} space-y-4`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className={SHOP_SECTION_LABEL}>Rekomendasi</p>
+                    <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-brand-900 dark:text-white">
+                      Produk yang layak dilihat berikutnya
+                    </h3>
+                    <p className="mt-2 text-sm leading-7 text-brand-600 dark:text-brand-300">
+                      Rekomendasi diambil dari produk yang Anda simpan, item di keranjang, promo aktif, dan stok yang masih sehat.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {recommendedProducts.map((product) => (
+                    <Link
+                      key={`recommended-${product.id}`}
+                      to={`/shop/${product.slug}`}
+                      className="group rounded-[1.35rem] border border-brand-200/80 bg-white/90 p-3 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md dark:border-brand-700 dark:bg-brand-900/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1rem] bg-brand-50 dark:bg-brand-900/50">
+                          <img
+                            src={resolveStoreImageUrl(product.imageUrl) || storePlaceholderImage}
+                            alt={product.name}
+                            className="image-soft h-full w-full object-contain"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap gap-1.5">
+                            {product.promoIsActive && (
+                              <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
+                                Promo
+                              </span>
+                            )}
+                            {getTotalStock(product) > 0 && getTotalStock(product) < 6 && (
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                Stok Tipis
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-2 line-clamp-2 text-sm font-semibold text-brand-900 dark:text-white">
+                            {product.name}
+                          </p>
+                          <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                            {product.color || "GTshirt collection"}
+                          </p>
+                          <p className="mt-2 text-sm font-semibold text-primary">
+                            {formatRupiah(Number(product.finalPrice ?? product.basePrice ?? 0))}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </article>
+            )}
+          </section>
+        )}
+
         {isLoadingProducts && products.length === 0 ? (
-          <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="shop-grid grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={`skeleton-${index}`}
@@ -1243,7 +1419,7 @@ function ShopPage() {
                   Semua produk sedang kosong. Pantau terus, kami akan restock segera.
                 </p>
               </>
-            ) : (availabilityFilter !== "all" || sizeFilter !== "all") && !searchQuery.trim() ? (
+            ) : availabilityFilter !== "all" && !searchQuery.trim() ? (
               <>
                 <h3 className="text-xl font-bold text-brand-900 dark:text-white">
                   Tidak ada produk sesuai filter
@@ -1293,7 +1469,7 @@ function ShopPage() {
                 </button>
               </div>
             )}
-            <div className="shop-grid grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="shop-grid grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {filteredProducts.map((product, index) => {
                 const effectivePrice = Number(
                   product.finalPrice ?? product.basePrice ?? 0,
@@ -1316,25 +1492,37 @@ function ShopPage() {
                     ? `Sisa ${totalStock}`
                     : `${totalStock} pcs`;
                 const compactMeta = `${availableSizes.length > 0 ? `Ukuran ${availableSizePreview}` : "Ukuran menyusul"}${product.color ? ` · ${product.color}` : ""}`;
-                const selection = selections[product.id] || {
-                  size: getDefaultSize(product),
-                  quantity: 1,
-                };
-                const selectedSize = selection.size || getDefaultSize(product);
-                const selectedSizeStock = getStockForSize(product, selectedSize);
+                const defaultSize = getDefaultSize(product);
+                const defaultSizeStock = getStockForSize(product, defaultSize);
+                const isWishlisted = wishlistIds.includes(Number(product.id));
+                const sizeSummary = availableSizes.length > 0
+                  ? availableSizePreview
+                  : "Cek detail produk";
 
                 return (
                   <article
                     key={product.id}
-                    className="product-card group card-soft flex flex-col overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_28px_60px_rgba(15,23,42,0.12)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]"
+                    className="product-card group card-soft relative flex flex-col overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_28px_60px_rgba(15,23,42,0.12)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]"
                   >
+                    <button
+                      type="button"
+                      onClick={(event) => handleToggleWishlist(product, event)}
+                      className={`absolute right-3 top-3 z-[3] inline-flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-sm transition ${
+                        isWishlisted
+                          ? "border-rose-200 bg-rose-50 text-rose-500 dark:border-rose-900/60 dark:bg-rose-900/20 dark:text-rose-300"
+                          : "border-white/80 bg-white/90 text-brand-500 hover:text-rose-500 dark:border-brand-700 dark:bg-brand-950/70 dark:text-brand-300"
+                      }`}
+                      aria-label={isWishlisted ? "Hapus dari wishlist" : "Simpan ke wishlist"}
+                    >
+                      <HeartIcon filled={isWishlisted} className="h-4 w-4" />
+                    </button>
                     <Link
                       to={`/shop/${product.slug}`}
                       className="flex flex-1 flex-col"
                     >
                       <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] p-2.5 dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:p-3">
                         <div className="pointer-events-none absolute inset-2.5 rounded-[1.2rem] border border-emerald-950/[0.08] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:border-emerald-900/30 dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))]" />
-                        <div className="absolute left-4 top-4 z-[2] flex flex-wrap gap-2">
+                        <div className="absolute left-4 top-4 z-[2] flex max-w-[calc(100%-4.75rem)] flex-wrap gap-2">
                           {product.promoIsActive && (
                             <span className="rounded-full bg-rose-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
                               Promo
@@ -1416,50 +1604,34 @@ function ShopPage() {
                     </Link>
 
                     <div className="border-t border-brand-100 px-3.5 pb-3.5 pt-3 dark:border-brand-800 sm:px-4.5 sm:pb-4.5">
-                      <div className="flex flex-wrap gap-2">
-                        {availableSizes.length > 0 ? (
-                          availableSizes.slice(0, 4).map((size) => (
-                            <button
-                              key={`${product.id}-${size}`}
-                              type="button"
-                              onClick={() => updateSelection(product.id, "size", size)}
-                              className={`min-h-[36px] rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
-                                selectedSize === size
-                                  ? "border-primary bg-primary text-white"
-                                  : "border-brand-200 bg-white text-brand-700 hover:border-brand-300 hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-                              }`}
-                            >
-                              {size}
-                            </button>
-                          ))
-                        ) : (
-                          <span className="text-xs text-brand-500 dark:text-brand-400">
-                            Ukuran belum tersedia
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-3 flex items-center justify-between gap-3">
-                        <p className="text-[11px] text-brand-500 dark:text-brand-400">
-                          {selectedSizeStock > 0
-                            ? `Size ${selectedSize} tersedia ${selectedSizeStock} pcs`
-                            : "Pilih detail produk untuk melihat batch berikutnya"}
+                      <div className="rounded-[1.05rem] border border-brand-200/80 bg-brand-50/80 px-3 py-2.5 dark:border-brand-700 dark:bg-brand-900/30">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
+                          Ukuran Siap
                         </p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => addToCart(product)}
-                            disabled={selectedSizeStock <= 0}
-                            className="inline-flex min-h-[40px] items-center justify-center rounded-[1rem] bg-primary px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-primary/90 disabled:opacity-50"
-                          >
-                            Tambah
-                          </button>
-                          <Link
-                            to={`/shop/${product.slug}`}
-                            className="inline-flex min-h-[40px] items-center justify-center rounded-[1rem] border border-brand-200 bg-white px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
-                          >
-                            Detail
-                          </Link>
-                        </div>
+                        <p className="mt-1 text-sm font-semibold text-brand-900 dark:text-white">
+                          {sizeSummary}
+                        </p>
+                        <p className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">
+                          {defaultSizeStock > 0
+                            ? `Tambah cepat akan memakai size ${defaultSize}. Pilihan lengkap ada di detail produk.`
+                            : "Lihat detail produk untuk cek batch berikutnya."}
+                        </p>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => addToCart(product)}
+                          disabled={defaultSizeStock <= 0}
+                          className="inline-flex min-h-[42px] w-full items-center justify-center rounded-[1rem] bg-primary px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-primary/90 disabled:opacity-50"
+                        >
+                          Tambah
+                        </button>
+                        <Link
+                          to={`/shop/${product.slug}`}
+                          className="inline-flex min-h-[42px] items-center justify-center rounded-[1rem] border border-brand-200 bg-white px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40"
+                        >
+                          Detail
+                        </Link>
                       </div>
                     </div>
                   </article>
