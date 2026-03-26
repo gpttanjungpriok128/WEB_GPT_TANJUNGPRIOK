@@ -2013,7 +2013,7 @@ function ProductDetailPage() {
             </Link>
           </div>
 
-          <div className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
+          <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
             {showcaseProducts.map((item) => {
               if (!item || !item.id) return null;
               
@@ -2026,9 +2026,9 @@ function ProductDetailPage() {
                 <Link
                   key={item.id}
                   to={`/shop/${item.slug}`}
-                  className="group block min-w-[76vw] shrink-0 snap-start sm:min-w-[20rem] md:min-w-0"
+                  className="group block min-w-[62vw] shrink-0 snap-start sm:min-w-[18rem] md:min-w-0"
                 >
-                  <div className="overflow-hidden rounded-[1.9rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,245,247,0.95))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.06)] transition-transform duration-300 group-hover:-translate-y-1 dark:bg-[linear-gradient(180deg,rgba(18,23,20,0.98),rgba(9,13,12,0.96))]">
+                  <div className="overflow-hidden rounded-[1.5rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,245,247,0.95))] p-3 shadow-[0_20px_48px_rgba(15,23,42,0.06)] transition-transform duration-300 group-hover:-translate-y-1 dark:bg-[linear-gradient(180deg,rgba(18,23,20,0.98),rgba(9,13,12,0.96))] sm:rounded-[1.9rem] sm:p-4">
                     <img
                       src={finalImageUrl}
                       alt={item.name}
@@ -2046,8 +2046,8 @@ function ProductDetailPage() {
                       className="image-soft aspect-[4/5] w-full object-contain mix-blend-multiply dark:mix-blend-normal"
                     />
                   </div>
-                  <div className="px-1 pt-4">
-                    <h3 className="text-[1.4rem] font-medium tracking-[-0.04em] text-brand-950 dark:text-white">
+                  <div className="px-1 pt-3 sm:pt-4">
+                    <h3 className="line-clamp-2 text-lg font-medium tracking-[-0.04em] text-brand-950 dark:text-white sm:text-[1.4rem]">
                       {item.name}
                     </h3>
                     <p className="mt-2 text-sm text-brand-500 dark:text-brand-400">
