@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PageHero from "../components/PageHero";
+import api from "../services/api";
 
 function ContactPage() {
   const contactEmail = "gpt.tanjungpriok128@gmail.com";
@@ -11,19 +12,37 @@ function ContactPage() {
 
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState({ type: "", text: "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFeedback({ type: "", text: "" });
     setIsSubmitting(true);
-    setFeedback("Mengirim pesan...");
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await api.post("/contact-messages", {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        subject: form.subject.trim(),
+        message: form.message.trim(),
+      });
       setForm({ name: "", email: "", subject: "", message: "" });
-      setFeedback("✓ Pesan berhasil dikirim. Terima kasih telah menghubungi kami!");
-      setTimeout(() => setFeedback(""), 5000);
-    } catch {
-      setFeedback("✗ Gagal mengirim pesan. Silakan coba lagi.");
+      setFeedback({
+        type: "success",
+        text: "Pesan berhasil dikirim. Tim kami akan menindaklanjuti secepatnya.",
+      });
+      setTimeout(() => setFeedback({ type: "", text: "" }), 5000);
+    } catch (error) {
+      const validationMessage = Array.isArray(error.response?.data?.errors)
+        ? error.response.data.errors[0]?.msg
+        : "";
+
+      setFeedback({
+        type: "error",
+        text:
+          validationMessage ||
+          error.response?.data?.message ||
+          "Gagal mengirim pesan. Silakan coba lagi.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -155,13 +174,16 @@ function ContactPage() {
           <button type="submit" disabled={isSubmitting} className="btn-primary w-full disabled:opacity-60">
             {isSubmitting ? "Mengirim..." : "Kirim Pesan"}
           </button>
-          {feedback && (
+          <p className="text-xs leading-5 text-brand-500 dark:text-brand-400">
+            Pesan yang Anda kirim akan langsung masuk ke inbox admin GPT Tanjung Priok. Untuk kebutuhan cepat, Anda juga tetap bisa menghubungi WhatsApp di samping.
+          </p>
+          {feedback.text && (
             <div className={`rounded-xl p-3 text-sm text-center font-medium ${
-              feedback.startsWith("✓")
+              feedback.type === "success"
                 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                 : "bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
             }`}>
-              {feedback}
+              {feedback.text}
             </div>
           )}
           </div>

@@ -70,6 +70,7 @@ app.use('/api', apiLimiter);
 app.use('/api/auth', authLimiter);
 app.use('/api/store/orders', publicWriteLimiter);
 app.use('/api/store/products/:slug/reviews', publicWriteLimiter);
+app.use('/api/contact-messages', publicWriteLimiter);
 app.use('/api', routes);
 app.use(notFoundHandler);
 app.use(globalErrorHandler);

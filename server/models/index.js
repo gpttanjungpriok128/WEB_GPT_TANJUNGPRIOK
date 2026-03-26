@@ -5,6 +5,7 @@ const Schedule = require('./schedule');
 const Gallery = require('./gallery');
 const PrayerRequest = require('./prayerRequest');
 const LiveStreamSetting = require('./liveStreamSetting');
+const ContactMessage = require('./contactMessage');
 const CongregationMember = require('./congregationMember');
 const StoreProduct = require('./storeProduct');
 const StoreOrder = require('./storeOrder');
@@ -43,6 +44,7 @@ module.exports = {
   Gallery,
   PrayerRequest,
   LiveStreamSetting,
+  ContactMessage,
   CongregationMember,
   StoreProduct,
   StoreOrder,

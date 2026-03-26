@@ -1070,9 +1070,6 @@ function ProductDetailPage() {
   const selectedSizeLabel = selectedSize ? normalizeSizeKey(selectedSize) : "-";
   const readySizeCount = sizes.filter((size) => getStockForSize(product, size) > 0).length;
   const sizePreview = sizes.slice(0, 4).map((size) => normalizeSizeKey(size)).join(" / ");
-  const missionQuote = product.verse
-    ? `"${product.verse}" menginspirasi koleksi ini untuk tetap tampil modern, rapi, dan penuh makna.`
-    : "Setiap piece GTshirt dirancang untuk dipakai bertumbuh, melayani, dan membawa identitas iman ke ruang sehari-hari.";
   const curatedLabel = product.color
     ? `${product.color} Edition`
     : "The Curator Series";
@@ -1617,12 +1614,6 @@ function ProductDetailPage() {
                       <p>
                         {product.description || "GTshirt hadir sebagai apparel komunitas yang rapi, nyaman, dan siap dipakai bertumbuh bersama."}
                       </p>
-                      <div className="border-l-2 border-emerald-400/70 pl-4 text-sm italic text-brand-600 dark:text-brand-400">
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] not-italic text-brand-500 dark:text-brand-500">
-                          Mission
-                        </p>
-                        <p>{missionQuote}</p>
-                      </div>
                     </div>
                   </div>
                 </div>
