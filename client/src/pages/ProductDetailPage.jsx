@@ -2013,7 +2013,7 @@ function ProductDetailPage() {
             </Link>
           </div>
 
-          <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
+          <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-visible pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0">
             {showcaseProducts.map((item) => {
               if (!item || !item.id) return null;
               
@@ -2028,7 +2028,7 @@ function ProductDetailPage() {
                   to={`/shop/${item.slug}`}
                   className="group block w-[13.5rem] shrink-0 snap-start sm:w-[15rem] md:w-auto"
                 >
-                  <article className="overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/30 group-hover:shadow-[0_24px_50px_rgba(15,23,42,0.1)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]">
+                  <article className="overflow-hidden rounded-[1.45rem] border border-emerald-950/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,248,0.96))] shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-all duration-300 md:group-hover:-translate-y-1 md:group-hover:border-primary/30 md:group-hover:shadow-[0_24px_50px_rgba(15,23,42,0.1)] dark:border-emerald-900/30 dark:bg-[linear-gradient(180deg,rgba(10,18,14,0.96),rgba(7,12,10,0.94))] sm:rounded-[1.8rem]">
                     <div className="relative aspect-square overflow-hidden rounded-t-[1.45rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,247,245,0.92))] dark:bg-[linear-gradient(180deg,rgba(14,24,18,0.88),rgba(9,15,11,0.9))] sm:rounded-t-[1.8rem]">
                       <div className="pointer-events-none absolute inset-0 rounded-t-[1.45rem] bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,248,246,0.84))] dark:bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.14),transparent_50%),linear-gradient(180deg,rgba(14,24,18,0.78),rgba(9,15,11,0.88))] sm:rounded-t-[1.8rem]" />
                       <div className="relative z-[1] h-full w-full p-2.5 sm:p-3">
