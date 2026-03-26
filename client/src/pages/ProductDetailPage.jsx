@@ -1725,7 +1725,7 @@ function ProductDetailPage() {
               </div>
             )}
 
-            <div className="space-y-3 border-t border-brand-200/70 pt-6 dark:border-brand-800">
+            <div className="action-buttons-desktop space-y-3 border-t border-brand-200/70 pt-6 dark:border-brand-800">
               <button
                 type="button"
                 onClick={addToCart}
