@@ -3,7 +3,13 @@ const { sendPrayerRequestNotification } = require('../services/emailService');
 
 async function createPrayerRequest(req, res, next) {
   try {
-    const prayerRequest = await PrayerRequest.create(req.body);
+    const payload = {
+      name: String(req.body.name || '').trim(),
+      request: String(req.body.request || '').trim(),
+      isRead: false
+    };
+
+    const prayerRequest = await PrayerRequest.create(payload);
     await sendPrayerRequestNotification(prayerRequest);
     return res.status(201).json({ message: 'Prayer request submitted', data: prayerRequest });
   } catch (error) {

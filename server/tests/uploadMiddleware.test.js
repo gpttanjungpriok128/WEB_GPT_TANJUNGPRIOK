@@ -74,3 +74,17 @@ test('requirePersistentUploadStorage allows multipart uploads when Cloudinary is
 
   assert.equal(nextCalled, true);
 });
+
+test('buildSafeUploadFilename ignores attacker-controlled original filenames', () => {
+  delete require.cache[require.resolve('../middleware/uploadMiddleware')];
+  const { buildSafeUploadFilename } = require('../middleware/uploadMiddleware');
+
+  const filename = buildSafeUploadFilename({
+    originalname: '../../etc/passwd',
+    mimetype: 'image/png'
+  });
+
+  assert.match(filename, /^\d+-[a-f0-9]{32}\.png$/);
+  assert.doesNotMatch(filename, /\.\./);
+  assert.doesNotMatch(filename, /[\\/]/);
+});

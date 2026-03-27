@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
@@ -12,12 +13,29 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+function getUploadFileExtension(file) {
+  switch (String(file?.mimetype || '').toLowerCase()) {
+    case 'image/png':
+      return 'png';
+    case 'image/webp':
+      return 'webp';
+    case 'image/jpeg':
+    default:
+      return 'jpg';
+  }
+}
+
+function buildSafeUploadFilename(file) {
+  const extension = getUploadFileExtension(file);
+  return `${Date.now()}-${crypto.randomBytes(16).toString('hex')}.${extension}`;
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
+    const uniqueName = buildSafeUploadFilename(file);
     cb(null, uniqueName);
   }
 });
@@ -52,5 +70,6 @@ function requirePersistentUploadStorage(req, res, next) {
 module.exports = {
   canPersistUploads,
   requirePersistentUploadStorage,
-  uploadImage
+  uploadImage,
+  buildSafeUploadFilename
 };

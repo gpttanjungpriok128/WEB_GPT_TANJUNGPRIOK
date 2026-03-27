@@ -13,21 +13,18 @@ const {
 const { isCloudinaryConfigured, uploadLocalImageToCloudinary } = require('../services/cloudinaryService');
 const { syncRevenueReportToSheet, isSheetsConfigured } = require('../services/sheetsService');
 const { invalidateCache } = require('../middleware/cacheMiddleware');
+const {
+  ORDER_STATUSES,
+  canTransitionOrderStatus,
+  isReviewableOrderStatus,
+  buildOrderStatusTransitionError
+} = require('../utils/storeOrderStatus');
 
 const DEFAULT_SHIPPING_COST = 15000;
+const ORDER_CODE_LOCK_KEY = 91327014;
 const STORE_WHATSAPP_NUMBER = String(
   process.env.STORE_WHATSAPP_NUMBER || '6282118223784' // Format: +62 821-1822-3784
 ).replace(/\D/g, '');
-const ORDER_STATUSES = [
-  'new',
-  'confirmed',
-  'packed',
-  'ready_pickup',
-  'shipping',
-  'picked_up',
-  'completed',
-  'cancelled'
-];
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 const STORE_PRODUCT_CLOUDINARY_FOLDER = process.env.CLOUDINARY_PRODUCT_FOLDER || 'gpt-tanjungpriok/products';
 const STORE_REVIEW_CLOUDINARY_FOLDER = process.env.CLOUDINARY_REVIEW_FOLDER || 'gpt-tanjungpriok/reviews';
@@ -289,6 +286,64 @@ function getProductStockInfo(product) {
   const totalStock = totalStockFromMap(stockBySize);
 
   return { sizes, stockBySize, totalStock };
+}
+
+function normalizeItemSize(value = '') {
+  return String(value || '').trim().toUpperCase();
+}
+
+function buildProductQuantityMap(items = []) {
+  const quantityMap = {};
+
+  for (const item of items) {
+    const productId = Number(item?.productId);
+    if (!Number.isInteger(productId) || productId <= 0) {
+      continue;
+    }
+
+    if (!quantityMap[productId]) {
+      quantityMap[productId] = {};
+    }
+
+    const size = normalizeItemSize(item.size);
+    quantityMap[productId][size] = (quantityMap[productId][size] || 0) + Math.max(0, toInteger(item.quantity, 0));
+  }
+
+  return quantityMap;
+}
+
+function restoreStockBySize(currentStockBySize, additionsBySize, sizes) {
+  const safeSizes = normalizeSizes(sizes);
+  const nextStockBySize = { ...currentStockBySize };
+  let unmatchedQuantity = 0;
+
+  for (const [rawSize, rawQty] of Object.entries(additionsBySize || {})) {
+    const additionQty = Math.max(0, toInteger(rawQty, 0));
+    if (additionQty <= 0) {
+      continue;
+    }
+
+    const size = normalizeItemSize(rawSize);
+    if (size && safeSizes.includes(size)) {
+      nextStockBySize[size] = Math.max(0, toInteger(nextStockBySize[size], 0)) + additionQty;
+      continue;
+    }
+
+    unmatchedQuantity += additionQty;
+  }
+
+  if (unmatchedQuantity > 0 && safeSizes.length > 0) {
+    const distributedAdditions = distributeStockBySize(unmatchedQuantity, safeSizes);
+    for (const size of safeSizes) {
+      nextStockBySize[size] = Math.max(0, toInteger(nextStockBySize[size], 0))
+        + Math.max(0, toInteger(distributedAdditions[size], 0));
+    }
+  }
+
+  return {
+    stockBySize: nextStockBySize,
+    stock: totalStockFromMap(nextStockBySize)
+  };
 }
 
 function subtractStockBySize(currentStockBySize, deductionsBySize, sizes) {
@@ -745,10 +800,22 @@ async function getOrCreateStoreSettings(transaction = null) {
   return setting;
 }
 
+async function acquireOrderCodeLock(transaction) {
+  if (!transaction || sequelize.getDialect() !== 'postgres') {
+    return;
+  }
+
+  await sequelize.query('SELECT pg_advisory_xact_lock(:lockKey)', {
+    transaction,
+    replacements: { lockKey: ORDER_CODE_LOCK_KEY }
+  });
+}
+
 async function generateOrderCode(transaction) {
   const now = new Date();
   const dateCode = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
   const prefix = `GTS-${dateCode}-`;
+  await acquireOrderCodeLock(transaction);
   const latest = await StoreOrder.findOne({
     where: { orderCode: { [Op.like]: `${prefix}%` } },
     order: [['createdAt', 'DESC']],
@@ -963,6 +1030,13 @@ async function createProductReview(req, res, next) {
       return res.status(400).json({ message: 'Order dibatalkan dan tidak bisa diberi ulasan.' });
     }
 
+    if (!isReviewableOrderStatus(order.status)) {
+      await discardUploadedFiles(uploadedFiles);
+      return res.status(400).json({
+        message: 'Ulasan baru bisa dikirim setelah pesanan selesai diterima atau diambil.'
+      });
+    }
+
     const items = Array.isArray(order.items) ? order.items : [];
     const hasProduct = items.some((item) => Number(item.productId) === Number(product.id));
     if (!hasProduct) {
@@ -994,13 +1068,13 @@ async function createProductReview(req, res, next) {
       rating,
       reviewText: reviewText || null,
       imageUrls: uploadedPaths,
-      isApproved: true
+      isApproved: false
     });
     uploadedPaths = [];
     invalidateStoreCatalogCache();
 
     return res.status(201).json({
-      message: 'Ulasan berhasil dikirim',
+      message: 'Ulasan berhasil dikirim dan menunggu review admin',
       data: serializeReview(review)
     });
   } catch (error) {
@@ -1547,11 +1621,66 @@ async function deleteAdminReview(req, res, next) {
 
 async function resetAdminOrders(req, res, next) {
   const transaction = await sequelize.transaction();
+  let didMutateCatalog = false;
+
   try {
+    const deductedOrders = await StoreOrder.findAll({
+      attributes: ['id'],
+      where: {
+        stockDeductedAt: { [Op.ne]: null }
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+
+    const deductedOrderIds = deductedOrders.map((order) => order.id);
+    if (deductedOrderIds.length > 0) {
+      const deductedItems = await StoreOrderItem.findAll({
+        where: { orderId: deductedOrderIds },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+
+      const additionsByProduct = buildProductQuantityMap(deductedItems);
+      const productIds = Object.keys(additionsByProduct)
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value > 0);
+
+      if (productIds.length > 0) {
+        const products = await StoreProduct.findAll({
+          where: { id: productIds },
+          transaction,
+          lock: transaction.LOCK.UPDATE
+        });
+        const productMap = new Map(products.map((product) => [product.id, product]));
+
+        for (const [productIdText, additionsBySize] of Object.entries(additionsByProduct)) {
+          const product = productMap.get(Number(productIdText));
+          if (!product) {
+            continue;
+          }
+
+          const { sizes, stockBySize } = getProductStockInfo(product);
+          const restoredStock = restoreStockBySize(stockBySize, additionsBySize, sizes);
+          await product.update(
+            {
+              stockBySize: restoredStock.stockBySize,
+              stock: restoredStock.stock
+            },
+            { transaction }
+          );
+          didMutateCatalog = true;
+        }
+      }
+    }
+
     const deletedItems = await StoreOrderItem.destroy({ where: {}, transaction });
     const deletedOrders = await StoreOrder.destroy({ where: {}, transaction });
 
     await transaction.commit();
+    if (didMutateCatalog) {
+      invalidateStoreCatalogCache();
+    }
     triggerRevenueSheetSync({ status: 'all' });
     return res.status(200).json({
       message: 'Semua pesanan berhasil dihapus',
@@ -1586,6 +1715,21 @@ async function updateAdminOrderStatus(req, res, next) {
       return res.status(400).json({ message: 'Status order tidak valid' });
     }
 
+    if (status === order.status) {
+      await transaction.commit();
+      return res.status(200).json({
+        message: 'Status order tidak berubah',
+        data: order
+      });
+    }
+
+    if (!canTransitionOrderStatus(order.status, status, order.shippingMethod)) {
+      await transaction.rollback();
+      return res.status(400).json({
+        message: buildOrderStatusTransitionError(order.status, order.shippingMethod)
+      });
+    }
+
     const updatePayload = { status };
 
     if (status === 'confirmed' && !order.stockDeductedAt) {
@@ -1607,15 +1751,7 @@ async function updateAdminOrderStatus(req, res, next) {
       });
       const productMap = new Map(products.map((product) => [product.id, product]));
 
-      const deductionMap = {};
-      for (const item of orderItems) {
-        if (!item.productId) continue;
-        if (!deductionMap[item.productId]) {
-          deductionMap[item.productId] = {};
-        }
-        const size = String(item.size || '').trim().toUpperCase();
-        deductionMap[item.productId][size] = (deductionMap[item.productId][size] || 0) + (Number(item.quantity) || 0);
-      }
+      const deductionMap = buildProductQuantityMap(orderItems);
 
       for (const [productIdText, deductionBySize] of Object.entries(deductionMap)) {
         const productId = Number(productIdText);

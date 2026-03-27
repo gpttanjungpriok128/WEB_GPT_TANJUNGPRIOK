@@ -25,6 +25,8 @@ API Secret: xxxxxxxxxxxxxxxxxxx
 
 ### 3️⃣ Update .env File di Server
 
+Untuk local development saja. Jangan commit file ini ke Git.
+
 Buka `/server/.env` dan ganti dengan credentials Anda:
 
 ```env
@@ -34,11 +36,11 @@ CLOUDINARY_API_KEY=your_api_key_di_sini
 CLOUDINARY_API_SECRET=your_api_secret_di_sini
 ```
 
-Contoh yang sudah diisi:
+Format contoh placeholder:
 ```env
-CLOUDINARY_CLOUD_NAME=djn7k8x9j
-CLOUDINARY_API_KEY=123456789012345
-CLOUDINARY_API_SECRET=AbCdEfGhIjKlMnOpQrStUvWxYz
+CLOUDINARY_CLOUD_NAME=example_cloud_name
+CLOUDINARY_API_KEY=example_api_key
+CLOUDINARY_API_SECRET=example_api_secret
 ```
 
 ### 4️⃣ Untuk Production (Render/Vercel/Railway)
@@ -50,7 +52,7 @@ CLOUDINARY_API_SECRET=AbCdEfGhIjKlMnOpQrStUvWxYz
    - `CLOUDINARY_API_KEY`
    - `CLOUDINARY_API_SECRET`
 4. Isi dengan credentials dari Cloudinary
-5. **PENTING**: Jangan share credentials ini di public!
+5. **PENTING**: Simpan di environment variables platform, jangan commit atau share credentials ini di public!
 
 ## ✅ Verification
 

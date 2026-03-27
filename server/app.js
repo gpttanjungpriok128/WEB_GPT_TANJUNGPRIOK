@@ -9,25 +9,11 @@ const path = require('path');
 const routes = require('./routes');
 const { notFoundHandler, globalErrorHandler } = require('./middleware/errorMiddleware');
 const { apiLimiter, authLimiter, publicWriteLimiter } = require('./middleware/rateLimiters');
+const { getAllowedClientOrigins, normalizeOrigin } = require('./utils/origin');
 
 const app = express();
 app.set('trust proxy', 1);
-function normalizeOrigin(origin) {
-  return String(origin || '').trim().replace(/\/+$/, '');
-}
-
-const allowedOrigins = (process.env.CLIENT_URL || '')
-  .split(',')
-  .map(normalizeOrigin)
-  .filter(Boolean);
-
-const localDevOrigins = ['http://localhost:5173', 'http://localhost:5174'];
-for (const origin of localDevOrigins) {
-  const normalized = normalizeOrigin(origin);
-  if (!allowedOrigins.includes(normalized)) {
-    allowedOrigins.push(normalized);
-  }
-}
+const allowedOrigins = getAllowedClientOrigins();
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -71,6 +57,7 @@ app.use('/api/auth', authLimiter);
 app.use('/api/store/orders', publicWriteLimiter);
 app.use('/api/store/products/:slug/reviews', publicWriteLimiter);
 app.use('/api/contact-messages', publicWriteLimiter);
+app.use('/api/prayer-requests', publicWriteLimiter);
 app.use('/api', routes);
 app.use(notFoundHandler);
 app.use(globalErrorHandler);

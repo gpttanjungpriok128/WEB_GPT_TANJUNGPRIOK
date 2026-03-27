@@ -6,7 +6,40 @@ on:
   pull_request:
 
 jobs:
+  security-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fail if non-example env files are tracked
+        run: |
+          tracked_env_files="$(
+            git ls-files \
+              | grep -E '(^|/)\.env($|\.)' \
+              | grep -Ev '(^|/)\.env(\.[^.]+)*\.example$' \
+              || true
+          )"
+          if [ -n "$tracked_env_files" ]; then
+            printf 'Tracked env files detected:\n%s\n' "$tracked_env_files"
+            exit 1
+          fi
+      - name: Fail if non-example env files appear in git history
+        run: |
+          history_env_files="$(
+            git log --all --name-only --pretty=format: \
+              | grep -E '(^|/)\.env($|\.)' \
+              | grep -Ev '(^|/)\.env(\.[^.]+)*\.example$' \
+              | sort -u \
+              || true
+          )"
+          if [ -n "$history_env_files" ]; then
+            printf 'Env files found in git history:\n%s\n' "$history_env_files"
+            exit 1
+          fi
+
   backend-check:
+    needs: security-hygiene
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,6 +57,7 @@ jobs:
         run: find . -path './node_modules' -prune -o -name '*.js' -print | xargs -I{} node --check {}
 
   frontend-build:
+    needs: security-hygiene
     runs-on: ubuntu-latest
     defaults:
       run:

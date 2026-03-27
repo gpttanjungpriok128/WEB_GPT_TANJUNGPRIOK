@@ -6,4 +6,14 @@ const api = axios.create({
   withCredentials: true
 });
 
+api.interceptors.request.use((config) => {
+  const method = String(config.method || 'get').toUpperCase();
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    config.headers = config.headers || {};
+    config.headers['X-Requested-With'] = 'XMLHttpRequest';
+  }
+
+  return config;
+});
+
 export default api;
