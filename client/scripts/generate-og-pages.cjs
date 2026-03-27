@@ -142,11 +142,11 @@ async function main() {
     process.env.PUBLIC_API_URL ||
       process.env.API_PROXY_TARGET ||
       process.env.VITE_API_URL ||
-      "https://web-gpt-tanjungpriok-api.onrender.com/api"
+      "https://linguistic-alameda-gpttanjungpriok-e69cc92f.koyeb.app/api"
   );
   const apiBaseRaw = /^https?:\/\//i.test(configuredApiUrl)
     ? configuredApiUrl
-    : "https://web-gpt-tanjungpriok-api.onrender.com/api";
+    : "https://linguistic-alameda-gpttanjungpriok-e69cc92f.koyeb.app/api";
   const apiBase = apiBaseRaw.endsWith("/api") ? apiBaseRaw : `${apiBaseRaw}/api`;
   const apiOrigin = apiBaseRaw.replace(/\/api\/?$/, "");
 
