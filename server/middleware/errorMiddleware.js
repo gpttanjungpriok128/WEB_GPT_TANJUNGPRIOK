@@ -4,12 +4,26 @@ function notFoundHandler(req, res, next) {
   next(error);
 }
 
+function getClientErrorMessage(err, statusCode) {
+  const fallbackMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.';
+
+  if (statusCode >= 500 && process.env.NODE_ENV === 'production') {
+    return fallbackMessage;
+  }
+
+  return err.message || 'Internal server error';
+}
+
 function globalErrorHandler(err, req, res, next) {
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal server error';
+  const message = getClientErrorMessage(err, statusCode);
 
   if (res.headersSent) {
     return next(err);
+  }
+
+  if (statusCode >= 500) {
+    console.error(`[${req.method} ${req.originalUrl}]`, err.stack || err.message || err);
   }
 
   res.status(statusCode).json({
@@ -18,4 +32,4 @@ function globalErrorHandler(err, req, res, next) {
   });
 }
 
-module.exports = { notFoundHandler, globalErrorHandler };
+module.exports = { notFoundHandler, globalErrorHandler, getClientErrorMessage };

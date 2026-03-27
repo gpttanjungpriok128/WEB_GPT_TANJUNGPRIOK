@@ -20,7 +20,7 @@ router.get('/', cacheResponse({ ttlMs: 60 * 1000 }), getArticles);
 router.get('/manage', authenticate, authorizeRoles('admin', 'multimedia'), getManageArticles);
 router.get('/:id', cacheResponse({ ttlMs: 60 * 1000 }), optionalAuthenticate, getArticleById);
 router.post('/', authenticate, authorizeRoles('admin', 'multimedia'), requirePersistentUploadStorage, uploadImage.single('image'), articleValidation, validate, createArticle);
-router.put('/:id', authenticate, authorizeRoles('admin', 'multimedia'), requirePersistentUploadStorage, uploadImage.single('image'), updateArticle);
+router.put('/:id', authenticate, authorizeRoles('admin', 'multimedia'), requirePersistentUploadStorage, uploadImage.single('image'), articleValidation, validate, updateArticle);
 router.patch('/:id/review', authenticate, authorizeRoles('admin'), reviewArticle);
 router.delete('/:id', authenticate, authorizeRoles('admin', 'multimedia'), deleteArticle);
 

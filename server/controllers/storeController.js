@@ -292,6 +292,12 @@ function normalizeItemSize(value = '') {
   return String(value || '').trim().toUpperCase();
 }
 
+function buildStockError(message) {
+  const error = new Error(message);
+  error.statusCode = 400;
+  return error;
+}
+
 function buildProductQuantityMap(items = []) {
   const quantityMap = {};
 
@@ -360,6 +366,147 @@ function subtractStockBySize(currentStockBySize, deductionsBySize, sizes) {
     stockBySize: nextStockBySize,
     stock: totalStockFromMap(nextStockBySize)
   };
+}
+
+function reserveStockBySize(product, deductionsBySize = {}) {
+  const { sizes, stockBySize, totalStock } = getProductStockInfo(product);
+  const nextStockBySize = { ...stockBySize };
+  const unknownDeductions = [];
+  let knownDeductionTotal = 0;
+
+  for (const [rawSize, rawQty] of Object.entries(deductionsBySize || {})) {
+    const size = normalizeItemSize(rawSize);
+    const deductionQty = Math.max(0, toInteger(rawQty, 0));
+
+    if (deductionQty <= 0) {
+      continue;
+    }
+
+    if (!size || !sizes.includes(size)) {
+      unknownDeductions.push({ size, qty: deductionQty });
+      continue;
+    }
+
+    const currentSizeStock = Math.max(0, toInteger(nextStockBySize[size], 0));
+    if (deductionQty > currentSizeStock) {
+      throw buildStockError(`Stok ${product.name} ukuran ${size} tidak mencukupi untuk pesanan ini`);
+    }
+
+    nextStockBySize[size] = Math.max(0, currentSizeStock - deductionQty);
+    knownDeductionTotal += deductionQty;
+  }
+
+  if (unknownDeductions.length > 0) {
+    const unknownTotal = unknownDeductions.reduce((sum, item) => sum + item.qty, 0);
+    const remainingStock = Math.max(0, totalStock - knownDeductionTotal);
+    if (unknownTotal > remainingStock) {
+      throw buildStockError(`Stok ${product.name} tidak mencukupi untuk pesanan ini`);
+    }
+
+    const sizeEntries = sizes
+      .map((size) => ({
+        size,
+        stock: Math.max(0, toInteger(nextStockBySize[size], 0))
+      }))
+      .sort((a, b) => b.stock - a.stock);
+
+    let remaining = unknownTotal;
+    for (const entry of sizeEntries) {
+      if (remaining <= 0) break;
+      const available = Math.max(0, toInteger(nextStockBySize[entry.size], 0));
+      const deduction = Math.min(available, remaining);
+      nextStockBySize[entry.size] = Math.max(0, available - deduction);
+      remaining -= deduction;
+    }
+
+    if (remaining > 0) {
+      throw buildStockError(`Stok ${product.name} tidak mencukupi untuk pesanan ini`);
+    }
+  }
+
+  return {
+    stockBySize: nextStockBySize,
+    stock: totalStockFromMap(nextStockBySize)
+  };
+}
+
+async function reserveStockForOrderItems(items = [], transaction) {
+  const deductionsByProduct = buildProductQuantityMap(items);
+  const productIds = Object.keys(deductionsByProduct)
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
+
+  if (productIds.length === 0) {
+    return false;
+  }
+
+  const products = await StoreProduct.findAll({
+    where: { id: productIds },
+    transaction,
+    lock: transaction.LOCK.UPDATE
+  });
+  const productMap = new Map(products.map((product) => [product.id, product]));
+
+  for (const [productIdText, deductionsBySize] of Object.entries(deductionsByProduct)) {
+    const product = productMap.get(Number(productIdText));
+    if (!product) {
+      throw buildStockError('Produk pada order sudah tidak ditemukan');
+    }
+
+    const reservedStock = reserveStockBySize(product, deductionsBySize);
+    await product.update(
+      {
+        stockBySize: reservedStock.stockBySize,
+        stock: reservedStock.stock
+      },
+      { transaction }
+    );
+  }
+
+  return true;
+}
+
+async function restoreStockForOrderItems(items = [], transaction, options = {}) {
+  const { allowMissingProducts = false } = options;
+  const additionsByProduct = buildProductQuantityMap(items);
+  const productIds = Object.keys(additionsByProduct)
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
+
+  if (productIds.length === 0) {
+    return false;
+  }
+
+  const products = await StoreProduct.findAll({
+    where: { id: productIds },
+    transaction,
+    lock: transaction.LOCK.UPDATE
+  });
+  const productMap = new Map(products.map((product) => [product.id, product]));
+  let didMutateCatalog = false;
+
+  for (const [productIdText, additionsBySize] of Object.entries(additionsByProduct)) {
+    const product = productMap.get(Number(productIdText));
+    if (!product) {
+      if (allowMissingProducts) {
+        continue;
+      }
+      throw buildStockError('Produk pada order sudah tidak ditemukan');
+    }
+
+    const { sizes, stockBySize } = getProductStockInfo(product);
+    const restoredStock = restoreStockBySize(stockBySize, additionsBySize, sizes);
+    await product.update(
+      {
+        stockBySize: restoredStock.stockBySize,
+        stock: restoredStock.stock
+      },
+      { transaction }
+    );
+    didMutateCatalog = true;
+  }
+
+  return didMutateCatalog;
 }
 
 function toInteger(value, defaultValue = 0) {
@@ -1089,6 +1236,7 @@ async function createProductReview(req, res, next) {
 
 async function createOrder(req, res, next) {
   const transaction = await sequelize.transaction();
+  let didMutateCatalog = false;
 
   try {
     const itemsInput = Array.isArray(req.body.items) ? req.body.items : [];
@@ -1110,7 +1258,8 @@ async function createOrder(req, res, next) {
           id: productIds,
           isActive: true
         },
-        transaction
+        transaction,
+        lock: transaction.LOCK.UPDATE
       }),
       getOrCreateStoreSettings(transaction)
     ]);
@@ -1174,6 +1323,9 @@ async function createOrder(req, res, next) {
       });
     }
 
+    const reservedAt = new Date();
+    didMutateCatalog = await reserveStockForOrderItems(orderItems, transaction);
+
     const shippingMethod = String(req.body.shippingMethod || 'Kurir').trim();
     const isPickupOrder = shippingMethod.toLowerCase().includes('ambil');
     const baseShippingCost = Number(settings.shippingCost) || DEFAULT_SHIPPING_COST;
@@ -1200,7 +1352,7 @@ async function createOrder(req, res, next) {
       totalAmount,
       status: 'new',
       channel: 'whatsapp',
-      stockDeductedAt: null
+      stockDeductedAt: reservedAt
     }, { transaction });
 
     await StoreOrderItem.bulkCreate(
@@ -1214,6 +1366,9 @@ async function createOrder(req, res, next) {
     await order.update({ whatsappMessage }, { transaction });
 
     await transaction.commit();
+    if (didMutateCatalog) {
+      invalidateStoreCatalogCache();
+    }
     triggerRevenueSheetSync({ status: 'all' });
 
     const whatsappLink = `https://wa.me/${STORE_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
@@ -1743,101 +1898,25 @@ async function updateAdminOrderStatus(req, res, next) {
         return res.status(400).json({ message: 'Order tidak memiliki item untuk dikonfirmasi' });
       }
 
-      const productIds = [...new Set(orderItems.map((item) => item.productId).filter(Boolean))];
-      const products = await StoreProduct.findAll({
-        where: { id: productIds },
-        transaction,
-        lock: transaction.LOCK.UPDATE
-      });
-      const productMap = new Map(products.map((product) => [product.id, product]));
-
-      const deductionMap = buildProductQuantityMap(orderItems);
-
-      for (const [productIdText, deductionBySize] of Object.entries(deductionMap)) {
-        const productId = Number(productIdText);
-        const product = productMap.get(productId);
-        if (!product) {
-          await transaction.rollback();
-          return res.status(400).json({ message: 'Produk pada order sudah tidak ditemukan' });
-        }
-
-        const { sizes, stockBySize, totalStock } = getProductStockInfo(product);
-        const nextStockBySize = { ...stockBySize };
-        const unknownDeductions = [];
-        let knownDeductionTotal = 0;
-
-        for (const [rawSize, rawQty] of Object.entries(deductionBySize)) {
-          const size = String(rawSize || '').trim().toUpperCase();
-          const deductionQty = Math.max(0, toInteger(rawQty, 0));
-
-          if (!size || !sizes.includes(size)) {
-            if (deductionQty > 0) {
-              unknownDeductions.push({ size, qty: deductionQty });
-            }
-            continue;
-          }
-
-          const currentSizeStock = Math.max(0, toInteger(nextStockBySize[size], 0));
-          if (deductionQty > currentSizeStock) {
-            await transaction.rollback();
-            return res.status(400).json({
-              message: `Stok ${product.name} ukuran ${size} tidak mencukupi untuk konfirmasi`
-            });
-          }
-
-          nextStockBySize[size] = Math.max(0, currentSizeStock - deductionQty);
-          knownDeductionTotal += deductionQty;
-        }
-
-        if (unknownDeductions.length > 0) {
-          const unknownTotal = unknownDeductions.reduce((sum, item) => sum + item.qty, 0);
-          const remainingStock = Math.max(0, totalStock - knownDeductionTotal);
-          if (unknownTotal > remainingStock) {
-            await transaction.rollback();
-            return res.status(400).json({
-              message: `Stok ${product.name} tidak mencukupi untuk konfirmasi`
-            });
-          }
-
-          const sizeEntries = sizes
-            .map((size) => ({
-              size,
-              stock: Math.max(0, toInteger(nextStockBySize[size], 0))
-            }))
-            .sort((a, b) => b.stock - a.stock);
-
-          let remaining = unknownTotal;
-          for (const entry of sizeEntries) {
-            if (remaining <= 0) break;
-            const available = Math.max(0, toInteger(nextStockBySize[entry.size], 0));
-            const deduction = Math.min(available, remaining);
-            nextStockBySize[entry.size] = Math.max(0, available - deduction);
-            remaining -= deduction;
-          }
-
-          if (remaining > 0) {
-            await transaction.rollback();
-            return res.status(400).json({
-              message: `Stok ${product.name} tidak mencukupi untuk konfirmasi`
-            });
-          }
-        }
-
-        const nextStock = {
-          stockBySize: nextStockBySize,
-          stock: totalStockFromMap(nextStockBySize)
-        };
-        await product.update(
-          {
-            stockBySize: nextStock.stockBySize,
-            stock: nextStock.stock
-          },
-          { transaction }
-        );
-      }
+      await reserveStockForOrderItems(orderItems, transaction);
 
       updatePayload.stockDeductedAt = new Date();
       didMutateCatalog = true;
+    }
+
+    if (status === 'cancelled' && order.stockDeductedAt) {
+      const orderItems = await StoreOrderItem.findAll({
+        where: { orderId: order.id },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+      if (orderItems.length > 0) {
+        didMutateCatalog = await restoreStockForOrderItems(orderItems, transaction, {
+          allowMissingProducts: true
+        }) || didMutateCatalog;
+      }
+
+      updatePayload.stockDeductedAt = null;
     }
 
     await order.update(updatePayload, { transaction });
@@ -2033,5 +2112,8 @@ module.exports = {
   deleteAdminReview,
   getAdminSettings,
   updateAdminSettings,
-  getAdminAnalytics
+  getAdminAnalytics,
+  __testHooks: {
+    reserveStockBySize
+  }
 };
