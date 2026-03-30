@@ -78,7 +78,7 @@ const PICKUP_STEPS = [
 
 const PICKUP_STATUSES = new Set(["ready_pickup", "picked_up"]);
 
-function isPickupShippingMethod(value) {
+export function isPickupShippingMethod(value) {
   const normalized = String(value || "").trim().toLowerCase();
   if (!normalized) return false;
   return (
@@ -87,6 +87,25 @@ function isPickupShippingMethod(value) {
     normalized.includes("pick up") ||
     normalized.includes("pick-up")
   );
+}
+
+export function getAllowedNextOrderStatuses(status, shippingMethod = "") {
+  switch (String(status || "").trim()) {
+    case "new":
+      return ["confirmed", "cancelled"];
+    case "confirmed":
+      return ["packed"];
+    case "packed":
+      return isPickupShippingMethod(shippingMethod)
+        ? ["ready_pickup"]
+        : ["shipping"];
+    case "ready_pickup":
+      return ["picked_up"];
+    case "shipping":
+      return ["completed"];
+    default:
+      return [];
+  }
 }
 
 export function buildOrderProgress(status, shippingMethod = "") {
