@@ -4,7 +4,7 @@ import { formatRupiah, formatDateTime, mapOrderStatusLabel, statusBadge } from "
 
 const REPORT_FILTERS_KEY = "gpt_tanjungpriok_admin_report_filters_v1";
 const REPORT_STATUS_OPTIONS = [
-  { value: "all", label: "Semua Status" },
+  { value: "all", label: "Semua Non-Dibatalkan" },
   { value: "picked_up", label: "Sudah Diambil" },
   { value: "ready_pickup", label: "Siap Diambil" },
   { value: "completed", label: "Selesai" },
@@ -328,6 +328,10 @@ export default function ReportsTab({ isActive }) {
               </div>
             ))}
           </div>
+
+          <p className="mt-3 text-xs text-brand-500 dark:text-brand-400">
+            Filter `Semua Non-Dibatalkan` mengikuti angka revenue kotor di dashboard, jadi order dibatalkan tidak dihitung sebagai pemasukan.
+          </p>
 
           <div className="mt-6 rounded-2xl border border-brand-200 dark:border-brand-700">
             {loadingReport ? (

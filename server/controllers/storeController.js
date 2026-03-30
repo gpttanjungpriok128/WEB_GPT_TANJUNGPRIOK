@@ -527,7 +527,7 @@ function parseDateValue(value) {
 }
 
 function parseRevenueFilters(source = {}) {
-  const status = String(source.status || 'completed').trim().toLowerCase();
+  const status = String(source.status || 'all').trim().toLowerCase();
   const startDate = parseDateValue(source.startDate);
   const endDateRaw = parseDateValue(source.endDate);
   const endDate = endDateRaw
@@ -545,11 +545,13 @@ function parseRevenueFilters(source = {}) {
   return { status, startDate, endDate };
 }
 
-async function buildRevenueReport(filters = {}) {
+function buildRevenueReportWhere(filters = {}) {
   const { status, startDate, endDate } = filters;
   const where = {};
 
-  if (status && status !== 'all') {
+  if (!status || status === 'all') {
+    where.status = { [Op.ne]: 'cancelled' };
+  } else {
     if (!ORDER_STATUSES.includes(status)) {
       const error = new Error('Status laporan tidak valid');
       error.statusCode = 400;
@@ -563,6 +565,12 @@ async function buildRevenueReport(filters = {}) {
     if (startDate) where.createdAt[Op.gte] = startDate;
     if (endDate) where.createdAt[Op.lte] = endDate;
   }
+
+  return where;
+}
+
+async function buildRevenueReport(filters = {}) {
+  const where = buildRevenueReportWhere(filters);
 
   const orders = await StoreOrder.findAll({
     where,
@@ -2137,6 +2145,7 @@ module.exports = {
   updateAdminSettings,
   getAdminAnalytics,
   __testHooks: {
-    reserveStockBySize
+    reserveStockBySize,
+    buildRevenueReportWhere
   }
 };
