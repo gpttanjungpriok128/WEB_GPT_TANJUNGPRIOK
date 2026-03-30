@@ -11,7 +11,7 @@ function isTrue(value) {
 }
 
 async function runPendingMigrations() {
-  if (isTrue(process.env.SKIP_AUTO_MIGRATE) || process.env.NODE_ENV === 'production') {
+  if (isTrue(process.env.SKIP_AUTO_MIGRATE)) {
     return;
   }
 
@@ -145,7 +145,6 @@ async function ensureDefaultUsers() {
         password: hashedPassword,
         role: account.role
       });
-      console.log(`Default ${account.role} account created: ${account.email}`);
     } else {
       await existing.update({
         name: account.name,

@@ -46,3 +46,38 @@ test('isOfflineStoreChannel detects offline store channel only', () => {
   assert.equal(__testHooks.isOfflineStoreChannel('offline_store'), true);
   assert.equal(__testHooks.isOfflineStoreChannel('whatsapp'), false);
 });
+
+test('pickStoreOrderValuesForColumns keeps only supported store order columns', () => {
+  const result = __testHooks.pickStoreOrderValuesForColumns(
+    {
+      orderCode: 'GTS-20260330-0001',
+      totalAmount: 150000,
+      amountPaid: 150000,
+      cashierName: 'Admin',
+      unknownField: 'skip-me'
+    },
+    ['orderCode', 'totalAmount']
+  );
+
+  assert.deepEqual(result, {
+    orderCode: 'GTS-20260330-0001',
+    totalAmount: 150000
+  });
+});
+
+test('listStoreOrderAttributesForColumns excludes columns missing from schema', () => {
+  const attributes = __testHooks.listStoreOrderAttributesForColumns([
+    'id',
+    'orderCode',
+    'totalAmount',
+    'status'
+  ]);
+
+  assert.deepEqual(attributes, ['id', 'orderCode', 'totalAmount', 'status']);
+});
+
+test('getOrderAmountPaid falls back to total when legacy schema has no amountPaid column', () => {
+  assert.equal(__testHooks.getOrderAmountPaid({ totalAmount: 99000 }), 99000);
+  assert.equal(__testHooks.getOrderAmountPaid({ totalAmount: 99000, amountPaid: 120000 }), 120000);
+  assert.equal(__testHooks.getOrderChangeAmount({}), 0);
+});

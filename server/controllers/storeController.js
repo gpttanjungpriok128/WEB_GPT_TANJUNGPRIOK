@@ -28,6 +28,75 @@ const STORE_WHATSAPP_NUMBER = String(
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 const STORE_PRODUCT_CLOUDINARY_FOLDER = process.env.CLOUDINARY_PRODUCT_FOLDER || 'gpt-tanjungpriok/products';
 const STORE_REVIEW_CLOUDINARY_FOLDER = process.env.CLOUDINARY_REVIEW_FOLDER || 'gpt-tanjungpriok/reviews';
+let storeOrderColumnSetPromise = null;
+
+function toColumnSet(columns = []) {
+  if (columns instanceof Set) {
+    return columns;
+  }
+
+  return new Set(Array.isArray(columns) ? columns : []);
+}
+
+function listStoreOrderAttributesForColumns(columns = []) {
+  const columnSet = toColumnSet(columns);
+  return Object.keys(StoreOrder.rawAttributes).filter((attribute) => columnSet.has(attribute));
+}
+
+function pickStoreOrderValuesForColumns(values = {}, columns = []) {
+  const columnSet = toColumnSet(columns);
+
+  return Object.fromEntries(
+    Object.entries(values).filter(([key, value]) => value !== undefined && columnSet.has(key))
+  );
+}
+
+async function getStoreOrderColumnSet() {
+  if (!storeOrderColumnSetPromise) {
+    storeOrderColumnSetPromise = sequelize.getQueryInterface()
+      .describeTable(StoreOrder.getTableName())
+      .then((table) => new Set(Object.keys(table || {})))
+      .catch((error) => {
+        storeOrderColumnSetPromise = null;
+        throw error;
+      });
+  }
+
+  return storeOrderColumnSetPromise;
+}
+
+async function getSafeStoreOrderAttributes(preferredAttributes = null) {
+  const columnSet = await getStoreOrderColumnSet();
+  const requestedAttributes = Array.isArray(preferredAttributes) && preferredAttributes.length > 0
+    ? preferredAttributes
+    : Object.keys(StoreOrder.rawAttributes);
+
+  return requestedAttributes.filter((attribute) => columnSet.has(attribute));
+}
+
+async function hasStoreOrderColumn(columnName) {
+  const columnSet = await getStoreOrderColumnSet();
+  return columnSet.has(columnName);
+}
+
+async function buildStoreOrderPayload(values = {}) {
+  const columnSet = await getStoreOrderColumnSet();
+  return pickStoreOrderValuesForColumns(values, columnSet);
+}
+
+async function buildStoreOrderMutationOptions(transaction = null, extraOptions = {}) {
+  const options = { ...extraOptions };
+  if (transaction) {
+    options.transaction = transaction;
+  }
+
+  const returning = await getSafeStoreOrderAttributes();
+  if (returning.length > 0) {
+    options.returning = returning;
+  }
+
+  return options;
+}
 
 function invalidateStoreCatalogCache() {
   invalidateCache((key) => key.includes('/store/products'));
@@ -582,6 +651,7 @@ async function buildRevenueReport(filters = {}) {
   const where = buildRevenueReportWhere(filters);
 
   const orders = await StoreOrder.findAll({
+    attributes: await getSafeStoreOrderAttributes(),
     where,
     include: [{ model: StoreOrderItem, as: 'items' }],
     order: [['createdAt', 'ASC']]
@@ -608,8 +678,8 @@ async function buildRevenueReport(filters = {}) {
       subtotal: Number(order.subtotal) || 0,
       shippingCost: Number(order.shippingCost) || 0,
       totalAmount: Number(order.totalAmount) || 0,
-      amountPaid: Number(order.amountPaid) || 0,
-      changeAmount: Number(order.changeAmount) || 0,
+      amountPaid: getOrderAmountPaid(order),
+      changeAmount: getOrderChangeAmount(order),
       itemCount,
       itemsSummary,
       reversedAt: order.reversedAt,
@@ -773,6 +843,18 @@ function normalizeReversalType(value = '') {
   return 'void';
 }
 
+function getOrderAmountPaid(order) {
+  if (order?.amountPaid === null || order?.amountPaid === undefined) {
+    return Number(order?.totalAmount) || 0;
+  }
+
+  return Number(order.amountPaid) || 0;
+}
+
+function getOrderChangeAmount(order) {
+  return Number(order?.changeAmount) || 0;
+}
+
 function serializeProduct(product) {
   const pricing = calculateProductPricing(product);
   const imageUrls = normalizeProductImages(product);
@@ -868,8 +950,8 @@ function serializeCustomerOrder(order) {
     subtotal: Number(order.subtotal) || 0,
     shippingCost: Number(order.shippingCost) || 0,
     totalAmount: Number(order.totalAmount) || 0,
-    amountPaid: Number(order.amountPaid) || 0,
-    changeAmount: Number(order.changeAmount) || 0,
+    amountPaid: getOrderAmountPaid(order),
+    changeAmount: getOrderChangeAmount(order),
     status: order.status,
     channel: order.channel,
     stockDeductedAt: order.stockDeductedAt,
@@ -1045,6 +1127,7 @@ async function generateOrderCode(transaction, options = {}) {
   const prefix = `${prefixBase}-${dateCode}-`;
   await acquireOrderCodeLock(transaction);
   const latest = await StoreOrder.findOne({
+    attributes: await getSafeStoreOrderAttributes(['id', 'orderCode', 'createdAt']),
     where: { orderCode: { [Op.like]: `${prefix}%` } },
     order: [['createdAt', 'DESC']],
     transaction
@@ -1259,6 +1342,14 @@ async function createProductReview(req, res, next) {
     const reviewText = req.body.reviewText ? String(req.body.reviewText).trim() : null;
 
     const order = await StoreOrder.findOne({
+      attributes: await getSafeStoreOrderAttributes([
+        'id',
+        'userId',
+        'orderCode',
+        'customerName',
+        'customerPhone',
+        'status'
+      ]),
       where: {
         orderCode: { [Op.iLike]: orderCode },
         customerPhone
@@ -1439,7 +1530,7 @@ async function createOrder(req, res, next) {
       : String(req.body.address || '').trim();
 
     const orderCode = await generateOrderCode(transaction);
-    const order = await StoreOrder.create({
+    const orderPayload = await buildStoreOrderPayload({
       orderCode,
       userId: req.user?.id || null,
       customerName: String(req.body.name || '').trim(),
@@ -1456,7 +1547,11 @@ async function createOrder(req, res, next) {
       status: 'new',
       channel: 'whatsapp',
       stockDeductedAt: reservedAt
-    }, { transaction });
+    });
+    const order = await StoreOrder.create(
+      orderPayload,
+      await buildStoreOrderMutationOptions(transaction)
+    );
 
     await StoreOrderItem.bulkCreate(
       orderItems.map((item) => ({ ...item, orderId: order.id })),
@@ -1466,7 +1561,10 @@ async function createOrder(req, res, next) {
     const appUrl = getPublicAppUrl(req);
     const invoiceUrl = buildInvoiceLink(appUrl, order.orderCode);
     const whatsappMessage = buildWhatsappMessage(order, orderItems, { invoiceUrl });
-    await order.update({ whatsappMessage }, { transaction });
+    await order.update(
+      await buildStoreOrderPayload({ whatsappMessage }),
+      await buildStoreOrderMutationOptions(transaction)
+    );
 
     await transaction.commit();
     if (didMutateCatalog) {
@@ -1587,7 +1685,7 @@ async function createAdminPosOrder(req, res, next) {
 
     const orderCode = await generateOrderCode(transaction, { prefixBase: 'GTPOS' });
     const cashierName = req.user?.name || '';
-    const order = await StoreOrder.create({
+    const orderPayload = await buildStoreOrderPayload({
       orderCode,
       userId: req.user?.id || null,
       customerName: String(req.body.name || '').trim() || 'Pembeli Offline',
@@ -1606,7 +1704,11 @@ async function createAdminPosOrder(req, res, next) {
       channel: 'offline_store',
       stockDeductedAt: reservedAt,
       whatsappMessage: null
-    }, { transaction });
+    });
+    const order = await StoreOrder.create(
+      orderPayload,
+      await buildStoreOrderMutationOptions(transaction)
+    );
 
     const createdItems = await StoreOrderItem.bulkCreate(
       orderItems.map((item) => ({ ...item, orderId: order.id })),
@@ -1638,6 +1740,7 @@ async function reverseAdminPosOrder(req, res, next) {
 
   try {
     const order = await StoreOrder.findByPk(req.params.id, {
+      attributes: await getSafeStoreOrderAttributes(),
       transaction,
       lock: transaction.LOCK.UPDATE
     });
@@ -1679,14 +1782,14 @@ async function reverseAdminPosOrder(req, res, next) {
       allowMissingProducts: true
     }) || didMutateCatalog;
 
-    await order.update({
+    await order.update(await buildStoreOrderPayload({
       status: 'cancelled',
       stockDeductedAt: null,
       reversedAt: new Date(),
       reversedBy: req.user?.id || null,
       reversalType,
       reversalReason
-    }, { transaction });
+    }), await buildStoreOrderMutationOptions(transaction));
 
     await transaction.commit();
     if (didMutateCatalog) {
@@ -1877,11 +1980,14 @@ async function getAdminOrders(req, res, next) {
     }
 
     const { rows, count } = await StoreOrder.findAndCountAll({
+      attributes: await getSafeStoreOrderAttributes(),
       where,
       include: [
         { model: StoreOrderItem, as: 'items' },
         { model: User, as: 'user', attributes: ['id', 'name', 'email', 'role'] },
-        { model: User, as: 'reversalActor', attributes: ['id', 'name', 'email', 'role'] }
+        ...((await hasStoreOrderColumn('reversedBy'))
+          ? [{ model: User, as: 'reversalActor', attributes: ['id', 'name', 'email', 'role'] }]
+          : [])
       ],
       order: [['createdAt', 'DESC']],
       limit,
@@ -1961,6 +2067,7 @@ async function getMyOrders(req, res, next) {
     }
 
     const { rows, count } = await StoreOrder.findAndCountAll({
+      attributes: await getSafeStoreOrderAttributes(),
       where,
       include: [{ model: StoreOrderItem, as: 'items' }],
       order: [['createdAt', 'DESC']],
@@ -1996,6 +2103,7 @@ async function trackPublicOrder(req, res, next) {
     }
 
     const order = await StoreOrder.findOne({
+      attributes: await getSafeStoreOrderAttributes(),
       where: {
         orderCode: { [Op.iLike]: orderCode },
         customerPhone
@@ -2181,6 +2289,7 @@ async function updateAdminOrderStatus(req, res, next) {
 
   try {
     const order = await StoreOrder.findByPk(req.params.id, {
+      attributes: await getSafeStoreOrderAttributes(),
       transaction,
       lock: transaction.LOCK.UPDATE
     });
@@ -2244,7 +2353,10 @@ async function updateAdminOrderStatus(req, res, next) {
       updatePayload.stockDeductedAt = null;
     }
 
-    await order.update(updatePayload, { transaction });
+    await order.update(
+      await buildStoreOrderPayload(updatePayload),
+      await buildStoreOrderMutationOptions(transaction)
+    );
     await transaction.commit();
     if (didMutateCatalog) {
       invalidateStoreCatalogCache();
@@ -2329,6 +2441,7 @@ async function getAdminAnalytics(req, res, next) {
         raw: true
       }),
       StoreOrder.findAll({
+        attributes: await getSafeStoreOrderAttributes(),
         limit: 8,
         include: [{ model: StoreOrderItem, as: 'items' }],
         order: [['createdAt', 'DESC']]
@@ -2446,6 +2559,10 @@ module.exports = {
     resolveAdminPosPayment,
     isCashPaymentMethod,
     isOfflineStoreChannel,
-    normalizeReversalType
+    normalizeReversalType,
+    listStoreOrderAttributesForColumns,
+    pickStoreOrderValuesForColumns,
+    getOrderAmountPaid,
+    getOrderChangeAmount
   }
 };
