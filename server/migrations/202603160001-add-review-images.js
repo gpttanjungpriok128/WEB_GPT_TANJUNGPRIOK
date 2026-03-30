@@ -2,14 +2,22 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('StoreProductReviews', 'imageUrls', {
-      type: Sequelize.JSONB,
-      allowNull: false,
-      defaultValue: []
-    });
+    const table = await queryInterface.describeTable('StoreProductReviews');
+
+    if (!table.imageUrls) {
+      await queryInterface.addColumn('StoreProductReviews', 'imageUrls', {
+        type: Sequelize.JSONB,
+        allowNull: false,
+        defaultValue: []
+      });
+    }
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn('StoreProductReviews', 'imageUrls');
+    const table = await queryInterface.describeTable('StoreProductReviews');
+
+    if (table.imageUrls) {
+      await queryInterface.removeColumn('StoreProductReviews', 'imageUrls');
+    }
   }
 };
