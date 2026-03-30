@@ -125,6 +125,10 @@ function formatRupiah(value) {
   }).format(Number(value) || 0);
 }
 
+function getWhatsappActionLabel(status) {
+  return status === "new" ? "Konfirmasi Lagi di WhatsApp" : "Buka Chat WhatsApp";
+}
+
 function TrackOrderPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -483,6 +487,16 @@ function TrackOrderPage() {
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-2">
+                    {order.whatsappLink && (
+                      <a
+                        href={order.whatsappLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                      >
+                        {getWhatsappActionLabel(order.status)}
+                      </a>
+                    )}
                     <button
                       type="button"
                       onClick={handleCopyOrderCode}
@@ -508,6 +522,12 @@ function TrackOrderPage() {
                   {copyFeedback && (
                     <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300">
                       {copyFeedback}
+                    </p>
+                  )}
+
+                  {order.whatsappLink && (
+                    <p className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300">
+                      Jika WhatsApp sempat gagal terbuka saat checkout, gunakan tombol di atas untuk kirim ulang konfirmasi order ini.
                     </p>
                   )}
                 </div>

@@ -786,6 +786,8 @@ async function getReviewSummaryMap(productIds = []) {
 }
 
 function serializeCustomerOrder(order) {
+  const whatsappMessage = getOrderWhatsappMessage(order);
+
   return {
     id: order.id,
     orderCode: order.orderCode,
@@ -801,6 +803,7 @@ function serializeCustomerOrder(order) {
     status: order.status,
     channel: order.channel,
     stockDeductedAt: order.stockDeductedAt,
+    whatsappLink: buildWhatsappLink(whatsappMessage),
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     items: Array.isArray(order.items)
@@ -1010,6 +1013,26 @@ function buildWhatsappMessage(order, items, options = {}) {
   ];
 
   return lines.join('\n');
+}
+
+function buildWhatsappLink(message = '') {
+  const safeMessage = String(message || '').trim();
+  if (!safeMessage) return '';
+  return `https://wa.me/${STORE_WHATSAPP_NUMBER}?text=${encodeURIComponent(safeMessage)}`;
+}
+
+function getOrderWhatsappMessage(order) {
+  const savedMessage = String(order?.whatsappMessage || '').trim();
+  if (savedMessage) {
+    return savedMessage;
+  }
+
+  const items = Array.isArray(order?.items) ? order.items : [];
+  if (!items.length) {
+    return '';
+  }
+
+  return buildWhatsappMessage(order, items);
 }
 
 async function getPublicProducts(req, res, next) {
@@ -1371,7 +1394,7 @@ async function createOrder(req, res, next) {
     }
     triggerRevenueSheetSync({ status: 'all' });
 
-    const whatsappLink = `https://wa.me/${STORE_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
+    const whatsappLink = buildWhatsappLink(whatsappMessage);
     return res.status(201).json({
       message: 'Pesanan berhasil dibuat',
       data: {
