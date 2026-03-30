@@ -14,7 +14,14 @@ const ORDER_STATUSES = [
 
 const createOrderValidation = [
   body('name').trim().notEmpty().withMessage('Nama pemesan wajib diisi'),
-  body('phone').trim().notEmpty().withMessage('Nomor WhatsApp wajib diisi'),
+  body('phone')
+    .trim()
+    .notEmpty()
+    .withMessage('Nomor WhatsApp wajib diisi')
+    .matches(/^[0-9+\-\s()]{7,}$/)
+    .withMessage('Nomor WhatsApp tidak valid (minimal 7 digit)') 
+    .isLength({ max: 20 })
+    .withMessage('Nomor WhatsApp maksimal 20 karakter'),
   body('address').custom((value, { req }) => {
     const shippingMethod = String(req.body.shippingMethod || '').toLowerCase();
     if (shippingMethod.includes('ambil')) return true;
@@ -28,6 +35,49 @@ const createOrderValidation = [
   body('items.*.productId').isInt({ min: 1 }).withMessage('productId item tidak valid'),
   body('items.*.size').trim().notEmpty().withMessage('Ukuran item wajib diisi'),
   body('items.*.quantity').isInt({ min: 1, max: 99 }).withMessage('Jumlah item harus 1 - 99')
+];
+
+const createPosOrderValidation = [
+  body('name')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 120 })
+    .withMessage('Nama pelanggan maksimal 120 karakter'),
+  body('phone')
+    .optional({ checkFalsy: true })
+    .trim()
+    .matches(/^[0-9+\-\s()]{7,}$/)
+    .withMessage('Nomor WhatsApp tidak valid (minimal 7 digit)')
+    .isLength({ max: 20 })
+    .withMessage('Nomor WhatsApp maksimal 20 karakter'),
+  body('paymentMethod')
+    .trim()
+    .notEmpty()
+    .withMessage('Metode pembayaran wajib dipilih'),
+  body('amountPaid')
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 0 })
+    .withMessage('Nominal dibayar harus angka >= 0'),
+  body('notes')
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .isLength({ max: 500 })
+    .withMessage('Catatan maksimal 500 karakter'),
+  body('items').isArray({ min: 1 }).withMessage('Item transaksi minimal 1 produk'),
+  body('items.*.productId').isInt({ min: 1 }).withMessage('productId item tidak valid'),
+  body('items.*.size').trim().notEmpty().withMessage('Ukuran item wajib diisi'),
+  body('items.*.quantity').isInt({ min: 1, max: 99 }).withMessage('Jumlah item harus 1 - 99')
+];
+
+const reversePosOrderValidation = [
+  body('action')
+    .trim()
+    .isIn(['void', 'return'])
+    .withMessage('Aksi reversal harus void atau return'),
+  body('reason')
+    .optional({ nullable: true, checkFalsy: true })
+    .isLength({ max: 500 })
+    .withMessage('Alasan maksimal 500 karakter')
 ];
 
 const createProductValidation = [
@@ -155,6 +205,8 @@ const createReviewValidation = [
 
 module.exports = {
   createOrderValidation,
+  createPosOrderValidation,
+  reversePosOrderValidation,
   createProductValidation,
   updateProductValidation,
   updateStoreSettingsValidation,

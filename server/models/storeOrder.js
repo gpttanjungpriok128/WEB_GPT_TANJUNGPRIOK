@@ -35,6 +35,9 @@ const StoreOrder = sequelize.define('StoreOrder', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  cashierName: {
+    type: DataTypes.STRING
+  },
   notes: {
     type: DataTypes.TEXT
   },
@@ -49,6 +52,16 @@ const StoreOrder = sequelize.define('StoreOrder', {
     defaultValue: 0
   },
   totalAmount: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  amountPaid: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  changeAmount: {
     type: DataTypes.INTEGER,
     allowNull: false,
     defaultValue: 0
@@ -74,6 +87,18 @@ const StoreOrder = sequelize.define('StoreOrder', {
   },
   stockDeductedAt: {
     type: DataTypes.DATE
+  },
+  reversedAt: {
+    type: DataTypes.DATE
+  },
+  reversedBy: {
+    type: DataTypes.INTEGER
+  },
+  reversalType: {
+    type: DataTypes.STRING
+  },
+  reversalReason: {
+    type: DataTypes.TEXT
   },
   whatsappMessage: {
     type: DataTypes.TEXT

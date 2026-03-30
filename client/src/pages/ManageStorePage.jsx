@@ -7,6 +7,7 @@ import AdminStoreTabs from "../components/store-admin/AdminStoreTabs";
 import "../styles.admin.css";
 
 const ProductsTab = lazy(() => import("../components/store-admin/ProductsTab"));
+const PosTab = lazy(() => import("../components/store-admin/PosTab"));
 const OrdersTab = lazy(() => import("../components/store-admin/OrdersTab"));
 const ScanTab = lazy(() => import("../components/store-admin/ScanTab"));
 const ReviewsTab = lazy(() => import("../components/store-admin/ReviewsTab"));
@@ -168,6 +169,13 @@ function ManageStorePage() {
           <ProductsTab
             isActive={activeTab === "produk"}
             onRefreshAnalytics={() => fetchAnalytics({ force: true })}
+          />
+        )}
+        {activeTab === "kasir" && (
+          <PosTab
+            isActive={activeTab === "kasir"}
+            onRefreshAnalytics={() => fetchAnalytics({ force: true })}
+            onGoToOrders={() => setActiveTab("pesanan")}
           />
         )}
         {activeTab === "pesanan" && (

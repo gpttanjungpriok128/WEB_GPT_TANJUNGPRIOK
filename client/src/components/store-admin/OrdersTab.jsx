@@ -3,7 +3,16 @@ import api from "../../services/api";
 import gtshirtLogo from "../../img/gtshirt-logo.jpeg";
 import { formatRupiah, formatDateTime, mapOrderStatusLabel } from "../../utils/storeFormatters";
 import { invalidateStoreCatalogCache } from "../../utils/storeCatalogCache";
-import { ORDER_STATUS_BADGE } from "../../utils/storeOrderStatus";
+import {
+  buildStoreOrderPrintDocument,
+  buildStoreOrderPrintDocumentFromAssets,
+  getStoreOrderPrintAsset,
+  getStoreOrderPrintLabel,
+} from "../../utils/storePrint";
+import {
+  ORDER_STATUS_BADGE,
+  getAllowedNextOrderStatuses,
+} from "../../utils/storeOrderStatus";
 
 const ORDER_STATUS_OPTIONS = [
   { value: "new", label: "Baru" },
@@ -15,7 +24,13 @@ const ORDER_STATUS_OPTIONS = [
   { value: "completed", label: "Selesai" },
   { value: "cancelled", label: "Dibatalkan" },
 ];
+const ORDER_CHANNEL_OPTIONS = [
+  { value: "", label: "Semua Channel" },
+  { value: "whatsapp", label: "Online / Web" },
+  { value: "offline_store", label: "Offline Store" },
+];
 const ORDER_PAGE_SIZE = 12;
+const ORDER_STATUS_OPTION_MAP = new Map(ORDER_STATUS_OPTIONS.map((option) => [option.value, option]));
 
 function statusBadge(status) {
   return ORDER_STATUS_BADGE[status] || "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300";
@@ -33,6 +48,39 @@ function isPickupShippingMethod(value) {
   return normalized.includes("ambil") || normalized.includes("pickup") || normalized.includes("pick up") || normalized.includes("pick-up");
 }
 
+function isOfflineOrder(order) {
+  return String(order?.channel || "").trim().toLowerCase() === "offline_store";
+}
+
+function mapOrderChannelLabel(order) {
+  if (isOfflineOrder(order)) return "Offline Store";
+  if (String(order?.channel || "").trim().toLowerCase() === "whatsapp") return "Online / Web";
+  return String(order?.channel || "Store").trim() || "Store";
+}
+
+function getPrintLabelTitle(order) {
+  if (isOfflineOrder(order)) return "Struk Offline Store";
+  return isPickupShippingMethod(order?.shippingMethod) ? "Resi Ambil di Gereja" : "Resi Pengiriman";
+}
+
+function getPrintButtonLabel(order) {
+  return getStoreOrderPrintLabel(order);
+}
+
+function getReversalTypeLabel(order) {
+  return String(order?.reversalType || "").trim().toLowerCase() === "return" ? "Retur" : "Void";
+}
+
+function getOrderTransitionOptions(order) {
+  const currentStatus = String(order?.status || "").trim();
+  const allowedNext = getAllowedNextOrderStatuses(currentStatus, order?.shippingMethod);
+  const values = [currentStatus, ...allowedNext].filter(Boolean);
+
+  return values.map((value) => (
+    ORDER_STATUS_OPTION_MAP.get(value) || { value, label: mapOrderStatusLabel(value) }
+  ));
+}
+
 function buildOrderQrValue(orderCode, mode, baseUrl = "") {
   if (!orderCode) return "";
   if (!baseUrl) return orderCode;
@@ -43,8 +91,7 @@ function buildOrderQrValue(orderCode, mode, baseUrl = "") {
 
 function buildPrintLabelMarkup(order, { logoUrl, qrValue } = {}) {
   if (!order) return "";
-  const isPickup = isPickupShippingMethod(order.shippingMethod);
-  const deliveryLabel = isPickup ? "Resi Ambil di Gereja" : "Resi Pengiriman";
+  const deliveryLabel = getPrintLabelTitle(order);
   const items = Array.isArray(order.items) ? order.items : [];
   const totalItems = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
   const itemRows = items.length > 0
@@ -64,6 +111,7 @@ function buildPrintDocument(markup, { layout = "thermal" } = {}) {
 export default function OrdersTab({ isActive, analytics, onGoToScan }) {
   const [orderSearch, setOrderSearch] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("");
+  const [orderChannelFilter, setOrderChannelFilter] = useState("");
   const [orders, setOrders] = useState([]);
   const [orderPage, setOrderPage] = useState(1);
   const [orderMeta, setOrderMeta] = useState({ page: 1, totalPages: 1, total: 0 });
@@ -87,7 +135,13 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
     if (append) { setIsLoadingMoreOrders(true); } else { setLoadingOrders(true); }
     try {
       const { data } = await api.get("/store/admin/orders", {
-        params: { page, limit, search: overrides.search ?? orderSearch, status: overrides.status ?? orderStatusFilter },
+        params: {
+          page,
+          limit,
+          search: overrides.search ?? orderSearch,
+          status: overrides.status ?? orderStatusFilter,
+          channel: overrides.channel ?? orderChannelFilter,
+        },
       });
       const rows = Array.isArray(data?.data) ? data.data : [];
       const meta = data?.meta || { page, totalPages: 1, total: rows.length };
@@ -108,7 +162,7 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
     } finally {
       if (append) { setIsLoadingMoreOrders(false); } else { setLoadingOrders(false); }
     }
-  }, [orderPage, orderSearch, orderStatusFilter]);
+  }, [orderPage, orderSearch, orderStatusFilter, orderChannelFilter]);
 
   const handleOrderStatusChange = async (orderId, status) => {
     const previousOrders = orders;
@@ -164,6 +218,43 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
     await handleOrderStatusChange(order.id, action.nextStatus);
   };
 
+  const handleOfflineReversal = async (order, action) => {
+    if (!order || !isOfflineOrder(order)) return;
+    const actionLabel = action === "return" ? "retur" : "void";
+    const reason = window.prompt(`Alasan ${actionLabel} transaksi ${order.orderCode} (opsional):`, "");
+    if (reason === null) return false;
+
+    try {
+      const { data } = await api.post(`/store/admin/orders/${order.id}/reversal`, {
+        action,
+        reason: reason.trim(),
+      });
+      const updatedOrder = data?.data || null;
+      if (updatedOrder) {
+        setOrders((prev) => prev.map((entry) => (
+          entry.id === order.id
+            ? { ...entry, ...updatedOrder, user: entry.user, reversalActor: entry.reversalActor }
+            : entry
+        )));
+        if (activeOrderSheet?.id === order.id) {
+          setActiveOrderSheet((prev) => (prev ? { ...prev, ...updatedOrder } : prev));
+        }
+      }
+      invalidateStoreCatalogCache();
+      setFeedback({
+        type: "success",
+        text: data?.message || `Transaksi ${actionLabel} berhasil diproses.`,
+      });
+      return true;
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        text: error.response?.data?.message || `Gagal memproses ${actionLabel} transaksi.`,
+      });
+      return false;
+    }
+  };
+
   const openPrintWindow = (html) => {
     if (typeof window === "undefined") return;
     const popup = window.open("", "_blank", "width=720,height=900");
@@ -177,19 +268,22 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
   const printOrderLabel = (order) => {
     if (!order) return;
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const qrValue = buildOrderQrValue(order.orderCode, "resi", baseUrl);
-    openPrintWindow(buildPrintDocument(buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo, qrValue }), { layout: "thermal" }));
+    openPrintWindow(buildStoreOrderPrintDocument(order, { logoUrl: gtshirtLogo, baseUrl }));
   };
 
   const printOrderLabels = (orderList) => {
     const safeOrders = Array.isArray(orderList) ? orderList.filter(Boolean) : [];
     if (safeOrders.length === 0) { setFeedback({ type: "error", text: "Pilih minimal 1 order untuk dicetak." }); return; }
-    const markup = safeOrders.map((order) => {
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const qrValue = buildOrderQrValue(order.orderCode, "resi", baseUrl);
-      return buildPrintLabelMarkup(order, { logoUrl: gtshirtLogo, qrValue });
-    }).join("");
-    openPrintWindow(buildPrintDocument(markup, { layout: "a4" }));
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    try {
+      const assets = safeOrders.map((order) => getStoreOrderPrintAsset(order, { logoUrl: gtshirtLogo, baseUrl }));
+      openPrintWindow(buildStoreOrderPrintDocumentFromAssets(assets));
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        text: error.message || "Bulk print belum mendukung kombinasi dokumen terpilih.",
+      });
+    }
   };
 
   const toggleOrderSelection = (orderId) => {
@@ -199,6 +293,26 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
   const clearSelectedOrders = () => { setSelectedOrderIds(new Set()); };
 
   const selectedOrders = useMemo(() => orders.filter((o) => selectedOrderIds.has(o.id)), [orders, selectedOrderIds]);
+  const bulkStatusOptions = useMemo(() => {
+    if (selectedOrders.length === 0) return [];
+
+    let sharedStatuses = new Set(
+      getAllowedNextOrderStatuses(selectedOrders[0].status, selectedOrders[0].shippingMethod),
+    );
+
+    selectedOrders.slice(1).forEach((order) => {
+      const nextStatuses = new Set(getAllowedNextOrderStatuses(order.status, order.shippingMethod));
+      sharedStatuses = new Set([...sharedStatuses].filter((status) => nextStatuses.has(status)));
+    });
+
+    return ORDER_STATUS_OPTIONS.filter((option) => sharedStatuses.has(option.value));
+  }, [selectedOrders]);
+
+  useEffect(() => {
+    if (bulkStatus && !bulkStatusOptions.some((option) => option.value === bulkStatus)) {
+      setBulkStatus("");
+    }
+  }, [bulkStatus, bulkStatusOptions]);
 
   // Virtual scroll
   const useVirtualOrders = orders.length > 60;
@@ -224,10 +338,15 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
     if (!isActive) return;
     const timeout = window.setTimeout(() => {
       setOrderPage(1);
-      fetchOrders({ page: 1, search: orderSearch, status: orderStatusFilter });
+      fetchOrders({
+        page: 1,
+        search: orderSearch,
+        status: orderStatusFilter,
+        channel: orderChannelFilter,
+      });
     }, 400);
     return () => window.clearTimeout(timeout);
-  }, [isActive, orderSearch, orderStatusFilter]);
+  }, [isActive, orderSearch, orderStatusFilter, orderChannelFilter]);
 
   // Viewport resize observer
   useEffect(() => {
@@ -270,6 +389,12 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
                 {ORDER_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
+            <div className="min-w-[180px] space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">Channel</label>
+              <select className="input-modern" value={orderChannelFilter} onChange={(e) => setOrderChannelFilter(e.target.value)}>
+                {ORDER_CHANNEL_OPTIONS.map((option) => <option key={option.value || "all"} value={option.value}>{option.label}</option>)}
+              </select>
+            </div>
             <button type="button" onClick={() => { setOrderPage(1); fetchOrders({ page: 1 }); }} className="btn-primary !px-6 !py-2.5">Terapkan</button>
             <button type="button" onClick={handleClearOrders} className="rounded-2xl border border-rose-500 bg-rose-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:border-rose-600 hover:bg-rose-700 dark:border-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600">Reset Semua Pesanan</button>
           </div>
@@ -279,11 +404,11 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
             <button type="button" onClick={() => onGoToScan?.()} className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-800/40">Scan QR</button>
             <button type="button" onClick={clearSelectedOrders} className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/40 dark:text-brand-300 dark:hover:bg-brand-800/40">Bersihkan</button>
             <select className="input-modern !py-2 text-xs" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
-              <option value="">Pilih Status</option>
-              {ORDER_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <option value="">{selectedOrders.length > 0 && bulkStatusOptions.length === 0 ? "Tidak ada status bersama" : "Pilih Status"}</option>
+              {bulkStatusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <button type="button" onClick={handleBulkStatusUpdate} disabled={!bulkStatus || selectedOrders.length === 0} className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-50">Update Status ({selectedOrders.length})</button>
-            <button type="button" onClick={() => printOrderLabels(selectedOrders)} disabled={selectedOrders.length === 0} className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-50">Print Resi Terpilih ({selectedOrders.length})</button>
+            <button type="button" onClick={() => printOrderLabels(selectedOrders)} disabled={selectedOrders.length === 0} className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-50">Print Dokumen ({selectedOrders.length})</button>
           </div>
 
           <div ref={orderListRef} onScroll={(e) => setOrderScrollTop(e.currentTarget.scrollTop)} className="admin-scroll-panel mt-4 max-h-[560px] space-y-4 overflow-auto pr-1">
@@ -304,6 +429,7 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
               <div style={{ paddingTop: orderPaddingTop, paddingBottom: orderPaddingBottom }}>
                 {visibleOrders.map((order, index) => {
                   const quickAction = getQuickActionForOrder(order);
+                  const canReverseOrder = isOfflineOrder(order) && order.status !== "cancelled" && Boolean(order.stockDeductedAt);
                   return (
                     <div key={order.id} ref={useVirtualOrders && index === 0 ? orderRowMeasureRef : null} className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45">
                       <div className="sm:hidden">
@@ -329,12 +455,28 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
                           <div className="mt-3 space-y-2 text-xs text-brand-600 dark:text-brand-300">
                             <p>{order.customerName} • {order.customerPhone}</p>
                             {order.user?.email && <p className="text-[11px] text-brand-500 dark:text-brand-400">Akun: {order.user.email}</p>}
-                            <p>{order.shippingMethod} • {order.paymentMethod}</p>
+                            <p>{mapOrderChannelLabel(order)} • {order.shippingMethod} • {order.paymentMethod}</p>
+                            {isOfflineOrder(order) && (
+                              <p className="text-[11px] text-brand-500 dark:text-brand-400">
+                                Kasir: {order.cashierName || "-"} • Dibayar {formatRupiah(order.amountPaid)} • Kembalian {formatRupiah(order.changeAmount)}
+                              </p>
+                            )}
                             <p className="text-[11px] text-brand-500 dark:text-brand-400">Potong stok: {order.stockDeductedAt ? `Sudah (${formatDateTime(order.stockDeductedAt)})` : "Belum"}</p>
+                            {order.reversedAt && (
+                              <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-300">
+                                {getReversalTypeLabel(order)} • {formatDateTime(order.reversedAt)}{order.reversalReason ? ` • ${order.reversalReason}` : ""}
+                              </p>
+                            )}
                             {Array.isArray(order.items) && order.items.length > 0 && (<p className="text-[11px] text-brand-500 dark:text-brand-400">{order.items.length} item • {order.items.map((i) => `${i.productName} (${i.size} x${i.quantity})`).join(", ")}</p>)}
                             {quickAction && <button type="button" onClick={() => handleQuickOrderAction(order, quickAction)} className="btn-primary !w-full !py-2 !text-xs">{quickAction.label}</button>}
+                            {canReverseOrder && (
+                              <>
+                                <button type="button" onClick={() => handleOfflineReversal(order, "void")} className="admin-order-action">Void Transaksi</button>
+                                <button type="button" onClick={() => handleOfflineReversal(order, "return")} className="admin-order-action">Retur Transaksi</button>
+                              </>
+                            )}
                             <button type="button" onClick={() => setActiveOrderSheet(order)} className="admin-order-action">Ubah Status</button>
-                            <button type="button" onClick={() => printOrderLabel(order)} className="admin-order-action">Print Resi</button>
+                            <button type="button" onClick={() => printOrderLabel(order)} className="admin-order-action">{getPrintButtonLabel(order)}</button>
                           </div>
                         </details>
                       </div>
@@ -346,22 +488,37 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
                             <div>
                               <p className="text-sm font-bold text-brand-900 dark:text-white">{order.orderCode}</p>
                               <p className="text-xs text-brand-500 dark:text-brand-400">{order.customerName} • {order.customerPhone}</p>
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-400 dark:text-brand-500">{mapOrderChannelLabel(order)}</p>
                               {order.user?.email && <p className="text-[11px] text-brand-500 dark:text-brand-400">Akun: {order.user.email}</p>}
                             </div>
                           </div>
                           <span className={`status-pill rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(order.status)}`}>{mapOrderStatusLabel(order.status)}</span>
                         </div>
-                        <div className="mt-2 text-xs text-brand-600 dark:text-brand-300">{formatDateTime(order.createdAt)} • {order.shippingMethod} • {order.paymentMethod}</div>
+                        <div className="mt-2 text-xs text-brand-600 dark:text-brand-300">{formatDateTime(order.createdAt)} • {mapOrderChannelLabel(order)} • {order.shippingMethod} • {order.paymentMethod}</div>
                         <div className="mt-1 text-xs font-semibold text-primary">Total: {formatRupiah(order.totalAmount)}</div>
+                        {isOfflineOrder(order) && (
+                          <div className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">
+                            Kasir: {order.cashierName || "-"} • Dibayar {formatRupiah(order.amountPaid)} • Kembalian {formatRupiah(order.changeAmount)}
+                          </div>
+                        )}
                         <div className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">Potong stok: {order.stockDeductedAt ? `Sudah (${formatDateTime(order.stockDeductedAt)})` : "Belum"}</div>
+                        {order.reversedAt && (
+                          <div className="mt-1 text-[11px] font-semibold text-rose-600 dark:text-rose-300">
+                            {getReversalTypeLabel(order)} • {formatDateTime(order.reversedAt)}{order.reversalReason ? ` • ${order.reversalReason}` : ""}
+                          </div>
+                        )}
                         {Array.isArray(order.items) && order.items.length > 0 && (<p className="mt-1 text-xs text-brand-500 dark:text-brand-400">{order.items.length} item • {order.items.map((i) => `${i.productName} (${i.size} x${i.quantity})`).join(", ")}</p>)}
                         <div className="mt-3">
                           <div className="flex flex-wrap items-center gap-2">
                             {quickAction && <button type="button" onClick={() => handleQuickOrderAction(order, quickAction)} className="rounded-xl border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90">{quickAction.label}</button>}
+                            {canReverseOrder && <button type="button" onClick={() => handleOfflineReversal(order, "void")} className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-200">Void</button>}
+                            {canReverseOrder && <button type="button" onClick={() => handleOfflineReversal(order, "return")} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">Retur</button>}
                             <select className="input-modern !py-2 text-xs" value={order.status} onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}>
-                              {ORDER_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                              {getOrderTransitionOptions(order).map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
                             </select>
-                            <button type="button" onClick={() => printOrderLabel(order)} className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200 dark:hover:bg-brand-800/40">Print Resi</button>
+                            <button type="button" onClick={() => printOrderLabel(order)} className="rounded-xl border border-brand-200 bg-white/80 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200 dark:hover:bg-brand-800/40">{getPrintButtonLabel(order)}</button>
                           </div>
                         </div>
                       </div>
@@ -417,16 +574,33 @@ export default function OrdersTab({ isActive, analytics, onGoToScan }) {
             <div className="admin-sheet-body">
               <div className="admin-sheet-meta">
                 <span>{formatDateTime(activeOrderSheet.createdAt)}</span>
+                <span>{mapOrderChannelLabel(activeOrderSheet)}</span>
                 <span>{activeOrderSheet.shippingMethod}</span>
                 <span>{activeOrderSheet.paymentMethod}</span>
                 <span className="font-semibold text-brand-900 dark:text-white">{formatRupiah(activeOrderSheet.totalAmount)}</span>
               </div>
+              {isOfflineOrder(activeOrderSheet) && (
+                <p className="mt-2 text-xs text-brand-500 dark:text-brand-400">
+                  Kasir: {activeOrderSheet.cashierName || "-"} • Dibayar {formatRupiah(activeOrderSheet.amountPaid)} • Kembalian {formatRupiah(activeOrderSheet.changeAmount)}
+                </p>
+              )}
+              {activeOrderSheet.reversedAt && (
+                <p className="mt-2 text-xs font-semibold text-rose-600 dark:text-rose-300">
+                  {getReversalTypeLabel(activeOrderSheet)} • {formatDateTime(activeOrderSheet.reversedAt)}{activeOrderSheet.reversalReason ? ` • ${activeOrderSheet.reversalReason}` : ""}
+                </p>
+              )}
               {Array.isArray(activeOrderSheet.items) && activeOrderSheet.items.length > 0 && (
                 <p className="mt-2 text-xs text-brand-500 dark:text-brand-400">{activeOrderSheet.items.length} item • {activeOrderSheet.items.map((i) => `${i.productName} (${i.size} x${i.quantity})`).join(", ")}</p>
               )}
-              <button type="button" onClick={() => printOrderLabel(activeOrderSheet)} className="mt-3 w-full rounded-xl border border-brand-200 bg-white/80 px-4 py-2.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200 dark:hover:bg-brand-800/40">Print Resi</button>
+              <button type="button" onClick={() => printOrderLabel(activeOrderSheet)} className="mt-3 w-full rounded-xl border border-brand-200 bg-white/80 px-4 py-2.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-700 dark:bg-brand-900/50 dark:text-brand-200 dark:hover:bg-brand-800/40">{getPrintButtonLabel(activeOrderSheet)}</button>
+              {isOfflineOrder(activeOrderSheet) && activeOrderSheet.status !== "cancelled" && activeOrderSheet.stockDeductedAt && (
+                <div className="mt-3 grid gap-2">
+                  <button type="button" onClick={async () => { const didReverse = await handleOfflineReversal(activeOrderSheet, "void"); if (didReverse) setActiveOrderSheet(null); }} className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-200">Void Transaksi</button>
+                  <button type="button" onClick={async () => { const didReverse = await handleOfflineReversal(activeOrderSheet, "return"); if (didReverse) setActiveOrderSheet(null); }} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">Retur Transaksi</button>
+                </div>
+              )}
               <div className="admin-sheet-options">
-                {ORDER_STATUS_OPTIONS.map((option) => (
+                {getOrderTransitionOptions(activeOrderSheet).map((option) => (
                   <button key={option.value} type="button" onClick={() => { handleOrderStatusChange(activeOrderSheet.id, option.value); setActiveOrderSheet(null); }} className={`admin-sheet-option ${activeOrderSheet.status === option.value ? "is-active" : ""}`}>{option.label}</button>
                 ))}
               </div>

@@ -14,16 +14,34 @@ const REPORT_STATUS_OPTIONS = [
   { value: "new", label: "Baru" },
   { value: "cancelled", label: "Dibatalkan" },
 ];
+const REPORT_CHANNEL_OPTIONS = [
+  { value: "all", label: "Semua Channel" },
+  { value: "whatsapp", label: "Online / Web" },
+  { value: "offline_store", label: "Offline Store" },
+];
+const DEFAULT_REPORT_FILTERS = {
+  startDate: "",
+  endDate: "",
+  status: "all",
+  channel: "all",
+  shippingMethod: "all",
+};
+
+function mapChannelLabel(channel) {
+  if (channel === "offline_store") return "Offline Store";
+  if (channel === "whatsapp") return "Online / Web";
+  return channel || "Store";
+}
 
 export default function ReportsTab({ isActive }) {
   const [reportFilters, setReportFilters] = useState(() => {
     try {
       const saved = localStorage.getItem(REPORT_FILTERS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) return { ...DEFAULT_REPORT_FILTERS, ...JSON.parse(saved) };
     } catch {
       //
     }
-    return { startDate: "", endDate: "", status: "all", shippingMethod: "all" };
+    return DEFAULT_REPORT_FILTERS;
   });
 
   const [reportRows, setReportRows] = useState([]);
@@ -44,6 +62,7 @@ export default function ReportsTab({ isActive }) {
         startDate: reportFilters.startDate,
         endDate: reportFilters.endDate,
         status: reportFilters.status,
+        channel: reportFilters.channel,
       };
       const { data } = await api.get("/store/admin/reports/revenue", { params });
       setReportRows(Array.isArray(data?.data) ? data.data : []);
@@ -68,6 +87,7 @@ export default function ReportsTab({ isActive }) {
         startDate: reportFilters.startDate,
         endDate: reportFilters.endDate,
         status: reportFilters.status,
+        channel: reportFilters.channel,
       };
       const { data } = await api.post("/store/admin/reports/revenue/sync", payload);
       setSheetSyncInfo({
@@ -99,10 +119,16 @@ export default function ReportsTab({ isActive }) {
         "Kode Order": row.orderCode,
         Tanggal: formatDateTime(row.createdAt),
         Nama: row.customerName,
+        Channel: mapChannelLabel(row.channel),
+        Kasir: row.cashierName || "",
         "No. WA": row.customerPhone,
         Status: mapOrderStatusLabel(row.status),
         Pengiriman: row.shippingMethod,
         Pembayaran: row.paymentMethod,
+        "Nominal Dibayar": row.amountPaid,
+        Kembalian: row.changeAmount,
+        Reversal: row.reversalType || "",
+        "Alasan Reversal": row.reversalReason || "",
         Subtotal: row.subtotal,
         Ongkir: row.shippingCost,
         Total: row.totalAmount,
@@ -197,6 +223,24 @@ export default function ReportsTab({ isActive }) {
                     ))}
                   </select>
                 </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                    Channel
+                  </span>
+                  <select
+                    className="input-modern"
+                    value={reportFilters.channel}
+                    onChange={(event) =>
+                      setReportFilters((prev) => ({ ...prev, channel: event.target.value }))
+                    }
+                  >
+                    {REPORT_CHANNEL_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   type="button"
                   onClick={() => fetchRevenueReport()}
@@ -247,6 +291,24 @@ export default function ReportsTab({ isActive }) {
                 }
               >
                 {REPORT_STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[180px] space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">
+                Channel
+              </label>
+              <select
+                className="input-modern"
+                value={reportFilters.channel}
+                onChange={(event) =>
+                  setReportFilters((prev) => ({ ...prev, channel: event.target.value }))
+                }
+              >
+                {REPORT_CHANNEL_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -359,13 +421,21 @@ export default function ReportsTab({ isActive }) {
                             {formatDateTime(row.createdAt)}
                           </p>
                         </div>
-                        {statusBadge(row.status)}
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusBadge(row.status)}`}>
+                          {mapOrderStatusLabel(row.status)}
+                        </span>
                       </div>
                       <div className="mt-2 text-xs text-brand-500 dark:text-brand-400">
                         {row.customerName} • {row.customerPhone}
                       </div>
+                      <div className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                        {mapChannelLabel(row.channel)}{row.cashierName ? ` • Kasir ${row.cashierName}` : ""}
+                      </div>
                       <div className="mt-2 text-sm font-semibold text-brand-900 dark:text-white">
                         Total: {formatRupiah(row.totalAmount)}
+                      </div>
+                      <div className="mt-1 text-xs text-brand-500 dark:text-brand-400">
+                        {row.paymentMethod} • Dibayar {formatRupiah(row.amountPaid)} • Kembalian {formatRupiah(row.changeAmount)}
                       </div>
                       <div className="mt-1 text-xs text-brand-500 dark:text-brand-400">
                         {row.itemsSummary}
@@ -380,7 +450,9 @@ export default function ReportsTab({ isActive }) {
                         <th className="px-4 py-3">Kode</th>
                         <th className="px-4 py-3">Tanggal</th>
                         <th className="px-4 py-3">Pelanggan</th>
+                        <th className="px-4 py-3">Channel</th>
                         <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3">Pembayaran</th>
                         <th className="px-4 py-3">Total</th>
                         <th className="px-4 py-3">Item</th>
                       </tr>
@@ -403,8 +475,19 @@ export default function ReportsTab({ isActive }) {
                               {row.customerPhone}
                             </div>
                           </td>
+                          <td className="px-4 py-3 text-xs text-brand-500 dark:text-brand-400">
+                            <div>{mapChannelLabel(row.channel)}</div>
+                            {row.cashierName && <div>Kasir: {row.cashierName}</div>}
+                          </td>
                           <td className="px-4 py-3">
-                            {statusBadge(row.status)}
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusBadge(row.status)}`}>
+                              {mapOrderStatusLabel(row.status)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-brand-500 dark:text-brand-400">
+                            <div>{row.paymentMethod}</div>
+                            <div>Dibayar {formatRupiah(row.amountPaid)}</div>
+                            <div>Kembalian {formatRupiah(row.changeAmount)}</div>
                           </td>
                           <td className="px-4 py-3 font-semibold text-brand-900 dark:text-white">
                             {formatRupiah(row.totalAmount)}

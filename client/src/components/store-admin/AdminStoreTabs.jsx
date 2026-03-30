@@ -19,6 +19,19 @@ export default function AdminStoreTabs({ activeTab, setActiveTab, tabHidden }) {
         )}
       </button>
       <button
+        onClick={() => setActiveTab("kasir")}
+        className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
+          activeTab === "kasir"
+            ? "text-primary"
+            : "text-brand-600 dark:text-brand-400 hover:text-brand-900 dark:hover:text-white"
+        }`}
+      >
+        Kasir Offline
+        {activeTab === "kasir" && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t"></div>
+        )}
+      </button>
+      <button
         onClick={() => setActiveTab("pesanan")}
         className={`px-4 py-3 font-semibold transition relative whitespace-nowrap shrink-0 min-h-[44px] ${
           activeTab === "pesanan"

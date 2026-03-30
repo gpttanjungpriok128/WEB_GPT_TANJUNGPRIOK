@@ -292,10 +292,14 @@ function normalizeItemSize(value = '') {
   return String(value || '').trim().toUpperCase();
 }
 
-function buildStockError(message) {
+function buildClientError(message) {
   const error = new Error(message);
   error.statusCode = 400;
   return error;
+}
+
+function buildStockError(message) {
+  return buildClientError(message);
 }
 
 function buildProductQuantityMap(items = []) {
@@ -528,6 +532,7 @@ function parseDateValue(value) {
 
 function parseRevenueFilters(source = {}) {
   const status = String(source.status || 'all').trim().toLowerCase();
+  const channel = String(source.channel || 'all').trim().toLowerCase();
   const startDate = parseDateValue(source.startDate);
   const endDateRaw = parseDateValue(source.endDate);
   const endDate = endDateRaw
@@ -542,11 +547,11 @@ function parseRevenueFilters(source = {}) {
     )
     : null;
 
-  return { status, startDate, endDate };
+  return { status, channel, startDate, endDate };
 }
 
 function buildRevenueReportWhere(filters = {}) {
-  const { status, startDate, endDate } = filters;
+  const { status, channel, startDate, endDate } = filters;
   const where = {};
 
   if (!status || status === 'all') {
@@ -564,6 +569,10 @@ function buildRevenueReportWhere(filters = {}) {
     where.createdAt = {};
     if (startDate) where.createdAt[Op.gte] = startDate;
     if (endDate) where.createdAt[Op.lte] = endDate;
+  }
+
+  if (channel && channel !== 'all') {
+    where.channel = channel;
   }
 
   return where;
@@ -592,13 +601,20 @@ async function buildRevenueReport(filters = {}) {
       customerName: order.customerName,
       customerPhone: order.customerPhone,
       status: order.status,
+      channel: order.channel,
       shippingMethod: order.shippingMethod,
       paymentMethod: order.paymentMethod,
+      cashierName: order.cashierName || '',
       subtotal: Number(order.subtotal) || 0,
       shippingCost: Number(order.shippingCost) || 0,
       totalAmount: Number(order.totalAmount) || 0,
+      amountPaid: Number(order.amountPaid) || 0,
+      changeAmount: Number(order.changeAmount) || 0,
       itemCount,
-      itemsSummary
+      itemsSummary,
+      reversedAt: order.reversedAt,
+      reversalType: order.reversalType || '',
+      reversalReason: order.reversalReason || ''
     };
   });
 
@@ -714,6 +730,49 @@ function formatRupiah(value) {
   }).format(Number(value) || 0);
 }
 
+function isCashPaymentMethod(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return false;
+
+  return normalized.includes('tunai') || normalized.includes('cash');
+}
+
+function isOfflineStoreChannel(value = '') {
+  return String(value || '').trim().toLowerCase() === 'offline_store';
+}
+
+function resolveAdminPosPayment(paymentMethodValue, totalAmount, amountPaidValue) {
+  const paymentMethod = String(paymentMethodValue || 'Tunai').trim() || 'Tunai';
+  const safeTotalAmount = Math.max(0, toInteger(totalAmount, 0));
+
+  if (!isCashPaymentMethod(paymentMethod)) {
+    return {
+      paymentMethod,
+      amountPaid: safeTotalAmount,
+      changeAmount: 0,
+      isCash: false
+    };
+  }
+
+  const amountPaid = Math.max(0, toInteger(amountPaidValue, safeTotalAmount));
+  if (amountPaid < safeTotalAmount) {
+    throw buildClientError('Nominal dibayar kurang dari total transaksi');
+  }
+
+  return {
+    paymentMethod,
+    amountPaid,
+    changeAmount: Math.max(0, amountPaid - safeTotalAmount),
+    isCash: true
+  };
+}
+
+function normalizeReversalType(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'return') return 'return';
+  return 'void';
+}
+
 function serializeProduct(product) {
   const pricing = calculateProductPricing(product);
   const imageUrls = normalizeProductImages(product);
@@ -804,13 +863,20 @@ function serializeCustomerOrder(order) {
     customerAddress: order.customerAddress,
     shippingMethod: order.shippingMethod,
     paymentMethod: order.paymentMethod,
+    cashierName: order.cashierName || '',
     notes: order.notes || '',
     subtotal: Number(order.subtotal) || 0,
     shippingCost: Number(order.shippingCost) || 0,
     totalAmount: Number(order.totalAmount) || 0,
+    amountPaid: Number(order.amountPaid) || 0,
+    changeAmount: Number(order.changeAmount) || 0,
     status: order.status,
     channel: order.channel,
     stockDeductedAt: order.stockDeductedAt,
+    reversedAt: order.reversedAt,
+    reversedBy: order.reversedBy || null,
+    reversalType: order.reversalType || '',
+    reversalReason: order.reversalReason || '',
     whatsappLink: buildWhatsappLink(whatsappMessage),
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
@@ -969,10 +1035,14 @@ async function acquireOrderCodeLock(transaction) {
   });
 }
 
-async function generateOrderCode(transaction) {
+async function generateOrderCode(transaction, options = {}) {
   const now = new Date();
   const dateCode = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-  const prefix = `GTS-${dateCode}-`;
+  const prefixBase = String(options.prefixBase || 'GTS')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '') || 'GTS';
+  const prefix = `${prefixBase}-${dateCode}-`;
   await acquireOrderCodeLock(transaction);
   const latest = await StoreOrder.findOne({
     where: { orderCode: { [Op.like]: `${prefix}%` } },
@@ -1381,6 +1451,8 @@ async function createOrder(req, res, next) {
       subtotal,
       shippingCost,
       totalAmount,
+      amountPaid: totalAmount,
+      changeAmount: 0,
       status: 'new',
       channel: 'whatsapp',
       stockDeductedAt: reservedAt
@@ -1415,6 +1487,221 @@ async function createOrder(req, res, next) {
         stockDeductedAt: order.stockDeductedAt,
         whatsappLink
       }
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return next(error);
+  }
+}
+
+async function createAdminPosOrder(req, res, next) {
+  const transaction = await sequelize.transaction();
+  let didMutateCatalog = false;
+
+  try {
+    const itemsInput = Array.isArray(req.body.items) ? req.body.items : [];
+    if (!itemsInput.length) {
+      await transaction.rollback();
+      return res.status(422).json({ message: 'Item transaksi kasir wajib diisi' });
+    }
+
+    const normalizedItems = itemsInput.map((item) => ({
+      productId: toInteger(item.productId, 0),
+      size: String(item.size || '').trim().toUpperCase(),
+      quantity: Math.max(1, toInteger(item.quantity, 1))
+    }));
+
+    const productIds = [...new Set(normalizedItems.map((item) => item.productId).filter(Boolean))];
+    const products = await StoreProduct.findAll({
+      where: { id: productIds },
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+
+    const productMap = new Map(products.map((item) => [item.id, item]));
+    if (productMap.size !== productIds.length) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Sebagian produk kasir tidak ditemukan' });
+    }
+
+    const qtyByVariant = normalizedItems.reduce((accumulator, item) => {
+      const key = `${item.productId}:${item.size}`;
+      accumulator[key] = (accumulator[key] || 0) + item.quantity;
+      return accumulator;
+    }, {});
+
+    let subtotal = 0;
+    const orderItems = [];
+
+    for (const item of normalizedItems) {
+      const product = productMap.get(item.productId);
+      if (!product) continue;
+
+      const { sizes, stockBySize } = getProductStockInfo(product);
+      if (!sizes.includes(item.size)) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: `Ukuran ${item.size} tidak tersedia untuk ${product.name}`
+        });
+      }
+
+      const requestedQty = qtyByVariant[`${item.productId}:${item.size}`] || 0;
+      const availableSizeStock = Math.max(0, toInteger(stockBySize[item.size], 0));
+      if (availableSizeStock <= 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: `Stok ${product.name} ukuran ${item.size} sedang habis`
+        });
+      }
+      if (requestedQty > availableSizeStock) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: `Stok ${product.name} ukuran ${item.size} tidak mencukupi. Tersedia: ${availableSizeStock}`
+        });
+      }
+
+      const pricing = calculateProductPricing(product);
+      const lineTotal = pricing.finalPrice * item.quantity;
+      subtotal += lineTotal;
+
+      orderItems.push({
+        productId: product.id,
+        productName: product.name,
+        productSlug: product.slug,
+        size: item.size,
+        color: product.color || '',
+        unitPrice: pricing.finalPrice,
+        quantity: item.quantity,
+        lineTotal,
+        promoLabel: pricing.promoIsActive ? pricing.promoLabel : null
+      });
+    }
+
+    const payment = resolveAdminPosPayment(
+      req.body.paymentMethod,
+      subtotal,
+      req.body.amountPaid
+    );
+    const reservedAt = new Date();
+    didMutateCatalog = await reserveStockForOrderItems(orderItems, transaction);
+
+    const orderCode = await generateOrderCode(transaction, { prefixBase: 'GTPOS' });
+    const cashierName = req.user?.name || '';
+    const order = await StoreOrder.create({
+      orderCode,
+      userId: req.user?.id || null,
+      customerName: String(req.body.name || '').trim() || 'Pembeli Offline',
+      customerPhone: normalizePhone(req.body.phone) || '-',
+      customerAddress: 'Transaksi langsung di offline store',
+      shippingMethod: 'Ambil Langsung di Offline Store',
+      paymentMethod: payment.paymentMethod,
+      cashierName: cashierName || null,
+      notes: req.body.notes ? String(req.body.notes).trim() : null,
+      subtotal,
+      shippingCost: 0,
+      totalAmount: subtotal,
+      amountPaid: payment.amountPaid,
+      changeAmount: payment.changeAmount,
+      status: 'completed',
+      channel: 'offline_store',
+      stockDeductedAt: reservedAt,
+      whatsappMessage: null
+    }, { transaction });
+
+    const createdItems = await StoreOrderItem.bulkCreate(
+      orderItems.map((item) => ({ ...item, orderId: order.id })),
+      { transaction, returning: true }
+    );
+
+    await transaction.commit();
+    if (didMutateCatalog) {
+      invalidateStoreCatalogCache();
+    }
+    triggerRevenueSheetSync({ status: 'all' });
+
+    return res.status(201).json({
+      message: 'Transaksi kasir offline berhasil dibuat',
+      data: serializeCustomerOrder({
+        ...order.get({ plain: true }),
+        items: createdItems
+      })
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return next(error);
+  }
+}
+
+async function reverseAdminPosOrder(req, res, next) {
+  const transaction = await sequelize.transaction();
+  let didMutateCatalog = false;
+
+  try {
+    const order = await StoreOrder.findByPk(req.params.id, {
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+
+    if (!order) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Order tidak ditemukan' });
+    }
+
+    if (!isOfflineStoreChannel(order.channel)) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Fitur void/retur hanya untuk transaksi offline store' });
+    }
+
+    if (order.status === 'cancelled') {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Transaksi ini sudah dibatalkan sebelumnya' });
+    }
+
+    if (!order.stockDeductedAt) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Stok transaksi ini sudah pernah dikembalikan' });
+    }
+
+    const reversalType = normalizeReversalType(req.body.action);
+    const reversalReason = String(req.body.reason || '').trim() || null;
+    const orderItems = await StoreOrderItem.findAll({
+      where: { orderId: order.id },
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+
+    if (!orderItems.length) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Order tidak memiliki item untuk dikembalikan' });
+    }
+
+    didMutateCatalog = await restoreStockForOrderItems(orderItems, transaction, {
+      allowMissingProducts: true
+    }) || didMutateCatalog;
+
+    await order.update({
+      status: 'cancelled',
+      stockDeductedAt: null,
+      reversedAt: new Date(),
+      reversedBy: req.user?.id || null,
+      reversalType,
+      reversalReason
+    }, { transaction });
+
+    await transaction.commit();
+    if (didMutateCatalog) {
+      invalidateStoreCatalogCache();
+    }
+    triggerRevenueSheetSync({ status: 'all' });
+
+    return res.status(200).json({
+      message: reversalType === 'return'
+        ? 'Retur transaksi offline berhasil diproses'
+        : 'Void transaksi offline berhasil diproses',
+      data: serializeCustomerOrder({
+        ...order.get({ plain: true }),
+        items: orderItems
+      })
     });
   } catch (error) {
     await transaction.rollback();
@@ -1574,6 +1861,12 @@ async function getAdminOrders(req, res, next) {
     if (req.query.status && ORDER_STATUSES.includes(req.query.status)) {
       where.status = req.query.status;
     }
+    if (req.query.channel) {
+      const channel = String(req.query.channel).trim().toLowerCase();
+      if (channel && channel !== 'all') {
+        where.channel = channel;
+      }
+    }
 
     if (search) {
       where[Op.or] = [
@@ -1587,7 +1880,8 @@ async function getAdminOrders(req, res, next) {
       where,
       include: [
         { model: StoreOrderItem, as: 'items' },
-        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'role'] }
+        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'role'] },
+        { model: User, as: 'reversalActor', attributes: ['id', 'name', 'email', 'role'] }
       ],
       order: [['createdAt', 'DESC']],
       limit,
@@ -2127,6 +2421,8 @@ module.exports = {
   getProductReviews,
   createProductReview,
   createOrder,
+  createAdminPosOrder,
+  reverseAdminPosOrder,
   getMyOrders,
   trackPublicOrder,
   getAdminProducts,
@@ -2146,6 +2442,10 @@ module.exports = {
   getAdminAnalytics,
   __testHooks: {
     reserveStockBySize,
-    buildRevenueReportWhere
+    buildRevenueReportWhere,
+    resolveAdminPosPayment,
+    isCashPaymentMethod,
+    isOfflineStoreChannel,
+    normalizeReversalType
   }
 };

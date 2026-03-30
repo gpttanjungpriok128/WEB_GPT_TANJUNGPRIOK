@@ -19,3 +19,15 @@ test('buildRevenueReportWhere keeps explicit cancelled filter when requested', (
     status: 'cancelled'
   });
 });
+
+test('buildRevenueReportWhere keeps channel filter when provided', () => {
+  const where = __testHooks.buildRevenueReportWhere({
+    status: 'all',
+    channel: 'offline_store'
+  });
+
+  assert.deepEqual(where, {
+    status: { [Op.ne]: 'cancelled' },
+    channel: 'offline_store'
+  });
+});

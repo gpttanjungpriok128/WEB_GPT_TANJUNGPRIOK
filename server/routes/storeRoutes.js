@@ -5,6 +5,8 @@ const {
   getProductReviews,
   createProductReview,
   createOrder,
+  createAdminPosOrder,
+  reverseAdminPosOrder,
   getMyOrders,
   trackPublicOrder,
   getAdminProducts,
@@ -29,6 +31,8 @@ const { requirePersistentUploadStorage, uploadImage } = require('../middleware/u
 const { validate } = require('../middleware/validationMiddleware');
 const {
   createOrderValidation,
+  createPosOrderValidation,
+  reversePosOrderValidation,
   createReviewValidation,
   createProductValidation,
   updateProductValidation,
@@ -76,6 +80,8 @@ router.post('/orders', optionalAuthenticate, createOrderValidation, validate, cr
 router.get('/orders/track', trackPublicOrder);
 router.get('/my-orders', authenticate, getMyOrders);
 
+router.post('/admin/pos/orders', authenticate, authorizeRoles('admin'), createPosOrderValidation, validate, createAdminPosOrder);
+router.post('/admin/orders/:id/reversal', authenticate, authorizeRoles('admin'), reversePosOrderValidation, validate, reverseAdminPosOrder);
 router.get('/admin/products', authenticate, authorizeRoles('admin'), getAdminProducts);
 router.post('/admin/products', authenticate, authorizeRoles('admin'), requirePersistentUploadStorage, uploadImage.array('images', 8), createProductValidation, validate, createAdminProduct);
 router.put('/admin/products/:id', authenticate, authorizeRoles('admin'), requirePersistentUploadStorage, uploadImage.array('images', 8), updateProductValidation, validate, updateAdminProduct);
