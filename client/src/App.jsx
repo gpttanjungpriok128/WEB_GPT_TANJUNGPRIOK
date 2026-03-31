@@ -24,6 +24,7 @@ const ArticleEditorPage = lazy(() => import("./pages/ArticleEditorPage"));
 const ManageArticlesPage = lazy(() => import("./pages/ManageArticlesPage"));
 const CongregationDataPage = lazy(() => import("./pages/CongregationDataPage"));
 const ManageStorePage = lazy(() => import("./pages/ManageStorePage"));
+const StorePosPage = lazy(() => import("./pages/StorePosPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -83,6 +84,7 @@ function App() {
 
             <Route element={<ProtectedRoute roles={["admin"]} />}>
               <Route path="/dashboard/store" element={<ManageStorePage />} />
+              <Route path="/dashboard/store/pos" element={<StorePosPage />} />
             </Route>
 
             <Route

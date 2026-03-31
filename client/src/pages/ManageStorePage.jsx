@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import api from "../services/api";
 import gtshirtLogo from "../img/gtshirt-logo.jpeg";
 import { formatRupiah } from "../utils/storeFormatters";
@@ -87,6 +87,11 @@ function ManageStorePage() {
   useEffect(() => {
     if (!location?.search) return;
     const params = new URLSearchParams(location.search);
+    const requestedTab = params.get("tab");
+    if (["produk", "kasir", "pesanan", "scan", "ulasan", "laporan", "ongkir"].includes(requestedTab || "")) {
+      setActiveTab(requestedTab);
+      return;
+    }
     const rawCode = params.get("order") || params.get("orderCode") || params.get("code");
     if (rawCode?.trim()) {
       setActiveTab("pesanan");
@@ -125,6 +130,18 @@ function ManageStorePage() {
               Kelola produk, harga, promo, ongkir, order, dan analisis performa penjualan
               brand GTshirt dari satu dashboard.
             </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link to="/dashboard/store/pos" className="btn-primary !px-5 !py-2.5 text-sm">
+                Buka POS Kasir
+              </Link>
+              <button
+                type="button"
+                onClick={() => setActiveTab("pesanan")}
+                className="rounded-2xl border border-brand-300 bg-white/75 px-5 py-2.5 text-sm font-semibold text-brand-700 transition hover:border-brand-400 hover:text-brand-900 dark:border-brand-700 dark:bg-brand-900/35 dark:text-brand-200 dark:hover:border-brand-600 dark:hover:text-white"
+              >
+                Lihat Pesanan
+              </button>
+            </div>
           </div>
           <div className="bg-[#255C2F] p-5 md:p-6">
             <img

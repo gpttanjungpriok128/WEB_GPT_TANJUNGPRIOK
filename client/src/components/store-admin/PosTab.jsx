@@ -32,7 +32,24 @@ function clampQuantity(value, max) {
   return Math.max(1, Math.min(safeMax, Number(value) || 1));
 }
 
-export default function PosTab({ isActive, onRefreshAnalytics, onGoToOrders }) {
+function getProductImageUrl(product) {
+  if (product?.imageUrl) {
+    return product.imageUrl;
+  }
+
+  if (Array.isArray(product?.imageUrls)) {
+    return product.imageUrls.find(Boolean) || "";
+  }
+
+  return "";
+}
+
+export default function PosTab({
+  isActive,
+  onRefreshAnalytics,
+  onGoToOrders,
+  standalone = false,
+}) {
   const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -83,6 +100,7 @@ export default function PosTab({ isActive, onRefreshAnalytics, onGoToOrders }) {
         return [{
           ...item,
           productName: product.name,
+          imageUrl: getProductImageUrl(product),
           unitPrice: Number(product.finalPrice) || 0,
           stockAvailable,
           quantity: clampQuantity(item.quantity, stockAvailable),
@@ -202,6 +220,7 @@ export default function PosTab({ isActive, onRefreshAnalytics, onGoToOrders }) {
             key: variantKey,
             productId: product.id,
             productName: product.name,
+            imageUrl: getProductImageUrl(product),
             size: draft.size,
             quantity: quantityToAdd,
             unitPrice: Number(product.finalPrice) || 0,
@@ -298,7 +317,7 @@ export default function PosTab({ isActive, onRefreshAnalytics, onGoToOrders }) {
   };
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+    <section className={`grid gap-6 ${standalone ? "xl:grid-cols-[1.2fr_0.8fr]" : "xl:grid-cols-[1.15fr_0.85fr]"}`}>
       <article className="glass-card dense-card p-6">
         {feedback.text && (
           <div
@@ -363,9 +382,28 @@ export default function PosTab({ isActive, onRefreshAnalytics, onGoToOrders }) {
                 className="rounded-2xl border border-brand-200 bg-white/75 p-4 shadow-sm dark:border-brand-700 dark:bg-brand-900/45"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-brand-900 dark:text-white">{product.name}</p>
-                    <p className="mt-1 text-sm font-semibold text-primary">{formatRupiah(product.finalPrice)}</p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-brand-200 bg-brand-100/60 dark:border-brand-700 dark:bg-brand-900/60">
+                      {getProductImageUrl(product) ? (
+                        <img
+                          src={getProductImageUrl(product)}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">
+                          GT
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="line-clamp-2 text-sm font-bold text-brand-900 dark:text-white">{product.name}</p>
+                      <p className="mt-1 text-sm font-semibold text-primary">{formatRupiah(product.finalPrice)}</p>
+                      {product.color && (
+                        <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">{product.color}</p>
+                      )}
+                    </div>
                   </div>
                   {!product.isActive && (
                     <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
@@ -433,7 +471,7 @@ export default function PosTab({ isActive, onRefreshAnalytics, onGoToOrders }) {
         </div>
       </article>
 
-      <article className="glass-card dense-card p-6">
+      <article className={`glass-card dense-card p-6 ${standalone ? "self-start xl:sticky xl:top-24" : ""}`}>
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-500 dark:text-brand-400">
@@ -460,12 +498,28 @@ export default function PosTab({ isActive, onRefreshAnalytics, onGoToOrders }) {
               className="rounded-2xl border border-brand-200 bg-white/80 p-4 dark:border-brand-700 dark:bg-brand-900/40"
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-brand-900 dark:text-white">{item.productName}</p>
-                  <p className="text-xs text-brand-500 dark:text-brand-400">
-                    Size {item.size}
-                    {!item.isActive ? " • disembunyikan dari katalog online" : ""}
-                  </p>
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-brand-200 bg-brand-100/60 dark:border-brand-700 dark:bg-brand-900/60">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.productName}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-500 dark:text-brand-400">
+                        GT
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-brand-900 dark:text-white">{item.productName}</p>
+                    <p className="text-xs text-brand-500 dark:text-brand-400">
+                      Size {item.size}
+                      {!item.isActive ? " • disembunyikan dari katalog online" : ""}
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
