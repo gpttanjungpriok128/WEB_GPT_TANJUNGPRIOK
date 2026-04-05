@@ -14,6 +14,7 @@ import {
   getTotalStock,
   normalizeSizeKey,
 } from "../utils/storeStock";
+import { getPriceForSize, getProductPriceSummary } from "../utils/storePricing";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
 const REVIEW_IMAGE_LIMIT = 3;
@@ -982,6 +983,7 @@ function ProductDetailPage() {
           sizeStock,
         );
         savedCart[existingItemIndex].quantity = nextQty;
+        savedCart[existingItemIndex].price = getPriceForSize(product, selectedSize);
         savedCart[existingItemIndex].image =
           savedCart[existingItemIndex].image || normalizedPrimaryImage;
         savedCart[existingItemIndex].imageUrls =
@@ -996,7 +998,7 @@ function ProductDetailPage() {
           variantKey,
           productId: product.id,
           name: product.name,
-          price: Number(product.finalPrice ?? product.basePrice ?? 0),
+          price: getPriceForSize(product, selectedSize),
           image: normalizedPrimaryImage,
           imageUrls: normalizedImageUrls,
           size: selectedSize,
@@ -1086,12 +1088,13 @@ function ProductDetailPage() {
     );
   }
 
-  const effectivePrice = Number(product.finalPrice ?? product.basePrice ?? 0);
   const rawSizes = Array.isArray(product.sizes) && product.sizes.length > 0
     ? product.sizes
     : ["S", "M", "L", "XL"];
   const filteredSizes = rawSizes.filter((size) => normalizeSizeLabel(size) !== "XXL");
   const sizes = filteredSizes.length > 0 ? filteredSizes : ["S", "M", "L", "XL"];
+  const priceSummary = getProductPriceSummary(product);
+  const effectivePrice = getPriceForSize(product, selectedSize || sizes[0]);
   const hasPreorderSizes = sizes.some(isAboveXL);
   const totalStock = getTotalStock(product);
   const selectedSizeStock = getStockForSize(product, selectedSize);
@@ -1625,6 +1628,11 @@ function ProductDetailPage() {
                 <p className="text-[2rem] font-semibold tracking-[-0.05em] text-brand-950 dark:text-white">
                   {formatRupiah(effectivePrice)}
                 </p>
+                {priceSummary.hasRange && (
+                  <p className="text-sm text-brand-500 dark:text-brand-400">
+                    Harga menyesuaikan ukuran yang dipilih. Mulai dari {formatRupiah(priceSummary.minPrice)}.
+                  </p>
+                )}
                 {product.promoIsActive && Number(product.discountAmount) > 0 && (
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                     Promo aktif: {product.promoLabel || "Harga spesial tersedia sekarang"}
@@ -1946,8 +1954,7 @@ function ProductDetailPage() {
           <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-visible pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0">
             {showcaseProducts.map((item) => {
               if (!item || !item.id) return null;
-              
-              const relatedPrice = Number(item.finalPrice ?? item.basePrice ?? 0);
+              const relatedPrice = getProductPriceSummary(item).minPrice;
               const relatedImages = getImageWithFallback(item, FALLBACK_PRODUCTS);
               const relatedImage = relatedImages && relatedImages.length > 0 ? relatedImages[0] : storePlaceholderImage;
               const finalImageUrl = ensureValidImageUrl(relatedImage);

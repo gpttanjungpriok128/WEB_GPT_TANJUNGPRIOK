@@ -307,6 +307,28 @@ function parseStockBySizeInput(value) {
   return null;
 }
 
+function parsePriceBySizeInput(value) {
+  if (value === undefined || value === null || value === '') return null;
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value;
+  }
+
+  return null;
+}
+
 function distributeStockBySize(totalStock, sizes) {
   const safeSizes = normalizeSizes(sizes);
   const safeTotal = Math.max(0, Number(totalStock) || 0);
@@ -338,6 +360,44 @@ function normalizeStockBySize(stockBySizeValue, sizes, fallbackStock = 0) {
   return normalized;
 }
 
+function normalizePriceBySize(priceBySizeValue, sizes, fallbackPrice = 0) {
+  const safeSizes = normalizeSizes(sizes);
+  const safeFallbackPrice = Math.max(0, toInteger(fallbackPrice, 0));
+  const source = parsePriceBySizeInput(priceBySizeValue);
+
+  if (!source) {
+    return safeSizes.reduce((accumulator, size) => {
+      accumulator[size] = safeFallbackPrice;
+      return accumulator;
+    }, {});
+  }
+
+  const normalized = {};
+  for (const size of safeSizes) {
+    const matchedKey = Object.keys(source).find((key) => key.toUpperCase() === size);
+    normalized[size] = Math.max(
+      0,
+      toInteger(matchedKey ? source[matchedKey] : safeFallbackPrice, safeFallbackPrice)
+    );
+  }
+
+  return normalized;
+}
+
+function compactPriceBySize(priceBySizeValue, sizes, fallbackPrice = 0) {
+  const safeSizes = normalizeSizes(sizes);
+  const safeFallbackPrice = Math.max(0, toInteger(fallbackPrice, 0));
+  const normalized = normalizePriceBySize(priceBySizeValue, safeSizes, safeFallbackPrice);
+
+  return safeSizes.reduce((accumulator, size) => {
+    const price = Math.max(0, toInteger(normalized[size], safeFallbackPrice));
+    if (price !== safeFallbackPrice) {
+      accumulator[size] = price;
+    }
+    return accumulator;
+  }, {});
+}
+
 function totalStockFromMap(stockBySize = {}) {
   return Object.values(stockBySize).reduce(
     (total, qty) => total + Math.max(0, toInteger(qty, 0)),
@@ -355,6 +415,52 @@ function getProductStockInfo(product) {
   const totalStock = totalStockFromMap(stockBySize);
 
   return { sizes, stockBySize, totalStock };
+}
+
+function getProductPriceInfo(product, now = new Date()) {
+  const sizes = normalizeSizes(product?.sizes);
+  const fallbackBasePrice = Math.max(0, toInteger(product?.basePrice, 0));
+  const priceBySize = normalizePriceBySize(
+    product?.priceBySize,
+    sizes,
+    fallbackBasePrice
+  );
+  const finalPriceBySize = {};
+  const basePriceValues = [];
+  const finalPriceValues = [];
+
+  for (const size of sizes) {
+    const basePrice = Math.max(0, toInteger(priceBySize[size], fallbackBasePrice));
+    const pricing = calculatePricingFromBasePrice(basePrice, product, now);
+    finalPriceBySize[size] = pricing.finalPrice;
+    basePriceValues.push(basePrice);
+    finalPriceValues.push(pricing.finalPrice);
+  }
+
+  const minBasePrice = basePriceValues.length > 0
+    ? Math.min(...basePriceValues)
+    : fallbackBasePrice;
+  const maxBasePrice = basePriceValues.length > 0
+    ? Math.max(...basePriceValues)
+    : fallbackBasePrice;
+  const defaultPricing = calculatePricingFromBasePrice(fallbackBasePrice, product, now);
+  const minFinalPrice = finalPriceValues.length > 0
+    ? Math.min(...finalPriceValues)
+    : defaultPricing.finalPrice;
+  const maxFinalPrice = finalPriceValues.length > 0
+    ? Math.max(...finalPriceValues)
+    : defaultPricing.finalPrice;
+
+  return {
+    sizes,
+    priceBySize,
+    finalPriceBySize,
+    minBasePrice,
+    maxBasePrice,
+    minFinalPrice,
+    maxFinalPrice,
+    hasPriceBySizeVariation: new Set(basePriceValues).size > 1
+  };
 }
 
 function normalizeItemSize(value = '') {
@@ -756,9 +862,9 @@ function isPromoActive(product, now = new Date()) {
   return true;
 }
 
-function calculateProductPricing(product) {
-  const basePrice = Math.max(0, Number(product.basePrice) || 0);
-  const promoIsActive = isPromoActive(product);
+function calculatePricingFromBasePrice(basePriceValue, product, now = new Date()) {
+  const basePrice = Math.max(0, Number(basePriceValue) || 0);
+  const promoIsActive = isPromoActive(product, now);
 
   if (!promoIsActive) {
     return {
@@ -790,6 +896,20 @@ function calculateProductPricing(product) {
     promoIsActive: true,
     promoLabel
   };
+}
+
+function calculateProductPricing(product, options = {}) {
+  const { size = '', now = new Date(), priceInfo = null } = options;
+  const normalizedSize = normalizeItemSize(size);
+  const resolvedPriceInfo = priceInfo || getProductPriceInfo(product, now);
+  const fallbackBasePrice = Math.max(0, Number(product?.basePrice) || 0);
+  const hasSizePrice = normalizedSize
+    && Object.prototype.hasOwnProperty.call(resolvedPriceInfo.priceBySize, normalizedSize);
+  const basePrice = hasSizePrice
+    ? Math.max(0, Number(resolvedPriceInfo.priceBySize[normalizedSize]) || 0)
+    : fallbackBasePrice;
+
+  return calculatePricingFromBasePrice(basePrice, product, now);
 }
 
 function formatRupiah(value) {
@@ -857,6 +977,7 @@ function getOrderChangeAmount(order) {
 
 function serializeProduct(product) {
   const pricing = calculateProductPricing(product);
+  const priceInfo = getProductPriceInfo(product);
   const imageUrls = normalizeProductImages(product);
   const { sizes, stockBySize, totalStock } = getProductStockInfo(product);
 
@@ -879,6 +1000,13 @@ function serializeProduct(product) {
     promoIsActive: pricing.promoIsActive,
     promoLabel: pricing.promoLabel,
     sizes,
+    priceBySize: priceInfo.priceBySize,
+    finalPriceBySize: priceInfo.finalPriceBySize,
+    minBasePrice: priceInfo.minBasePrice,
+    maxBasePrice: priceInfo.maxBasePrice,
+    minFinalPrice: priceInfo.minFinalPrice,
+    maxFinalPrice: priceInfo.maxFinalPrice,
+    hasPriceBySizeVariation: priceInfo.hasPriceBySizeVariation,
     stockBySize,
     stock: totalStock,
     isActive: Boolean(product.isActive),
@@ -1053,6 +1181,27 @@ function buildProductPayload(body = {}, userId, options = {}) {
   payload.updatedBy = userId;
 
   return payload;
+}
+
+function applyPriceConfiguration(payload, body = {}, existingProduct = null) {
+  const sizes = normalizeSizes(payload.sizes ?? existingProduct?.sizes);
+  const fallbackBasePrice = payload.basePrice !== undefined
+    ? payload.basePrice
+    : Math.max(0, toInteger(existingProduct?.basePrice, 0));
+  const hasPriceBySize = body.priceBySize !== undefined;
+
+  let priceBySize = null;
+
+  if (hasPriceBySize) {
+    priceBySize = compactPriceBySize(body.priceBySize, sizes, fallbackBasePrice);
+  } else if (existingProduct) {
+    priceBySize = compactPriceBySize(existingProduct.priceBySize, sizes, fallbackBasePrice);
+  } else {
+    priceBySize = compactPriceBySize(null, sizes, fallbackBasePrice);
+  }
+
+  payload.sizes = sizes;
+  payload.priceBySize = priceBySize;
 }
 
 function applyStockConfiguration(payload, body = {}, existingProduct = null) {
@@ -1498,7 +1647,7 @@ async function createOrder(req, res, next) {
         });
       }
 
-      const pricing = calculateProductPricing(product);
+      const pricing = calculateProductPricing(product, { size: item.size });
       const lineTotal = pricing.finalPrice * item.quantity;
       subtotal += lineTotal;
 
@@ -1658,7 +1807,7 @@ async function createAdminPosOrder(req, res, next) {
         });
       }
 
-      const pricing = calculateProductPricing(product);
+      const pricing = calculateProductPricing(product, { size: item.size });
       const lineTotal = pricing.finalPrice * item.quantity;
       subtotal += lineTotal;
 
@@ -1853,6 +2002,7 @@ async function createAdminProduct(req, res, next) {
     }
 
     const payload = buildProductPayload(req.body, req.user.id);
+    applyPriceConfiguration(payload, req.body);
     applyStockConfiguration(payload, req.body);
     if (!payload.slug) {
       await discardUploadedFiles(uploadedFiles);
@@ -1898,6 +2048,7 @@ async function updateAdminProduct(req, res, next) {
 
     const oldImages = normalizeProductImages(product);
     const payload = buildProductPayload(req.body, req.user.id, { partial: true });
+    applyPriceConfiguration(payload, req.body, product);
     applyStockConfiguration(payload, req.body, product);
 
     if (payload.slug) {
@@ -2555,6 +2706,10 @@ module.exports = {
   getAdminAnalytics,
   __testHooks: {
     reserveStockBySize,
+    normalizePriceBySize,
+    compactPriceBySize,
+    getProductPriceInfo,
+    calculateProductPricing,
     buildRevenueReportWhere,
     resolveAdminPosPayment,
     isCashPaymentMethod,

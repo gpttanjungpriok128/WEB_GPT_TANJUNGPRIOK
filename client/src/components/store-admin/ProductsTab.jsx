@@ -3,6 +3,11 @@ import { API_ORIGIN } from "../../config/env";
 import api from "../../services/api";
 import { formatRupiah } from "../../utils/storeFormatters";
 import { invalidateStoreCatalogCache } from "../../utils/storeCatalogCache";
+import {
+  compactPriceBySizeMap,
+  getProductPriceSummary,
+  normalizePriceBySizeMap,
+} from "../../utils/storePricing";
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL"];
 const PRODUCT_ACTIVE_OPTIONS = [
@@ -49,6 +54,7 @@ function createInitialProductForm() {
   return {
     name: "", slug: "", description: "", color: "",
     basePrice: 0, sizesText: DEFAULT_SIZES.join(", "),
+    priceBySize: {},
     stockBySize: normalizeStockBySizeMap({}, DEFAULT_SIZES),
     promoType: "none", promoValue: 0, promoStartAt: "", promoEndAt: "",
     isActive: true,
@@ -71,6 +77,21 @@ function resolveImageUrl(src) {
   if (!src) return "";
   if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("blob:")) return src;
   return `${API_ORIGIN}${src.startsWith("/") ? "" : "/"}${src}`;
+}
+
+function formatPriceRange(summary) {
+  if (!summary) return formatRupiah(0);
+  return summary.hasRange
+    ? `${formatRupiah(summary.minPrice)} - ${formatRupiah(summary.maxPrice)}`
+    : formatRupiah(summary.minPrice);
+}
+
+function formatPriceBySizeSummary(priceMap = {}) {
+  const summary = Object.entries(priceMap)
+    .filter(([size]) => normalizeSizeLabel(size) !== "XXL")
+    .map(([size, price]) => `${normalizeSizeLabel(size)}=${formatRupiah(price)}`)
+    .join(" • ");
+  return summary || "-";
 }
 
 export default function ProductsTab({ isActive, onRefreshAnalytics }) {
@@ -100,6 +121,10 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
 
   const productFormSizes = useMemo(() => normalizeSizePayload(productForm.sizesText), [productForm.sizesText]);
   const productFormHasPreorderSizes = useMemo(() => productFormSizes.some(isAboveXL), [productFormSizes]);
+  const productFormPriceBySize = useMemo(
+    () => normalizePriceBySizeMap(productForm.priceBySize, productFormSizes, Number(productForm.basePrice) || 0),
+    [productForm.priceBySize, productFormSizes, productForm.basePrice],
+  );
   const productFormStockBySize = useMemo(() => normalizeStockBySizeMap(productForm.stockBySize, productFormSizes), [productForm.stockBySize, productFormSizes]);
   const productFormTotalStock = useMemo(() => sumStockBySize(productFormStockBySize), [productFormStockBySize]);
 
@@ -153,9 +178,10 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
   const fillProductForm = (product) => {
     const sizes = filterOutXXL(Array.isArray(product.sizes) && product.sizes.length > 0 ? product.sizes.map((s) => String(s).toUpperCase()) : [...DEFAULT_SIZES]);
     const safeSizes = sizes.length > 0 ? sizes : [...DEFAULT_SIZES];
+    const priceBySize = compactPriceBySizeMap(product.priceBySize, safeSizes, product.basePrice || 0);
     const stockBySize = normalizeStockBySizeMap(product.stockBySize, safeSizes);
     setEditingProductId(product.id);
-    setProductForm({ name: product.name || "", slug: product.slug || "", description: product.description || "", color: product.color || "", basePrice: product.basePrice || 0, sizesText: safeSizes.join(", "), stockBySize, promoType: product.promoType || "none", promoValue: product.promoValue || 0, promoStartAt: toLocalDatetimeInput(product.promoStartAt), promoEndAt: toLocalDatetimeInput(product.promoEndAt), isActive: Boolean(product.isActive) });
+    setProductForm({ name: product.name || "", slug: product.slug || "", description: product.description || "", color: product.color || "", basePrice: product.basePrice || 0, sizesText: safeSizes.join(", "), priceBySize, stockBySize, promoType: product.promoType || "none", promoValue: product.promoValue || 0, promoStartAt: toLocalDatetimeInput(product.promoStartAt), promoEndAt: toLocalDatetimeInput(product.promoEndAt), isActive: Boolean(product.isActive) });
     clearImages();
     const urls = Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? product.imageUrls : product.imageUrl ? [product.imageUrl] : [];
     setExistingImages(urls);
@@ -163,10 +189,45 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
   };
   const handleProductFormChange = (field, value) => {
     setProductForm((prev) => {
-      if (field === "sizesText") { const sizes = normalizeSizePayload(value); return { ...prev, sizesText: value, stockBySize: normalizeStockBySizeMap(prev.stockBySize, sizes) }; }
+      if (field === "sizesText") {
+        const sizes = normalizeSizePayload(value);
+        const fallbackPrice = Math.max(0, Number(prev.basePrice) || 0);
+        return {
+          ...prev,
+          sizesText: value,
+          priceBySize: compactPriceBySizeMap(prev.priceBySize, sizes, fallbackPrice),
+          stockBySize: normalizeStockBySizeMap(prev.stockBySize, sizes),
+        };
+      }
+      if (field === "basePrice") {
+        const sizes = normalizeSizePayload(prev.sizesText);
+        const fallbackPrice = Math.max(0, Number(value) || 0);
+        return {
+          ...prev,
+          basePrice: value,
+          priceBySize: compactPriceBySizeMap(prev.priceBySize, sizes, fallbackPrice),
+        };
+      }
       return { ...prev, [field]: value };
     });
     setProductFieldErrors((prev) => { if (!prev[field]) return prev; const next = { ...prev }; delete next[field]; return next; });
+  };
+  const handlePriceBySizeChange = (size, value) => {
+    const normalizedSize = String(size || "").trim().toUpperCase();
+    if (!normalizedSize) return;
+    setProductForm((prev) => {
+      const sizes = normalizeSizePayload(prev.sizesText);
+      const fallbackPrice = Math.max(0, Number(prev.basePrice) || 0);
+      const nextPriceBySize = {
+        ...normalizePriceBySizeMap(prev.priceBySize, sizes, fallbackPrice),
+        [normalizedSize]: Math.max(0, Number(value) || 0),
+      };
+
+      return {
+        ...prev,
+        priceBySize: compactPriceBySizeMap(nextPriceBySize, sizes, fallbackPrice),
+      };
+    });
   };
   const handleStockBySizeChange = (size, value) => {
     const normalizedSize = String(size || "").trim().toUpperCase();
@@ -197,6 +258,7 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
     }
     setSavingProduct(true);
     const sizes = productFormSizes;
+    const priceBySize = normalizePriceBySizeMap(productForm.priceBySize, sizes, Number(productForm.basePrice) || 0);
     const stockBySize = normalizeStockBySizeMap(productForm.stockBySize, sizes);
     const totalStock = sumStockBySize(stockBySize);
     const formData = new FormData();
@@ -205,6 +267,7 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
     formData.append("description", productForm.description);
     formData.append("color", productForm.color);
     formData.append("basePrice", String(Number(productForm.basePrice) || 0));
+    formData.append("priceBySize", JSON.stringify(priceBySize));
     formData.append("stock", String(totalStock));
     formData.append("stockBySize", JSON.stringify(stockBySize));
     sizes.forEach((s) => formData.append("sizes", s));
@@ -375,8 +438,9 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
             {productAccordion.stock && (
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">Harga Dasar</label>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">Harga Default</label>
                   <input type="number" min="0" ref={basePriceInputRef} className={`input-modern ${productFieldErrors.basePrice ? "input-error" : ""}`} value={productForm.basePrice} onChange={(e) => handleProductFormChange("basePrice", e.target.value)} aria-invalid={Boolean(productFieldErrors.basePrice)} />
+                  <p className="text-[11px] text-brand-500 dark:text-brand-400">Dipakai sebagai harga fallback jika size belum diberi harga khusus.</p>
                   {productFieldErrors.basePrice && <p className="text-[11px] font-semibold text-rose-500">{productFieldErrors.basePrice}</p>}
                 </div>
                 <div className="space-y-1.5 md:col-span-2">
@@ -388,15 +452,24 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">Stok per Ukuran</label>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-brand-500 dark:text-brand-400">Harga & Stok per Ukuran</label>
                     <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">Total stok: {productFormTotalStock}</span>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4">
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {productFormSizes.map((size) => (
-                      <label key={size} className="rounded-xl border border-brand-200 bg-white/70 p-2 text-xs dark:border-brand-700 dark:bg-brand-900/45">
-                        <span className="mb-1 block font-semibold text-brand-700 dark:text-brand-300">{size}</span>
-                        <input type="number" min="0" className="input-modern !py-2 !text-sm" value={productFormStockBySize[size] ?? 0} onChange={(e) => handleStockBySizeChange(size, e.target.value)} />
-                      </label>
+                      <div key={size} className="rounded-xl border border-brand-200 bg-white/70 p-3 text-xs dark:border-brand-700 dark:bg-brand-900/45">
+                        <span className="mb-2 block font-semibold text-brand-700 dark:text-brand-300">{size}</span>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <label className="space-y-1">
+                            <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">Harga</span>
+                            <input type="number" min="0" className="input-modern !py-2 !text-sm" value={productFormPriceBySize[size] ?? 0} onChange={(e) => handlePriceBySizeChange(size, e.target.value)} />
+                          </label>
+                          <label className="space-y-1">
+                            <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-brand-400">Stok</span>
+                            <input type="number" min="0" className="input-modern !py-2 !text-sm" value={productFormStockBySize[size] ?? 0} onChange={(e) => handleStockBySizeChange(size, e.target.value)} />
+                          </label>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -492,7 +565,13 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
           {!loadingProducts && products.length === 0 && (
             <div className="rounded-2xl border border-dashed border-brand-200 p-8 text-center text-sm text-brand-600 dark:border-brand-700 dark:text-brand-400">Belum ada produk GTshirt.</div>
           )}
-          {!loadingProducts && products.map((product) => (
+          {!loadingProducts && products.map((product) => {
+            const basePriceSummary = getProductPriceSummary(product, { useBasePrice: true });
+            const finalPriceSummary = getProductPriceSummary(product);
+            const basePriceBySize = normalizePriceBySizeMap(product.priceBySize, product.sizes, product.basePrice || 0);
+            const finalPriceBySize = normalizePriceBySizeMap(product.finalPriceBySize, product.sizes, product.finalPrice || product.basePrice || 0);
+
+            return (
             <div key={product.id} className="rounded-2xl border border-brand-200 bg-white/70 p-4 dark:border-brand-700 dark:bg-brand-900/45">
               <div className="flex items-start gap-3">
                 {product.imageUrl && <img src={resolveImageUrl(product.imageUrl)} alt={product.name} loading="lazy" decoding="async" className="h-14 w-14 flex-shrink-0 rounded-xl border border-brand-200 object-cover dark:border-brand-700" />}
@@ -504,16 +583,17 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-brand-600 dark:text-brand-300">
-                <span>Harga: {formatRupiah(product.basePrice)}</span>
-                <span>Final: {formatRupiah(product.finalPrice)}</span>
+                <span>Harga: {formatPriceRange(basePriceSummary)}</span>
+                <span>Final: {formatPriceRange(finalPriceSummary)}</span>
                 <span>Stok: {product.stock}</span>
                 <span>Size: {Array.isArray(product.sizes) ? filterOutXXL(product.sizes).join("/") || "-" : "-"}</span>
                 <span>Foto: {Array.isArray(product.imageUrls) ? product.imageUrls.length : 0}</span>
               </div>
+              <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">Harga per ukuran: {formatPriceBySizeSummary(basePriceBySize)}</p>
               {product.stockBySize && (
                 <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">Stok per ukuran: {Object.entries(product.stockBySize).filter(([size]) => normalizeSizeLabel(size) !== "XXL").map(([size, qty]) => `${String(size).toUpperCase()}=${Number(qty) || 0}`).join(" • ")}</p>
               )}
-              {product.promoIsActive && <p className="mt-1 text-xs font-semibold text-primary">Promo aktif: {product.promoLabel}</p>}
+              {product.promoIsActive && <p className="mt-1 text-xs font-semibold text-primary">Promo aktif: {product.promoLabel} • {formatPriceBySizeSummary(finalPriceBySize)}</p>}
               <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
                 <button type="button" onClick={() => fillProductForm(product)} className="min-h-[44px] rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600">Edit</button>
                 <button type="button" onClick={() => handleToggleProductStatus(product, !product.isActive)} className={`min-h-[44px] rounded-lg px-3 py-2 text-xs font-semibold text-white transition ${product.isActive ? "bg-rose-500 hover:bg-rose-600" : "bg-emerald-600 hover:bg-emerald-700"}`}>{product.isActive ? "Nonaktifkan" : "Aktifkan"}</button>
@@ -528,7 +608,8 @@ export default function ProductsTab({ isActive, onRefreshAnalytics }) {
                 </div>
               </details>
             </div>
-          ))}
+            );
+          })}
         </div>
       </article>
     </section>

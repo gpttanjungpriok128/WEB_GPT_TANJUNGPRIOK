@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { formatRupiah } from "../../utils/storeFormatters";
 import { buildStoreOrderPrintDocument } from "../../utils/storePrint";
 import { invalidateStoreCatalogCache } from "../../utils/storeCatalogCache";
+import { getPriceForSize, getProductPriceSummary } from "../../utils/storePricing";
 
 const PAYMENT_OPTIONS = ["Tunai", "QRIS", "Transfer Bank", "Kartu Debit"];
 
@@ -101,7 +102,7 @@ export default function PosTab({
           ...item,
           productName: product.name,
           imageUrl: getProductImageUrl(product),
-          unitPrice: Number(product.finalPrice) || 0,
+          unitPrice: getPriceForSize(product, item.size),
           stockAvailable,
           quantity: clampQuantity(item.quantity, stockAvailable),
           isActive: Boolean(product.isActive),
@@ -223,7 +224,7 @@ export default function PosTab({
             imageUrl: getProductImageUrl(product),
             size: draft.size,
             quantity: quantityToAdd,
-            unitPrice: Number(product.finalPrice) || 0,
+            unitPrice: getPriceForSize(product, draft.size),
             stockAvailable,
             isActive: Boolean(product.isActive),
           },
@@ -235,7 +236,7 @@ export default function PosTab({
         return {
           ...item,
           quantity: clampQuantity(item.quantity + quantityToAdd, stockAvailable),
-          unitPrice: Number(product.finalPrice) || 0,
+          unitPrice: getPriceForSize(product, draft.size),
           stockAvailable,
         };
       });
@@ -373,6 +374,8 @@ export default function PosTab({
 
           {!loadingProducts && filteredProducts.map((product) => {
             const draft = getDraftValue(product);
+            const priceSummary = getProductPriceSummary(product);
+            const displayPrice = getPriceForSize(product, draft.size);
             const inCart = getCartQuantityForVariant(product.id, draft.size);
             const availableToAdd = Math.max(0, draft.stockAvailable - inCart);
 
@@ -399,7 +402,12 @@ export default function PosTab({
                     </div>
                     <div className="min-w-0">
                       <p className="line-clamp-2 text-sm font-bold text-brand-900 dark:text-white">{product.name}</p>
-                      <p className="mt-1 text-sm font-semibold text-primary">{formatRupiah(product.finalPrice)}</p>
+                      <p className="mt-1 text-sm font-semibold text-primary">{formatRupiah(displayPrice)}</p>
+                      {priceSummary.hasRange && (
+                        <p className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">
+                          Mulai {formatRupiah(priceSummary.minPrice)} sampai {formatRupiah(priceSummary.maxPrice)}
+                        </p>
+                      )}
                       {product.color && (
                         <p className="mt-1 text-xs text-brand-500 dark:text-brand-400">{product.color}</p>
                       )}

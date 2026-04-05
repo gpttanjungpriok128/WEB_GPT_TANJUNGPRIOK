@@ -5,6 +5,7 @@ import ShopHero from "../components/ShopHero";
 import storePlaceholderImage from "../img/logo1.png";
 import { resolveStoreImageUrl } from "../utils/storeImage";
 import { getTotalStock } from "../utils/storeStock";
+import { getProductPriceSummary } from "../utils/storePricing";
 import { buildCacheKey, getCacheSnapshot, swrGet } from "../utils/swrCache";
 import {
   STORE_CATALOG_INVALIDATION_EVENT,
@@ -543,10 +544,10 @@ function ShopPage() {
 
     nextProducts.sort((left, right) => {
       if (sortBy === "price-low") {
-        return Number(left.finalPrice ?? left.basePrice ?? 0) - Number(right.finalPrice ?? right.basePrice ?? 0);
+        return getProductPriceSummary(left).minPrice - getProductPriceSummary(right).minPrice;
       }
       if (sortBy === "price-high") {
-        return Number(right.finalPrice ?? right.basePrice ?? 0) - Number(left.finalPrice ?? left.basePrice ?? 0);
+        return getProductPriceSummary(right).minPrice - getProductPriceSummary(left).minPrice;
       }
       if (sortBy === "name") {
         return String(left.name || "").localeCompare(String(right.name || ""), "id");
@@ -1055,9 +1056,8 @@ function ShopPage() {
             )}
             <div className="shop-grid grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {filteredProducts.map((product, index) => {
-                const effectivePrice = Number(
-                  product.finalPrice ?? product.basePrice ?? 0,
-                );
+                const priceSummary = getProductPriceSummary(product);
+                const effectivePrice = priceSummary.minPrice;
                 const totalStock = getTotalStock(product);
                 const catalogSizes = getCatalogSizes(product);
                 const sizePreview = catalogSizes.length > 0
@@ -1120,11 +1120,16 @@ function ShopPage() {
                         <div className="mt-auto grid grid-cols-2 gap-3 pt-1">
                           <div className="min-w-0">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                              Harga
+                              {priceSummary.hasRange ? "Mulai" : "Harga"}
                             </p>
                             <p className="mt-1 text-base font-black text-brand-900 dark:text-white sm:text-[1.05rem]">
                               {formatRupiah(effectivePrice)}
                             </p>
+                            {priceSummary.hasRange && (
+                              <p className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">
+                                sampai {formatRupiah(priceSummary.maxPrice)}
+                              </p>
+                            )}
                           </div>
                           <div className="text-right">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">

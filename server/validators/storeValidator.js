@@ -88,6 +88,21 @@ const createProductValidation = [
   body('color').optional().isString().withMessage('Warna tidak valid'),
   body('imageUrl').optional().isString().withMessage('URL gambar tidak valid'),
   body('basePrice').isInt({ min: 0 }).withMessage('Harga produk harus angka >= 0'),
+  body('priceBySize')
+    .optional()
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true;
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return true;
+        } catch {
+          throw new Error('Harga per ukuran harus format JSON object');
+        }
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) return true;
+      throw new Error('Harga per ukuran tidak valid');
+    }),
   body('stock').optional().isInt({ min: 0 }).withMessage('Stok harus angka >= 0'),
   body('promoType')
     .optional()
@@ -133,6 +148,21 @@ const updateProductValidation = [
   body('color').optional().isString().withMessage('Warna tidak valid'),
   body('imageUrl').optional().isString().withMessage('URL gambar tidak valid'),
   body('basePrice').optional().isInt({ min: 0 }).withMessage('Harga produk harus angka >= 0'),
+  body('priceBySize')
+    .optional()
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true;
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return true;
+        } catch {
+          throw new Error('Harga per ukuran harus format JSON object');
+        }
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) return true;
+      throw new Error('Harga per ukuran tidak valid');
+    }),
   body('stock').optional().isInt({ min: 0 }).withMessage('Stok harus angka >= 0'),
   body('promoType')
     .optional()

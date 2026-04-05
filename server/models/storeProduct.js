@@ -38,6 +38,11 @@ const StoreProduct = sequelize.define('StoreProduct', {
     allowNull: false,
     defaultValue: 0
   },
+  priceBySize: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+  },
   promoType: {
     type: DataTypes.ENUM('none', 'percentage', 'fixed'),
     allowNull: false,

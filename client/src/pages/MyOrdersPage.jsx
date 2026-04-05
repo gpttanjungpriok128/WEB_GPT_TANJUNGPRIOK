@@ -7,6 +7,7 @@ import StoreOrderInvoice from "../components/StoreOrderInvoice";
 import { useAuth } from "../context/AuthContext";
 import { normalizeStoreImagePath } from "../utils/storeImage";
 import { ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from "../utils/storeOrderStatus";
+import { getPriceForSize } from "../utils/storePricing";
 import { clampQuantity, getStockForSize, normalizeSizeKey } from "../utils/storeStock";
 
 const CART_STORAGE_KEY = "gpt_tanjungpriok_shop_cart_v2";
@@ -280,7 +281,7 @@ function MyOrdersPage() {
             ...existingItem,
             productId: product.id,
             name: product.name,
-            price: Number(product.finalPrice ?? product.basePrice ?? item.unitPrice ?? 0),
+            price: getPriceForSize(product, size) || Number(item.unitPrice) || 0,
             image: existingItem.image || normalizedPrimaryImage,
             imageUrls:
               Array.isArray(existingItem.imageUrls) && existingItem.imageUrls.length > 0
@@ -297,7 +298,7 @@ function MyOrdersPage() {
             variantKey,
             productId: product.id,
             name: product.name,
-            price: Number(product.finalPrice ?? product.basePrice ?? item.unitPrice ?? 0),
+            price: getPriceForSize(product, size) || Number(item.unitPrice) || 0,
             image: normalizedPrimaryImage,
             imageUrls: normalizedImageUrls,
             size,
