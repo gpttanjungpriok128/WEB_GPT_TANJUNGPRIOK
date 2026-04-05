@@ -87,6 +87,13 @@ const formatRupiah = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
+const formatPriceRangeLabel = (summary) => {
+  if (!summary) return formatRupiah(0);
+  return summary.hasRange
+    ? `${formatRupiah(summary.minPrice)} - ${formatRupiah(summary.maxPrice)}`
+    : formatRupiah(summary.minPrice);
+};
+
 const InstagramIcon = ({ className = "h-5 w-5" }) => (
   <svg
     className={className}
@@ -1120,16 +1127,11 @@ function ShopPage() {
                         <div className="mt-auto grid grid-cols-2 gap-3 pt-1">
                           <div className="min-w-0">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
-                              {priceSummary.hasRange ? "Mulai" : "Harga"}
+                              Harga
                             </p>
                             <p className="mt-1 text-base font-black text-brand-900 dark:text-white sm:text-[1.05rem]">
-                              {formatRupiah(effectivePrice)}
+                              {formatPriceRangeLabel(priceSummary)}
                             </p>
-                            {priceSummary.hasRange && (
-                              <p className="mt-1 text-[11px] text-brand-500 dark:text-brand-400">
-                                sampai {formatRupiah(priceSummary.maxPrice)}
-                              </p>
-                            )}
                           </div>
                           <div className="text-right">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500 dark:text-brand-400">
